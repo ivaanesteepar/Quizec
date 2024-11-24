@@ -1,1 +1,1 @@
-Aplicación de Quizzes realiza en Kotlin
+Aplicación de Quizzes realizada en Kotlin
