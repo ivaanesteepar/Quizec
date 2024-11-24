@@ -48,45 +48,145 @@ class QuizViewModel : ViewModel() {
     private val _errorMessage = MutableStateFlow("")
     val errorMessage: StateFlow<String> = _errorMessage
 
-    private val _codigoQuiz = MutableStateFlow<String?>(null)
-    val codigoQuiz: StateFlow<String?> get() = _codigoQuiz
 
     // Declara el tipo del Map explícitamente
     val _respuestas = MutableStateFlow<Map<String, Any>>(emptyMap())
     val respuestas: StateFlow<Map<String, Any>> get() = _respuestas
 
-    // En tu ViewModel o en un lugar adecuado
-    val correctAnswersMap = mutableMapOf<String, Int>()
-
     // Mapa de respuestas de todos los usuarios (usamos StateFlow para ser reactivos)
     private val _respuestasUsuario = MutableStateFlow<Map<String, Pair<String, Int>>>(emptyMap())
     val respuestasUsuario: StateFlow<Map<String, Pair<String, Int>>> = _respuestasUsuario
+
+    private val _totalTime = MutableStateFlow(600) // Tiempo total global inicial (10 minutos)
+    val totalTime: StateFlow<Int> get() = _totalTime // Exponer el tiempo total como StateFlow
+
+    private val _usuariosTiempo = mutableStateOf<Map<String, Int>>(emptyMap())
+    val usuariosTiempo: State<Map<String, Int>> get() = _usuariosTiempo
+
+
+    private val _remainingTime = mutableStateOf(60) // Tiempo restante para la pregunta
+    val remainingTime: State<Int> = _remainingTime // Exponer el tiempo restante como un estado observable
 
 
     init {
         obtenerRolUsuario()
     }
 
-    fun actualizarRespuestasCorrectas(userId: String, userName: String, respuestasCorrectas: Int) {
-        val updatedMap = _respuestasUsuario.value.toMutableMap()
-        updatedMap[userId] = Pair(userName, respuestasCorrectas)
-        _respuestasUsuario.value = updatedMap
-    }
 
-    // Función para agregar un nuevo usuario al mapa si no está presente
-    fun agregarNuevoUsuario(userId: String, userName: String) {
-        val updatedMap = _respuestasUsuario.value.toMutableMap()
-        if (!updatedMap.containsKey(userId)) {
-            updatedMap[userId] = Pair(userName, 0)  // 0 respuestas correctas inicialmente
+    fun tick() {
+        // Solo decrementa si el tiempo no es 0
+        if (_totalTime.value > 0) {
+            _totalTime.value -= 1
+            println("El tiempo total es ahora: ${_totalTime.value}")
+        } else {
+            // El tiempo total es 0, no hace nada.
+            println("El tiempo ya ha llegado a 0, no se puede decrementar más.")
         }
-        _respuestasUsuario.value = updatedMap
     }
 
 
-    // Obtener las respuestas correctas de un usuario
-    fun obtenerRespuestasCorrectas(userId: String): Int {
-        return correctAnswersMap.getOrDefault(userId, 0)
+    fun iniciarQuiz(codigoQuiz: String, usuarioUid: String) {
+        val db = FirebaseFirestore.getInstance()
+
+        // Referencia al documento del código del cuestionario dentro de la colección usuariosEspera
+        val usuariosEsperaRef = db.collection("usuariosEspera")
+            .document(codigoQuiz)
+
+        println("Usuarios espera ref: $usuariosEsperaRef")
+
+        // Recuperar el documento del código del cuestionario
+        usuariosEsperaRef.get().addOnSuccessListener { document ->
+            if (document.exists()) {
+                // Accedemos al mapa 'usuarios' dentro del documento
+                val usuariosMap = document.get("usuarios") as? Map<String, Map<String, Any>> ?: return@addOnSuccessListener
+
+                println("Usuarios map: $usuariosMap")
+
+                // Verificamos si el UID del usuario está presente en el mapa
+                val usuarioData = usuariosMap[usuarioUid]
+                if (usuarioData != null) {
+                    // Creamos la referencia al documento del usuario
+                    val usuarioRef = usuariosEsperaRef.collection("usuarios").document(usuarioUid)
+
+                    println("Usuario ref iniciarquiz: $usuarioRef")
+
+                    // Actualizamos el campo 'quizTerminado' a false para el usuario específico
+                    usuarioRef.update("quizTerminado", false).addOnCompleteListener { task ->
+                        if (task.isSuccessful) {
+                            Log.d("QuizViewModel", "El campo quizTerminado para el usuario $usuarioUid ha sido actualizado a false")
+                        } else {
+                            Log.e("QuizViewModel", "Error al actualizar el campo quizTerminado para el usuario $usuarioUid.")
+                        }
+                    }
+                } else {
+                    Log.e("QuizViewModel", "El usuario con UID $usuarioUid no se encontró en el mapa de usuarios.")
+                }
+            } else {
+                Log.e("QuizViewModel", "No se encontró el documento para el código del cuestionario $codigoQuiz.")
+            }
+        }.addOnFailureListener { exception ->
+            Log.e("QuizViewModel", "Error al acceder al documento: ${exception.message}")
+        }
     }
+
+
+
+    // Pone el campo de 'quizTerminado' en true para todos los usuarios y acaba la partida
+    fun endQuiz(codigoQuiz: String) {
+        val db = FirebaseFirestore.getInstance()
+
+        // Referencia al documento del código del cuestionario dentro de la colección usuariosEspera
+        val usuariosEsperaRef = db.collection("usuariosEspera")
+            .document(codigoQuiz)
+
+        println("Usuarios espera ref: $usuariosEsperaRef")
+
+        // Recuperar el documento del código del cuestionario
+        usuariosEsperaRef.get().addOnSuccessListener { document ->
+            if (document.exists()) {
+                // Accedemos al mapa 'usuarios' dentro del documento
+                val usuariosMap = document.get("usuarios") as? Map<String, Map<String, Any>> ?: return@addOnSuccessListener
+
+                println("Usuarios map: $usuariosMap")
+
+                // Iteramos sobre los usuarios y actualizamos el campo 'quizTerminado' para cada uno
+                val batch = db.batch()
+
+                // Para cada usuario, obtenemos el UID y actualizamos el campo 'quizTerminado'
+                usuariosMap.forEach { (uid, usuarioData) ->
+                    // Referencia al mapa del usuario dentro del campo 'usuarios'
+                    val usuarioRef = usuariosEsperaRef
+
+                    // Si 'quizTerminado' no existe en el mapa, lo actualizamos
+                    batch.update(usuarioRef, "usuarios.$uid.quizTerminado", true)
+                }
+
+                // Commit de la operación de actualización en batch
+                batch.commit().addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        Log.d("QuizViewModel", "Todos los usuarios han sido actualizados con quizTerminado = true")
+                    } else {
+                        Log.e("QuizViewModel", "Error al actualizar el campo quizTerminado para los usuarios.")
+                    }
+                }
+
+            } else {
+                Log.e("QuizViewModel", "No se encontró el documento para el código del cuestionario $codigoQuiz.")
+            }
+        }.addOnFailureListener { exception ->
+            Log.e("QuizViewModel", "Error al acceder al documento: ${exception.message}")
+        }
+    }
+
+
+
+
+    // Método para restablecer los tiempos cuando se inicia un nuevo quiz o pregunta
+    fun resetTimes() {
+        _totalTime.value = 600  // Restablece el tiempo total a 10 minutos
+        _remainingTime.value = 30 // Restablece el tiempo por pregunta a 30 segundos
+    }
+
 
 
     // Función para cargar las imágenes de los cuestionarios creados por el usuario
@@ -247,31 +347,6 @@ class QuizViewModel : ViewModel() {
             }
         } catch (e: Exception) {
             Log.e("QuizViewModel", "Error al obtener las preguntas de Firestore: ${e.message}")
-        }
-    }
-
-    // Función para obtener el código del quiz
-    fun obtenerCodigoQuiz() {
-        val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
-        val cuestionariosRef = firestore.collection("cuestionarios")
-            .whereEqualTo("creadorId", userId) // Filtramos por el ID del creador
-
-        // Realiza la consulta
-        viewModelScope.launch {
-            try {
-                val result = cuestionariosRef.get().await()
-                if (!result.isEmpty) {
-                    // Suponemos que solo hay un cuestionario por usuario, así que obtenemos el primer documento
-                    val cuestionario = result.documents.first()
-                    val codigo = cuestionario.getString("id") // Suponemos que el campo 'id' es el código
-                    _codigoQuiz.value = codigo // Asignamos el valor al MutableStateFlow
-                    println("EL CODIGO DEL QUIZ ES: $codigo")
-                } else {
-                    Log.e("QuizViewModel", "No se encontró ningún cuestionario para el usuario con ID $userId")
-                }
-            } catch (e: Exception) {
-                Log.e("QuizViewModel", "Error al obtener el código del quiz: ${e.message}")
-            }
         }
     }
 

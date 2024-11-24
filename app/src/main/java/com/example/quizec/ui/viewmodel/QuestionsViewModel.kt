@@ -215,8 +215,6 @@ class QuestionsViewModel : ViewModel() {
         }
     }
 
-
-
     fun modificarPregunta(preguntaModificada: Pregunta, userId: String) {
         println("Pregunta a modificar cuyo titulo eees: $preguntaModificada.titulo")
 
@@ -264,10 +262,4 @@ class QuestionsViewModel : ViewModel() {
             }
         }
     }
-
-
-
 }
-
-
-

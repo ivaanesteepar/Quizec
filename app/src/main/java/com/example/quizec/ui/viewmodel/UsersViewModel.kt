@@ -64,7 +64,8 @@ class UsersViewModel : ViewModel() {
                             "id" to userId,
                             "nombre" to nombreUsuario,
                             "rol" to rolUsuario,
-                            "respuestasCorrectas" to 0  // Se inicializa con 0
+                            "respuestasCorrectas" to 0,  // Se inicializa con 0
+                            "quizTerminado" to false
                         )
 
                         val usuariosEsperaRef = db.collection("usuariosEspera")

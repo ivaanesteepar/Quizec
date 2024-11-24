@@ -1,8 +1,16 @@
 package com.example.quizec.ui.screens
 
+import android.util.Log
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,6 +26,7 @@ import com.example.quizec.data.model.UserResponse
 import com.example.quizec.ui.viewmodel.QuizViewModel
 import com.example.quizec.ui.viewmodel.UsersViewModel
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.delay
 
 @Composable
@@ -41,30 +50,85 @@ fun UserQuizzesScreen(
     val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
     var userName by remember { mutableStateOf<String?>(null) }
 
-    var remainingTime by remember { mutableStateOf(10) } // 60 segundos
+    // Observamos el totalTime
+    val totalTime by quizViewModel.totalTime.collectAsState()
+    println("totalTime fuera del launch: $totalTime")
 
+    var remainingTime by remember { mutableStateOf(30) } // Tiempo por pregunta
+    var timerActive by remember { mutableStateOf(true) }
+
+    // Estado global desde el ViewModel
+    val _remainingTime = quizViewModel.remainingTime // Obtenido desde el ViewModel
+    val remainingTimeState: State<Int> = _remainingTime
 
 
     LaunchedEffect(codigoQuiz) {
         if (codigoQuiz != null) {
+            println("Usuario ha entrado con id: $userId al cuestionario: $codigoQuiz")
+            quizViewModel.iniciarQuiz(codigoQuiz, userId)
             quizViewModel.cargarPreguntasPorCodigo(codigoQuiz)
             userName = usersViewModel.obtenerNombreUsuario(userId, codigoQuiz)
             usersViewModel.agregarUsuarioAQuiz(codigoQuiz)
+            quizViewModel.resetTimes()  // Restablece los tiempos a su valor inicial
         }
     }
 
-    // Temporizador que decrementa cada segundo
-    LaunchedEffect(remainingTime) {
-        if (remainingTime > 0) {
-            delay(1000) // Espera 1 segundo
+    // Lógica para verificar si el quiz ha sido terminado
+    LaunchedEffect(userId, codigoQuiz) {
+        if (codigoQuiz != null) {
+            val db = FirebaseFirestore.getInstance()
+            val usuariosEsperaRef = db.collection("usuariosEspera").document(codigoQuiz)
+
+            // Listener en tiempo real para escuchar cambios en el estado del quiz
+            usuariosEsperaRef.addSnapshotListener { documentSnapshot, error ->
+                if (error != null) {
+                    Log.e("QuizViewModel", "Error al verificar el estado de quizTerminado: ${error.message}")
+                    return@addSnapshotListener
+                }
+
+                if (documentSnapshot != null && documentSnapshot.exists()) {
+                    val usuariosMap = documentSnapshot.get("usuarios") as? Map<String, Map<String, Any>> ?: return@addSnapshotListener
+                    val usuarioData = usuariosMap[userId]
+                    val quizTerminado = usuarioData?.get("quizTerminado") as? Boolean
+
+                    // Si el estado cambia a true, navega a la pantalla de resultados
+                    if (quizTerminado == true) {
+                        navController.navigate("results_screen/$codigoQuiz")
+                    }
+                }
+            }
+        }
+    }
+
+
+
+    // Lógica del temporizador para la pregunta actual y el tiempo total
+    LaunchedEffect(totalTime) {
+        println("totalTime: $totalTime")
+        if (totalTime == 0) {
+            navController.navigate("results_screen/$codigoQuiz") // Navega al finalizar
+        }
+    }
+
+    LaunchedEffect(currentQuestionIndex) {
+        remainingTime = 30 // Reinicia el tiempo de la pregunta al cambiar
+        timerActive = true
+
+        while (timerActive && remainingTime > 0 && totalTime > 0) {
+            delay(1000)
             remainingTime -= 1
-        } else {
-            // Si el tiempo se acaba, navegamos a la pantalla de resultados
-            navController.navigate("results_screen/$codigoQuiz")
+            quizViewModel.tick() // Disminuye el tiempo total
+        }
+
+        if (remainingTime == 0) {
+            if (currentQuestionIndex < preguntas.size - 1) {
+                currentQuestionIndex++ // Cambiar a la siguiente pregunta
+            } else {
+                navController.navigate("results_screen/$codigoQuiz") // Ir a resultados
+            }
         }
     }
 
-    println("El usuario es: $userName") // BIEN
     preguntas = quizViewModel.preguntas
 
     Box(
@@ -99,9 +163,8 @@ fun UserQuizzesScreen(
                 // Aquí agregamos un Spacer de tamaño ajustado para mayor separación
                 Spacer(modifier = Modifier.width(50.dp)) // Ajusta el valor según lo necesites
 
-                // Tiempo restante
                 Text(
-                    text = "Tiempo restante: $remainingTime segundos",
+                    text = "Tiempo restante: $remainingTime segundos (Total: $totalTime)",
                     style = MaterialTheme.typography.bodyMedium,
                     fontSize = 16.sp
                 )
@@ -210,6 +273,55 @@ fun UserQuizzesScreen(
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Text(text = opcion, color = Color.White)
+                            }
+                        }
+                    }
+
+                } else if (currentQuestion.tipo == TipoPregunta.ORDENAR) {
+                    val orderedItems = currentQuestion.itemsOrdenados.toMutableStateList()
+                    println("Items ordenados: $orderedItems")
+
+                    Column {
+                        orderedItems.forEachIndexed { index, item ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(8.dp)
+                                    .background(Color.LightGray, shape = RoundedCornerShape(8.dp))
+                            ) {
+                                // Mostrar el texto del ítem
+                                Text(
+                                    text = item,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .padding(16.dp)
+                                )
+
+                                // Botón para mover el ítem hacia arriba
+                                IconButton(
+                                    onClick = {
+                                        if (index > 0) {
+                                            // Mover el ítem hacia arriba
+                                            orderedItems.removeAt(index)
+                                            orderedItems.add(index - 1, item)
+                                        }
+                                    }
+                                ) {
+                                    Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Mover arriba")
+                                }
+
+                                // Botón para mover el ítem hacia abajo
+                                IconButton(
+                                    onClick = {
+                                        if (index < orderedItems.size - 1) {
+                                            // Mover el ítem hacia abajo
+                                            orderedItems.removeAt(index)
+                                            orderedItems.add(index + 1, item)
+                                        }
+                                    }
+                                ) {
+                                    Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Mover abajo")
+                                }
                             }
                         }
                     }
