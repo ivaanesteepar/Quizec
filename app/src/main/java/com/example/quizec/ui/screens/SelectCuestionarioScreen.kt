@@ -1,0 +1,185 @@
+package com.example.quizec.ui.screens
+
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
+import android.content.ContentResolver
+import android.content.Context
+import android.util.Log
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
+import com.example.quizec.ui.viewmodel.QuizViewModel
+import com.example.quizec.ui.viewmodel.QuestionsViewModel
+import com.google.firebase.auth.FirebaseAuth
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.quizec.data.model.Rol
+import com.google.firebase.firestore.FirebaseFirestore
+
+@Composable
+fun SelectCuestionarioScreen(
+    navController: NavHostController,
+    quizViewModel: QuizViewModel,
+    questionsViewModel: QuestionsViewModel = viewModel(),
+    context: Context // Pasamos el contexto para usar ContentResolver
+) {
+    val userId = FirebaseAuth.getInstance().currentUser?.uid
+
+    // Cargar los cuestionarios y sus imágenes desde la base de datos cuando la pantalla se muestra
+    LaunchedEffect(userId) {
+        userId?.let {
+            quizViewModel.cargarImagenesCuestionariosUsuario(it) // Cargar las imágenes de los cuestionarios del usuario desde la base de datos
+            questionsViewModel.cargarCuestionariosUsuario(it) // Cargar los cuestionarios
+        }
+    }
+
+    // Estado de los cuestionarios
+    val cuestionariosState = questionsViewModel.cuestionariosState.collectAsState()
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        Text(
+            text = "Seleccione un Cuestionario",
+            style = MaterialTheme.typography.bodyMedium
+        )
+
+        // Reducir el tamaño de la LazyColumn
+        LazyColumn(
+            modifier = Modifier
+                .padding(top = 16.dp)
+                .heightIn(max = 350.dp) // Limitar la altura de la LazyColumn para que quepan los botones debajo
+        ) {
+            items(cuestionariosState.value) { cuestionario ->
+                val isSelected = questionsViewModel.selectedCuestionario == cuestionario.id
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                ) {
+                    // Mostrar checkbox para seleccionar el cuestionario
+                    Checkbox(
+                        checked = isSelected,
+                        onCheckedChange = {
+                            questionsViewModel.toggleCuestionarioSelection(cuestionario.id)
+                        },
+                        modifier = Modifier.size(20.dp)
+                    )
+
+                    // Mostrar título, ID y URL del cuestionario
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(start = 8.dp)
+                    ) {
+                        Text(
+                            text = cuestionario.titulo,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        Text(
+                            text = "ID: ${cuestionario.id}",
+                            style = MaterialTheme.typography.labelSmall
+                        )
+
+                        // Mostrar la URL de la imagen
+                        cuestionario.imagen?.let { imageUrl ->
+                            Text(
+                                text = "URL de la imagen: $imageUrl",
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+
+                            // Cargar y mostrar la imagen desde URI
+                            val imageBitmap by remember(imageUrl) {
+                                mutableStateOf(loadImageFromUri(context, imageUrl))
+                            }
+
+                            imageBitmap?.let { bitmap ->
+                                Image(
+                                    bitmap = bitmap.asImageBitmap(),
+                                    contentDescription = "Imagen del cuestionario",
+                                    modifier = Modifier
+                                        .padding(top = 8.dp)
+                                        .size(100.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Botón de "Continuar"
+        Button(
+            onClick = {
+                val selectedCuestionarioId = questionsViewModel.selectedCuestionario
+                if (selectedCuestionarioId != null) {
+                    if (userId != null) {
+                        actualizarRolUsuario(userId, Rol.CREADOR)
+                    }
+                    navController.navigate("waiting_screen/$selectedCuestionarioId")
+                }
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp)
+        ) {
+            Text(text = "Continuar")
+        }
+
+        // Botón de "Volver"
+        Button(
+            onClick = {
+                navController.popBackStack() // Navegar hacia atrás
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp)
+        ) {
+            Text(text = "Volver")
+        }
+    }
+}
+
+
+// Función para actualizar el rol del usuario en Firestore
+private fun actualizarRolUsuario(userUid: String, rol: Rol) {
+    val db = FirebaseFirestore.getInstance()
+    val usuarioRef = db.collection("users").document(userUid)
+
+    // Actualizar el campo 'rol' en Firestore
+    usuarioRef.update("rol", rol)
+        .addOnSuccessListener {
+            Log.d("CrearCuestionario", "Rol de usuario actualizado a '${rol.name}'.")
+        }
+        .addOnFailureListener { e ->
+            Log.w("CrearCuestionario", "Error al actualizar el rol del usuario", e)
+        }
+}
+
+
+// Función para cargar la imagen desde un URI usando ContentResolver
+fun loadImageFromUri(context: Context, imageUri: String): Bitmap? {
+    return try {
+        val uri = Uri.parse(imageUri)
+        val contentResolver: ContentResolver = context.contentResolver
+        val inputStream = contentResolver.openInputStream(uri)
+        BitmapFactory.decodeStream(inputStream)
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
+    }
+}

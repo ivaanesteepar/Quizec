@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "44258184213",
+    "firebase_url": "https://quizec-b8ac4-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "quizec-b8ac4",
+    "storage_bucket": "quizec-b8ac4.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:44258184213:android:ca718e0a7145be1023121c",
+        "android_client_info": {
+          "package_name": "com.example.quizec"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDy9wMfb9njDDVNkGbbMy02ePsccQLmfxo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
