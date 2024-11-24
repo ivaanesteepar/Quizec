@@ -1,1 +1,1 @@
-Aplicación de Quizzes realizada en Kotlin utilizando JetPackCompose (en proceso)
+Aplicación de Quizzes realizada en Kotlin utilizando Jetpack Compose (en proceso)
