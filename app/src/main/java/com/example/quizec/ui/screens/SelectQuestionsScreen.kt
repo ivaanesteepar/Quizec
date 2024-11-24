@@ -224,13 +224,6 @@ fun PreguntaItem(
                 )
             }
 
-            if (isInQuiz) {
-                Text(
-                    text = "Incluida en el quiz",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.secondary
-                )
-            }
         }
 
         Spacer(modifier = Modifier.height(8.dp))

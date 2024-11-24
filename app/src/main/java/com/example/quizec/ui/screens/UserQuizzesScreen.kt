@@ -1,5 +1,3 @@
-@file:JvmName("UserQuizzesScreenKt")
-
 package com.example.quizec.ui.screens
 
 import androidx.compose.foundation.layout.*
@@ -36,6 +34,9 @@ fun UserQuizzesScreen(
     var isAnswerSelected by remember { mutableStateOf(false) }
     var trueButtonColor by remember { mutableStateOf(Color(0xFF2196F3)) }
     var falseButtonColor by remember { mutableStateOf(Color(0xFF2196F3)) }
+
+    // Estado para controlar si el botón "Aceptar" fue presionado
+    var isAcceptButtonClicked by remember { mutableStateOf(false) }
 
     val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
     var userName by remember { mutableStateOf<String?>(null) }
@@ -283,6 +284,7 @@ fun UserQuizzesScreen(
 
                             isAnswerCorrect = isCorrect
                             isAnswerSelected = true
+                            isAcceptButtonClicked = true
 
                             if (isCorrect) {
                                 // Primero, obtener el valor actualizado de las respuestas correctas desde Firestore
@@ -295,7 +297,7 @@ fun UserQuizzesScreen(
                             }
                         }
                     },
-                    enabled = selectedAnswer != null // Habilitar el botón solo si hay una respuesta seleccionada
+                    enabled = !isAcceptButtonClicked && selectedAnswer != null // Habilitar el botón solo si hay una respuesta seleccionada
                 ) {
                     Text(text = "Aceptar")
                 }
@@ -322,6 +324,7 @@ fun UserQuizzesScreen(
                         selectedAnswer = null
                         isAnswerCorrect = null
                         isAnswerSelected = false
+                        isAcceptButtonClicked = false
                         trueButtonColor = Color(0xFF2196F3)
                         falseButtonColor = Color(0xFF2196F3)
 

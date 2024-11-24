@@ -192,6 +192,13 @@ fun CreateQuizScreen(navController: NavHostController, quizViewModel: QuizViewMo
         ) {
             Text("Crear Cuestionario", color = Color.White)
         }
+        Spacer(modifier = Modifier.height(16.dp))
+        Button(
+            onClick = { navController.navigate("home") },
+            modifier = Modifier.fillMaxWidth(0.8f)
+        ) {
+            Text("Volver", color = Color.White)
+        }
     }
 }
 
