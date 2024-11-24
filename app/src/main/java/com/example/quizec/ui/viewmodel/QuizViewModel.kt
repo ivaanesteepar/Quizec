@@ -12,7 +12,6 @@ import androidx.lifecycle.viewModelScope
 import com.example.quizec.data.model.Cuestionario
 import com.example.quizec.data.model.Pregunta
 import com.example.quizec.data.model.TipoPregunta
-import com.example.quizec.data.model.UserResponse
 import com.example.quizec.data.model.Usuario
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -181,7 +180,7 @@ class QuizViewModel : ViewModel() {
 
 
 
-    // Método para restablecer los tiempos cuando se inicia un nuevo quiz o pregunta
+    // Método para restablecer los tiempos cuando se inicia un nuevo quiz o pregunta (QUITAR!!!)
     fun resetTimes() {
         _totalTime.value = 600  // Restablece el tiempo total a 10 minutos
         _remainingTime.value = 30 // Restablece el tiempo por pregunta a 30 segundos
@@ -350,7 +349,7 @@ class QuizViewModel : ViewModel() {
         }
     }
 
-    // Función para generar un código de 6 dígitos
+    // Función para generar un código de 6 dígitos (CAMBIAR A ALFANUMERICO)
     fun generarClave(): String {
         return (100000..999999).random().toString()  // Genera un código de 6 dígitos
     }

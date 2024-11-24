@@ -22,7 +22,6 @@ import androidx.navigation.NavHostController
 import com.example.quizec.data.model.Pregunta
 import com.example.quizec.data.model.Rol
 import com.example.quizec.data.model.TipoPregunta
-import com.example.quizec.data.model.UserResponse
 import com.example.quizec.ui.viewmodel.QuizViewModel
 import com.example.quizec.ui.viewmodel.UsersViewModel
 import com.google.firebase.auth.FirebaseAuth
