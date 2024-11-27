@@ -51,8 +51,8 @@ fun UserQuizzesScreen(
     var selectedAnswer by remember { mutableStateOf<List<String>?>(null) }
     var isAnswerCorrect by remember { mutableStateOf<Boolean?>(null) }
     var isAnswerSelected by remember { mutableStateOf(false) }
-    var trueButtonColor by remember { mutableStateOf(Color(0xFF2196F3)) }
-    var falseButtonColor by remember { mutableStateOf(Color(0xFF2196F3)) }
+    var trueButtonColor by remember { mutableStateOf(defaultButtonColor) }
+    var falseButtonColor by remember { mutableStateOf(defaultButtonColor) }
 
     //JIMENA
     var enableAcept by remember { mutableStateOf(false) } //habilita el botoón de aceptar
@@ -236,6 +236,7 @@ fun UserQuizzesScreen(
                     )
                     if (selectedAnswer != null) enableAcept = true
 
+
                 } else if (currentQuestion.tipo == TipoPregunta.OPCION_MULTIPLE_MULTIPLES) {
                     MultChoicesScreen(
                         currentQuestion = currentQuestion,
@@ -245,7 +246,6 @@ fun UserQuizzesScreen(
                         },
                         isAcceptButtonClicked = isAcceptButtonClicked
                     )
-
                     if (selectedAnswer != null) enableAcept = true
 
 
@@ -350,70 +350,51 @@ fun UserQuizzesScreen(
                         //USO DE ENABLEACEPT PARA VERIFICAR QUE HAY UNA RESPUESTA
 
                         val correctAnswers = currentQuestion.respuestasCorrectas
-                        when (currentQuestion.tipo) {
-                            TipoPregunta.VERDADERO_FALSO -> if (selectedAnswer == correctAnswers) isAnswerCorrect =
-                                true
+                            when (currentQuestion.tipo) {
+                                TipoPregunta.VERDADERO_FALSO -> if (selectedAnswer == correctAnswers) isAnswerCorrect = true
+                                TipoPregunta.OPCION_MULTIPLE_UNA -> if (selectedAnswer?.sorted() == correctAnswers.sorted()) isAnswerCorrect = true
+                                TipoPregunta.OPCION_MULTIPLE_MULTIPLES -> if (selectedAnswer?.sorted() == correctAnswers.sorted()) isAnswerCorrect = true
+                                TipoPregunta.COMPLETAR_ESPACIOS -> if (selectedOption == currentQuestion.opcionCorrecta) isAnswerCorrect = true
+                                TipoPregunta.ORDENAR -> if( userOrderedItems == currentQuestion.itemsOrdenados) isAnswerCorrect = true
+                                TipoPregunta.EMPAREJAR -> {
+                                    var isAllCorrect = true
+                                    currentQuestion.emparejamientos.forEach { correctPair ->
+                                        // Obtener la clave y el valor correctos de emparejamientos
+                                        val (key, correctValue) = correctPair.entries.first() // Asumimos un solo par clave-valor por item
+                                        // Comparar si el valor seleccionado por el usuario coincide con el valor correcto
 
-                            TipoPregunta.OPCION_MULTIPLE_UNA -> if (selectedAnswer?.sorted() == correctAnswers.sorted()) isAnswerCorrect =
-                                true
-
-                            TipoPregunta.OPCION_MULTIPLE_MULTIPLES -> if (selectedAnswer?.sorted() == correctAnswers.sorted()) isAnswerCorrect =
-                                true
-
-                            TipoPregunta.COMPLETAR_ESPACIOS -> if (selectedOption == currentQuestion.opcionCorrecta) isAnswerCorrect =
-                                true
-
-                            TipoPregunta.ORDENAR -> if (userOrderedItems == currentQuestion.itemsOrdenados) isAnswerCorrect =
-                                true
-
-                            TipoPregunta.EMPAREJAR -> {
-                                var isAllCorrect = true
-                                currentQuestion.emparejamientos.forEach { correctPair ->
-                                    // Obtener la clave y el valor correctos de emparejamientos
-                                    val (key, correctValue) = correctPair.entries.first() // Asumimos un solo par clave-valor por item
-                                    // Comparar si el valor seleccionado por el usuario coincide con el valor correcto
-
-                                    if (userSelections[key] != correctValue) {
-                                        isAllCorrect = false
-                                        return@forEach
+                                        if (userSelections[key] != correctValue) {
+                                            isAllCorrect = false
+                                            return@forEach
+                                        }
                                     }
+                                    if (isAllCorrect) isAnswerCorrect = true
                                 }
-                                if (isAllCorrect) isAnswerCorrect = true
+                                else -> false
                             }
 
-                            else -> false
-                        }
+                            isAcceptButtonClicked = true //para luego mostrar si es correcta o no la respuesta en un Text(
 
-                        isAcceptButtonClicked =
-                            true //para luego mostrar si es correcta o no la respuesta en un Text(
-
-                        if (isAnswerCorrect == true) {
-                            // Primero, obtener el valor actualizado de las respuestas correctas desde Firestore
-                            usersViewModel.obtenerRespuestasCorrectas(
-                                userId,
-                                codigoQuiz!!
-                            ) { respuestasCorrectas ->
-                                // Incrementar el número de respuestas correctas
-                                val respuestasCorrectasActualizadas = respuestasCorrectas + 1
-                                usersViewModel.actualizarRespuestasCorrectas(
-                                    userId,
-                                    codigoQuiz,
-                                    respuestasCorrectasActualizadas
-                                )
-                                println("Respuestas correctas actualizadas: $respuestasCorrectasActualizadas")
+                            if (isAnswerCorrect == true) {
+                                // Primero, obtener el valor actualizado de las respuestas correctas desde Firestore
+                                usersViewModel.obtenerRespuestasCorrectas(userId, codigoQuiz!!) { respuestasCorrectas ->
+                                    // Incrementar el número de respuestas correctas
+                                    val respuestasCorrectasActualizadas = respuestasCorrectas + 1
+                                    usersViewModel.actualizarRespuestasCorrectas(userId, codigoQuiz, respuestasCorrectasActualizadas)
+                                    println("Respuestas correctas actualizadas: $respuestasCorrectasActualizadas")
+                                }
                             }
-                        }
 
-                        resultMessage = if (isAnswerCorrect == true) {
-                            "¡Respuesta correcta!"
-                        } else {
-                            "Respuesta incorrecta"
-                        }
+                            resultMessage = if (isAnswerCorrect == true){
+                                "¡Respuesta correcta!"
+                            } else {
+                                "Respuesta incorrecta"
+                            }
                         Log.d("RESULT", "resultMessage: ${resultMessage}")
 
                         //}
                     },
-                    enabled = enableAcept == true && !isAcceptButtonClicked// Habilitar el botón si hay una respuesta y desactivar una vez pulsado
+                    enabled = enableAcept && !isAcceptButtonClicked// Habilitar el botón si hay una respuesta y desactivar una vez pulsado
                 ) {
                     Text(text = "Aceptar")
                 }
@@ -441,8 +422,8 @@ fun UserQuizzesScreen(
                         isAnswerCorrect = null
                         isAnswerSelected = false
                         isAcceptButtonClicked = false
-                        trueButtonColor = Color(0xFF2196F3)
-                        falseButtonColor = Color(0xFF2196F3)
+                        trueButtonColor = defaultButtonColor
+                        falseButtonColor = defaultButtonColor
                         resultMessage = ""
 
                         if (currentQuestionIndex < preguntas.size - 1) {
