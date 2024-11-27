@@ -1,22 +1,32 @@
 package com.example.quizec.ui.screens
 
-import com.example.quizec.utils.TimeProgressBar
 import android.util.Log
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.quizec.data.model.Pregunta
+import com.example.quizec.data.model.Rol
 import com.example.quizec.data.model.TipoPregunta
 import com.example.quizec.ui.screens.UserQuestionTypes.FillBlankQuestionScreen
 import com.example.quizec.ui.screens.UserQuestionTypes.MatchingQuestionScreen
+import com.example.quizec.ui.screens.UserQuestionTypes.OrderingQuesitonScreen
 import com.example.quizec.ui.screens.UserQuestionTypes.OrderingQuesitonScreen
 import com.example.quizec.ui.viewmodel.QuizViewModel
 import com.example.quizec.ui.viewmodel.UsersViewModel
@@ -53,6 +63,7 @@ fun UserQuizzesScreen(
 
     // Observamos el totalTime
     val totalTime by quizViewModel.totalTime.collectAsState()
+    println("totalTime fuera del launch: $totalTime")
 
     var remainingTime by remember { mutableStateOf(30) } // Tiempo por pregunta
     var timerActive by remember { mutableStateOf(true) }
@@ -100,8 +111,11 @@ fun UserQuizzesScreen(
         }
     }
 
+
+
     // Lógica del temporizador para la pregunta actual y el tiempo total
     LaunchedEffect(totalTime) {
+        println("totalTime: $totalTime")
         if (totalTime == 0) {
             navController.navigate("results_screen/$codigoQuiz") // Navega al finalizar
         }
@@ -145,7 +159,6 @@ fun UserQuizzesScreen(
             val opcionesCorrectas = currentQuestion.opcionesCorrectasCompletarPalabras
             var userInputs = remember { mutableStateListOf<String>().apply { repeat(opcionesCorrectas.size) { add("") } } }
 
-
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -161,8 +174,11 @@ fun UserQuizzesScreen(
                 // Aquí agregamos un Spacer de tamaño ajustado para mayor separación
                 Spacer(modifier = Modifier.width(50.dp)) // Ajusta el valor según lo necesites
 
-                TimeProgressBar(remainingTime)
-
+                Text(
+                    text = "Tiempo restante: $remainingTime segundos (Total: $totalTime)",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontSize = 16.sp
+                )
             }
 
             // Centrar todo el contenido dentro de un Column

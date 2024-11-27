@@ -143,25 +143,40 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
 
                 TipoPregunta.OPCION_MULTIPLE_UNA -> {
                     Text("Opciones de Respuesta", style = MaterialTheme.typography.bodyMedium)
+
+                    // Iterar sobre las opciones con índice para mostrar los campos de texto y el botón de eliminar
                     opciones.forEachIndexed { index, option ->
-                        OutlinedTextField(
-                            value = option,
-                            onValueChange = { newOption ->
-                                opciones =
-                                    opciones.toMutableList().apply { this[index] = newOption }
-                            },
-                            label = { Text("Opción ${index + 1}") },
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                            OutlinedTextField(
+                                value = option,
+                                onValueChange = { newOption ->
+                                    // Actualizar la opción al cambiar el texto
+                                    opciones = opciones.toMutableList().apply { this[index] = newOption }
+                                },
+                                label = { Text("Opción ${index + 1}") },
+                                modifier = Modifier.weight(1f).padding(vertical = 4.dp)
+                            )
+
+                            // Botón para eliminar la opción
+                            IconButton(onClick = {
+                                // Eliminar la opción de la lista
+                                opciones = opciones.toMutableList().apply { removeAt(index) }
+                            }) {
+                                Icon(imageVector = Icons.Default.Delete, contentDescription = "Eliminar Opción")
+                            }
+                        }
                     }
+
+                    // Botón para agregar una nueva opción
                     Button(onClick = { opciones = opciones + "" }) {
                         Text("Agregar Opción")
                     }
+
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        "Seleccione la respuesta correcta:",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+
+                    Text("Seleccione la respuesta correcta:", style = MaterialTheme.typography.bodyMedium)
+
+                    // Mostrar las opciones y permitir seleccionar la respuesta correcta
                     opciones.forEachIndexed { index, option ->
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             RadioButton(
@@ -179,15 +194,24 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
 
                         // Mostrar las opciones de respuesta
                         opciones.forEachIndexed { index, option ->
-                            OutlinedTextField(
-                                value = option,
-                                onValueChange = { newOption ->
-                                    opciones =
-                                        opciones.toMutableList().apply { this[index] = newOption }
-                                },
-                                label = { Text("Opción ${index + 1}") },
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                                OutlinedTextField(
+                                    value = option,
+                                    onValueChange = { newOption ->
+                                        opciones = opciones.toMutableList().apply { this[index] = newOption }
+                                    },
+                                    label = { Text("Opción ${index + 1}") },
+                                    modifier = Modifier.weight(1f).padding(vertical = 4.dp)
+                                )
+
+                                // Botón de eliminar opción
+                                IconButton(onClick = {
+                                    // Eliminar la opción de la lista
+                                    opciones = opciones.toMutableList().apply { removeAt(index) }
+                                }) {
+                                    Icon(imageVector = Icons.Default.Delete, contentDescription = "Eliminar Opción")
+                                }
+                            }
                         }
 
                         // Botón para agregar más opciones
@@ -197,23 +221,20 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        Text(
-                            "Seleccione las respuestas correctas:",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
+                        Text("Seleccione las respuestas correctas:", style = MaterialTheme.typography.bodyMedium)
 
                         // Lista de opciones con múltiples respuestas correctas
                         opciones.forEachIndexed { index, option ->
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 // Usar un Checkbox para permitir seleccionar múltiples respuestas correctas
                                 Checkbox(
-                                    checked = respuestasCorrectasMultipleMultiples.contains(index),  // Verifica si la opción está seleccionada como correcta
+                                    checked = respuestasCorrectasMultipleMultiples.contains(index), // Verifica si la opción está seleccionada como correcta
                                     onCheckedChange = { isChecked ->
                                         // Modificar la lista de respuestas correctas
                                         if (isChecked) {
-                                            respuestasCorrectasMultipleMultiples.add(index)  // Añadir el índice si está marcado
+                                            respuestasCorrectasMultipleMultiples.add(index) // Añadir el índice si está marcado
                                         } else {
-                                            respuestasCorrectasMultipleMultiples.remove(index)  // Eliminar el índice si se desmarca
+                                            respuestasCorrectasMultipleMultiples.remove(index) // Eliminar el índice si se desmarca
                                         }
                                     }
                                 )
@@ -222,6 +243,7 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                         }
                     }
                 }
+
 
 
                 TipoPregunta.EMPAREJAR -> {
@@ -590,8 +612,22 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                             TipoPregunta.VERDADERO_FALSO -> {
                                 // No hay validación adicional para este tipo
                             }
-                            TipoPregunta.OPCION_MULTIPLE_UNA, TipoPregunta.OPCION_MULTIPLE_MULTIPLES -> {
-                                if (opciones.any { it.isEmpty() }) {
+                            TipoPregunta.OPCION_MULTIPLE_MULTIPLES ->{
+                                if (opciones.size !in 2..6) {
+                                    errorMessage = "Por favor, ingrese entre 2 y 6 opciones."
+                                }else if (opciones.any { it.isEmpty() }) {
+                                    errorMessage = "Por favor, complete todas las opciones."
+                                } else if (respuestasCorrectasMultipleMultiples.isEmpty()) {
+                                    errorMessage = "Por favor, seleccione la respuesta correcta."
+                                }else{
+                                    errorMessage = ""
+                                }
+                            }
+
+                            TipoPregunta.OPCION_MULTIPLE_UNA -> {
+                                if (opciones.size !in 2..6) {
+                                    errorMessage = "Por favor, ingrese entre 2 y 6 opciones."
+                                }else if (opciones.any { it.isEmpty() }) {
                                     errorMessage = "Por favor, complete todas las opciones."
                                 } else if (respuestaCorrectaOpcionMultiple == -1) {
                                     errorMessage = "Por favor, seleccione la respuesta correcta."

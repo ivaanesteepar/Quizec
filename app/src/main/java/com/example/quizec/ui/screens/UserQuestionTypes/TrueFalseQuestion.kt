@@ -1,2 +1,59 @@
 package com.example.quizec.ui.screens.UserQuestionTypes
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+
+
+
+@Composable
+fun TrueFalseQuestionScreen(
+    onSelectedAnswerChange: (List<String>?) -> Unit, // Lambda para actualizar el estado
+    falseButtonColor: Color,
+    trueButtonColor: Color,
+    isAcceptButtonClicked: Boolean
+    ){
+
+    Row(
+        horizontalArrangement = Arrangement.Center, // Centra los botones horizontalmente
+        verticalAlignment = Alignment.CenterVertically, // Centra los botones verticalmente
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+    ) {
+        Button(
+            onClick = {
+                onSelectedAnswerChange(listOf("Verdadero"))
+            },
+            colors = ButtonDefaults.buttonColors(containerColor = trueButtonColor),
+            enabled = !isAcceptButtonClicked,
+            modifier = Modifier.weight(1f) // Ocupa el mismo espacio que el botón de Falso
+        ) {
+            Text(text = "Verdadero", color = Color.White)
+        }
+
+        Spacer(modifier = Modifier.width(16.dp)) // Espacio entre los botones
+
+        Button(
+            onClick = {
+                onSelectedAnswerChange(listOf("Falso"))
+            },
+            colors = ButtonDefaults.buttonColors(containerColor = falseButtonColor),
+            enabled = !isAcceptButtonClicked,
+            modifier = Modifier.weight(1f) // Ocupa el mismo espacio que el botón de Verdadero
+        ) {
+            Text(text = "Falso", color = Color.White)
+        }
+    }
+}
