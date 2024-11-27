@@ -13,6 +13,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.example.quizec.data.model.Pregunta
+import com.example.quizec.ui.theme.defaultButtonColor
+import com.example.quizec.ui.theme.selectedButtonColor
 
 @Composable
 fun OneMultChoicesScreen(
@@ -34,7 +36,8 @@ fun OneMultChoicesScreen(
                         onSelectedAnswerChange(listOf(opcion)) // Solo seleccionamos una opción
                     }
                 },
-                colors = ButtonDefaults.buttonColors(containerColor = if (isSelected) Color(0xFFFFA500) else Color(0xFF2196F3)),
+                colors = ButtonDefaults.buttonColors(containerColor = if (isSelected) selectedButtonColor
+                    else defaultButtonColor),
                 enabled = !isAcceptButtonClicked,
                 modifier = Modifier.fillMaxWidth()
             ) {

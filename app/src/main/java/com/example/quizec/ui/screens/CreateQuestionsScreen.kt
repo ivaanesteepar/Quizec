@@ -45,14 +45,13 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
     var tipoPregunta by remember { mutableStateOf(TipoPregunta.VERDADERO_FALSO) }
 
     // Nueva variable para almacenar las respuestas correctas
-    var respuestasCorrectasMultipleMultiples = remember { mutableStateListOf<Int>() }
+    var respuestasCorrectasMultipleMultiples by remember { mutableStateOf(listOf<String>()) }
 
     var opciones by remember { mutableStateOf(listOf("")) } //COMPLETAR ESPACIOS
     var respuestasCorrectas by remember { mutableStateOf(listOf("")) }
     var respuestaCorrectaVF by remember { mutableStateOf(true) }
     var respuestaCorrectaOpcionMultiple by remember { mutableStateOf(-1) } // Índice de la opción correcta seleccionada
-    var respuestasUsuario by remember { mutableStateOf(listOf<String>()) } // Respuestas de los usuarios para completar la frase
-    var palabrasSeleccionadas by remember { mutableStateOf(setOf<Int>()) } // Conjunto de índices de palabras seleccionadas para completar
+
     //EMPAREJAR
     var leftItems by remember { mutableStateOf(listOf("")) }
     var rightItems by remember { mutableStateOf(listOf("")) }
@@ -62,6 +61,7 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
     //COMPLETAR ESPACIOS
     var fraseCompletar by remember { mutableStateOf("") }
     var opcionCorrecta by remember { mutableStateOf("") } //la palabra que será el espacio en blanco
+
     //ASOCIACION
     // Listas para que el profesor ingrese conceptos y definiciones
     var conceptos by remember { mutableStateOf(listOf("")) }
@@ -206,8 +206,9 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
 
                                 // Botón de eliminar opción
                                 IconButton(onClick = {
-                                    // Eliminar la opción de la lista
+                                    // Eliminar la opción de la lista y sincronizar las respuestas correctas
                                     opciones = opciones.toMutableList().apply { removeAt(index) }
+                                    respuestasCorrectasMultipleMultiples = respuestasCorrectasMultipleMultiples.filter { it in opciones }
                                 }) {
                                     Icon(imageVector = Icons.Default.Delete, contentDescription = "Eliminar Opción")
                                 }
@@ -228,17 +229,17 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 // Usar un Checkbox para permitir seleccionar múltiples respuestas correctas
                                 Checkbox(
-                                    checked = respuestasCorrectasMultipleMultiples.contains(index), // Verifica si la opción está seleccionada como correcta
+                                    checked = respuestasCorrectasMultipleMultiples.contains(option), // Verifica si la opción está seleccionada como correcta
                                     onCheckedChange = { isChecked ->
-                                        // Modificar la lista de respuestas correctas
-                                        if (isChecked) {
-                                            respuestasCorrectasMultipleMultiples.add(index) // Añadir el índice si está marcado
+                                        // Modificar la lista de respuestas correctas directamente con opciones
+                                        respuestasCorrectasMultipleMultiples = if (isChecked) {
+                                            respuestasCorrectasMultipleMultiples + option // Añadir la opción si está marcada
                                         } else {
-                                            respuestasCorrectasMultipleMultiples.remove(index) // Eliminar el índice si se desmarca
+                                            respuestasCorrectasMultipleMultiples - option // Eliminar la opción si se desmarca
                                         }
                                     }
                                 )
-                                Text("Opción ${index + 1}: $option")
+                                Text("Opción ${index + 1}: $option") // Mostrar la opción como texto
                             }
                         }
                     }
@@ -651,7 +652,7 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                             }
 
                             TipoPregunta.ORDENAR -> {
-                                if (itemsOrdenados.size !in 2..6 || itemsOrdenados.size !in 2..6) {
+                                if (itemsOrdenados.size !in 2..6 ) {
                                     errorMessage = "Por favor, ingrese entre 2 y 6 ítems."
                                 }else {
                                     errorMessage = ""
@@ -716,9 +717,13 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                             // Establecer las respuestas correctas dependiendo del tipo de pregunta
                             respuestasCorrectas = when (tipoPregunta) {
                                 TipoPregunta.VERDADERO_FALSO -> listOf(if (respuestaCorrectaVF) "Verdadero" else "Falso")
-                                TipoPregunta.OPCION_MULTIPLE_UNA, TipoPregunta.OPCION_MULTIPLE_MULTIPLES -> listOfNotNull(
+                                TipoPregunta.OPCION_MULTIPLE_UNA -> listOfNotNull(
                                     opciones.getOrNull(respuestaCorrectaOpcionMultiple)
                                 )
+                                TipoPregunta.OPCION_MULTIPLE_MULTIPLES -> respuestasCorrectasMultipleMultiples
+                                TipoPregunta.COMPLETAR_ESPACIOS -> listOf(opcionCorrecta)
+                                //TipoPregunta.EMPAREJAR -> itemPairs.map { it.values.first() }
+
                                 else -> listOf()
                             }
 

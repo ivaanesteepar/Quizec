@@ -1,5 +1,6 @@
 package com.example.quizec.ui.screens.UserQuestionTypes
 
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,12 +13,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.example.quizec.data.model.Pregunta
+import com.example.quizec.ui.theme.defaultButtonColor
+import com.example.quizec.ui.theme.selectedButtonColor
 
 @Composable
 fun MultChoicesScreen(
     currentQuestion: Pregunta,
     selectedAnswer: List<String>?,
-    onSelectedAnswerChange: (List<String>) -> Unit,
+    onSelectedAnswerChange: (List<String>?) -> Unit,
     isAcceptButtonClicked: Boolean
 ) {
     Column(
@@ -31,19 +34,19 @@ fun MultChoicesScreen(
 
             Button(
                 onClick = {
-                    if (selectedAnswer != null) {
-                        if (isSelected) {
-                            onSelectedAnswerChange(selectedAnswer.filter { it != opcion })
-
-                        } else {
-                            onSelectedAnswerChange(selectedAnswer + opcion)
-                        }
+                    val updatedAnswer = if (isSelected) {
+                        // Si está seleccionada, la eliminamos
+                        selectedAnswer?.filter { it != opcion }
+                    } else {
+                        // Si no está seleccionada, la agregamos
+                        (selectedAnswer ?: emptyList()) + opcion
                     }
+                    onSelectedAnswerChange(updatedAnswer)
+                    Log.d("MultChoicesScreen", "selectedAnswer: $updatedAnswer")
                 },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isSelected) Color(
-                        0xFFFFA500
-                    ) else Color(0xFF2196F3)
+                    containerColor = if (isSelected) selectedButtonColor
+                    else defaultButtonColor
                 ),
                 enabled = !isAcceptButtonClicked,
                 modifier = Modifier.fillMaxWidth()

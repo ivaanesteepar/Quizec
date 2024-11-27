@@ -1,34 +1,24 @@
 package com.example.quizec.ui.screens
 
 import android.util.Log
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.quizec.data.model.Pregunta
-import com.example.quizec.data.model.Rol
 import com.example.quizec.data.model.TipoPregunta
 import com.example.quizec.ui.screens.UserQuestionTypes.FillBlankQuestionScreen
 import com.example.quizec.ui.screens.UserQuestionTypes.MatchingQuestionScreen
+import com.example.quizec.ui.screens.UserQuestionTypes.MissingWordsQuestion
 import com.example.quizec.ui.screens.UserQuestionTypes.MultChoicesScreen
 import com.example.quizec.ui.screens.UserQuestionTypes.OneMultChoicesScreen
-import com.example.quizec.ui.screens.UserQuestionTypes.OrderingQuesitonScreen
 import com.example.quizec.ui.screens.UserQuestionTypes.OrderingQuesitonScreen
 import com.example.quizec.ui.screens.UserQuestionTypes.TrueFalseQuestionScreen
 import com.example.quizec.ui.theme.defaultButtonColor
@@ -48,6 +38,7 @@ fun UserQuizzesScreen(
     val usersViewModel = UsersViewModel()
     var preguntas by remember { mutableStateOf(emptyList<Pregunta>()) }
     var currentQuestionIndex by remember { mutableStateOf(0) }
+
     var selectedAnswer by remember { mutableStateOf<List<String>?>(null) }
     var isAnswerCorrect by remember { mutableStateOf<Boolean?>(null) }
     var isAnswerSelected by remember { mutableStateOf(false) }
@@ -224,6 +215,7 @@ fun UserQuizzesScreen(
                        trueButtonColor = trueButtonColor,
                        isAcceptButtonClicked = isAcceptButtonClicked
                    )
+                   if (selectedAnswer != null) enableAcept = true
 
                 } else if (currentQuestion.tipo == TipoPregunta.OPCION_MULTIPLE_UNA) {
                     OneMultChoicesScreen(
@@ -249,6 +241,7 @@ fun UserQuizzesScreen(
                     if (selectedAnswer != null) enableAcept = true
 
 
+
                 }else if (currentQuestion.tipo == TipoPregunta.COMPLETAR_ESPACIOS) {
                     FillBlankQuestionScreen(
                         currentQuestion = currentQuestion,
@@ -259,10 +252,7 @@ fun UserQuizzesScreen(
                         isAcceptButtonClicked = isAcceptButtonClicked
                     )
                     //habilitar o no el boton de aceptar
-                    if (selectedOption != null){
-                        enableAcept = true
-                    }
-
+                    if (selectedOption != null) enableAcept = true
 
 
                 }else if (currentQuestion.tipo == TipoPregunta.ORDENAR) {
@@ -286,59 +276,14 @@ fun UserQuizzesScreen(
 
 
                 }else if (currentQuestion.tipo == TipoPregunta.COMPLETAR_PALABRAS) {
-                    val fraseCompletar = currentQuestion.fraseCompletar
 
-                    // Dividir la frase en palabras y reemplazar las correctas por un espacio (___)
-                    val palabrasFrase = fraseCompletar.split(" ")
-                    val fraseConEspacios = palabrasFrase.joinToString(" ") { palabra ->
-                        if (opcionesCorrectas.contains(palabra)) {
-                            "___" // Reemplaza las palabras correctas con "___"
-                        } else {
-                            palabra // Mantiene las otras palabras
-                        }
-                    }
-
-                    // Mostrar la frase modificada
-                    Text(
-                        text = "Completa la frase: $fraseConEspacios",
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontSize = 16.sp
+                    MissingWordsQuestion(
+                        currentQuestion = currentQuestion,
+                        opcionesCorrectas = opcionesCorrectas,
+                        userInputs = userInputs
                     )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp) // Agregado padding horizontal
-                    ) {
-                        opcionesCorrectas.forEachIndexed { index, palabraCorrecta ->
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                // Número de la palabra (1, 2, 3,...)
-                                Text(
-                                    text = "${index + 1}.",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontSize = 14.sp,
-                                    modifier = Modifier.width(24.dp) // Espacio fijo para el número
-                                )
-
-                                // Cuadro de texto para que el usuario ingrese la respuesta
-                                TextField(
-                                    value = userInputs[index],
-                                    onValueChange = { newValue -> userInputs[index] = newValue },
-                                    label = { Text(text = "Ingresa la palabra correcta") },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    singleLine = true
-                                )
-                            }
-                        }
-                    }
+                    Log.d("MISSING","${userInputs}")
+                    if (userInputs.all { it.isNotBlank()} && userInputs.size == currentQuestion.opcionesCorrectasCompletarPalabras.size) enableAcept = true
                 }
 
                 Spacer(modifier = Modifier.height(20.dp))
@@ -347,52 +292,61 @@ fun UserQuizzesScreen(
 
                 Button(
                     onClick = {
-                        //USO DE ENABLEACEPT PARA VERIFICAR QUE HAY UNA RESPUESTA
-
                         val correctAnswers = currentQuestion.respuestasCorrectas
-                            when (currentQuestion.tipo) {
-                                TipoPregunta.VERDADERO_FALSO -> if (selectedAnswer == correctAnswers) isAnswerCorrect = true
-                                TipoPregunta.OPCION_MULTIPLE_UNA -> if (selectedAnswer?.sorted() == correctAnswers.sorted()) isAnswerCorrect = true
-                                TipoPregunta.OPCION_MULTIPLE_MULTIPLES -> if (selectedAnswer?.sorted() == correctAnswers.sorted()) isAnswerCorrect = true
-                                TipoPregunta.COMPLETAR_ESPACIOS -> if (selectedOption == currentQuestion.opcionCorrecta) isAnswerCorrect = true
-                                TipoPregunta.ORDENAR -> if( userOrderedItems == currentQuestion.itemsOrdenados) isAnswerCorrect = true
-                                TipoPregunta.EMPAREJAR -> {
-                                    var isAllCorrect = true
-                                    currentQuestion.emparejamientos.forEach { correctPair ->
-                                        // Obtener la clave y el valor correctos de emparejamientos
-                                        val (key, correctValue) = correctPair.entries.first() // Asumimos un solo par clave-valor por item
-                                        // Comparar si el valor seleccionado por el usuario coincide con el valor correcto
 
-                                        if (userSelections[key] != correctValue) {
-                                            isAllCorrect = false
-                                            return@forEach
-                                        }
+                        when (currentQuestion.tipo) {
+                            TipoPregunta.VERDADERO_FALSO -> if (selectedAnswer == correctAnswers) isAnswerCorrect = true
+                            TipoPregunta.OPCION_MULTIPLE_UNA -> if (selectedAnswer?.sorted() == correctAnswers.sorted()) isAnswerCorrect = true
+                            TipoPregunta.OPCION_MULTIPLE_MULTIPLES -> if (selectedAnswer?.sorted() == currentQuestion.respuestasCorrectas.sorted()) isAnswerCorrect = true
+                            TipoPregunta.COMPLETAR_ESPACIOS -> if (selectedOption == currentQuestion.opcionCorrecta) isAnswerCorrect = true
+                            TipoPregunta.ORDENAR -> if (userOrderedItems == currentQuestion.itemsOrdenados) isAnswerCorrect = true
+                            TipoPregunta.EMPAREJAR -> {
+                                var isAllCorrect = true
+
+                                currentQuestion.emparejamientos.forEach { correctPair ->
+                                    // Obtener la clave y el valor correctos de emparejamientos
+                                    val (key, correctValue) = correctPair.entries.first() // Asumimos un solo par clave-valor por item
+                                    // Comparar si el valor seleccionado por el usuario coincide con el valor correcto
+
+                                    if (userSelections[key] != correctValue) {
+                                        isAllCorrect = false
+                                        return@forEach
                                     }
-                                    if (isAllCorrect) isAnswerCorrect = true
                                 }
-                                else -> false
+                                if (isAllCorrect) isAnswerCorrect = true
+                            }
+                            TipoPregunta.COMPLETAR_PALABRAS -> {
+                                if (userInputs.sorted() == currentQuestion.opcionesCorrectasCompletarPalabras.sorted()) isAnswerCorrect = true
                             }
 
-                            isAcceptButtonClicked = true //para luego mostrar si es correcta o no la respuesta en un Text(
+                            else -> false
+                        }
 
-                            if (isAnswerCorrect == true) {
-                                // Primero, obtener el valor actualizado de las respuestas correctas desde Firestore
-                                usersViewModel.obtenerRespuestasCorrectas(userId, codigoQuiz!!) { respuestasCorrectas ->
-                                    // Incrementar el número de respuestas correctas
-                                    val respuestasCorrectasActualizadas = respuestasCorrectas + 1
-                                    usersViewModel.actualizarRespuestasCorrectas(userId, codigoQuiz, respuestasCorrectasActualizadas)
-                                    println("Respuestas correctas actualizadas: $respuestasCorrectasActualizadas")
-                                }
-                            }
+                        isAcceptButtonClicked = true //para luego mostrar si es correcta o no la respuesta en un Text(
 
-                            resultMessage = if (isAnswerCorrect == true){
-                                "¡Respuesta correcta!"
-                            } else {
-                                "Respuesta incorrecta"
+                        if (isAnswerCorrect == true) {
+                            // Primero, obtener el valor actualizado de las respuestas correctas desde Firestore
+                            usersViewModel.obtenerRespuestasCorrectas(
+                                userId,
+                                codigoQuiz!!
+                            ) { respuestasCorrectas ->
+                                // Incrementar el número de respuestas correctas
+                                val respuestasCorrectasActualizadas = respuestasCorrectas + 1
+                                usersViewModel.actualizarRespuestasCorrectas(
+                                    userId,
+                                    codigoQuiz,
+                                    respuestasCorrectasActualizadas
+                                )
+                                println("Respuestas correctas actualizadas: $respuestasCorrectasActualizadas")
                             }
+                        }
+
+                        resultMessage = if (isAnswerCorrect == true) {
+                            "¡Respuesta correcta!"
+                        } else {
+                            "Respuesta incorrecta"
+                        }
                         Log.d("RESULT", "resultMessage: ${resultMessage}")
-
-                        //}
                     },
                     enabled = enableAcept && !isAcceptButtonClicked// Habilitar el botón si hay una respuesta y desactivar una vez pulsado
                 ) {
@@ -422,6 +376,7 @@ fun UserQuizzesScreen(
                         isAnswerCorrect = null
                         isAnswerSelected = false
                         isAcceptButtonClicked = false
+                        enableAcept = false
                         trueButtonColor = defaultButtonColor
                         falseButtonColor = defaultButtonColor
                         resultMessage = ""
