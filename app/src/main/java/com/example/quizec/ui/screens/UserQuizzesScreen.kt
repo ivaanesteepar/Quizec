@@ -26,8 +26,13 @@ import com.example.quizec.data.model.Rol
 import com.example.quizec.data.model.TipoPregunta
 import com.example.quizec.ui.screens.UserQuestionTypes.FillBlankQuestionScreen
 import com.example.quizec.ui.screens.UserQuestionTypes.MatchingQuestionScreen
+import com.example.quizec.ui.screens.UserQuestionTypes.MultChoicesScreen
+import com.example.quizec.ui.screens.UserQuestionTypes.OneMultChoicesScreen
 import com.example.quizec.ui.screens.UserQuestionTypes.OrderingQuesitonScreen
 import com.example.quizec.ui.screens.UserQuestionTypes.OrderingQuesitonScreen
+import com.example.quizec.ui.screens.UserQuestionTypes.TrueFalseQuestionScreen
+import com.example.quizec.ui.theme.defaultButtonColor
+import com.example.quizec.ui.theme.selectedButtonColor
 import com.example.quizec.ui.viewmodel.QuizViewModel
 import com.example.quizec.ui.viewmodel.UsersViewModel
 import com.google.firebase.auth.FirebaseAuth
@@ -204,93 +209,44 @@ fun UserQuizzesScreen(
 
                 // Opciones de respuesta dependiendo del tipo de pregunta
                 if (currentQuestion.tipo == TipoPregunta.VERDADERO_FALSO) {
-                    Row(
-                        horizontalArrangement = Arrangement.Center, // Centra los botones horizontalmente
-                        verticalAlignment = Alignment.CenterVertically, // Centra los botones verticalmente
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
-                    ) {
-                        Button(
-                            onClick = {
-                                if (!isAnswerSelected) {
-                                    selectedAnswer = listOf("Verdadero")
-                                    trueButtonColor = Color(0xFFFFA500)
-                                    falseButtonColor = Color(0xFF2196F3)
-                                }
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = trueButtonColor),
-                            enabled = !isAnswerSelected,
-                            modifier = Modifier.weight(1f) // Ocupa el mismo espacio que el botón de Falso
-                        ) {
-                            Text(text = "Verdadero", color = Color.White)
-                        }
+                   TrueFalseQuestionScreen(
+                       onSelectedAnswerChange = { newAnswer ->
+                           selectedAnswer = newAnswer
+                           if(selectedAnswer?.contains("Verdadero") == true){
+                               trueButtonColor = selectedButtonColor
+                               falseButtonColor = defaultButtonColor
+                           }else{
+                               falseButtonColor = selectedButtonColor
+                               trueButtonColor = defaultButtonColor
+                           }
+                       },
+                       falseButtonColor = falseButtonColor,
+                       trueButtonColor = trueButtonColor,
+                       isAcceptButtonClicked = isAcceptButtonClicked
+                   )
 
-                        Spacer(modifier = Modifier.width(16.dp)) // Espacio entre los botones
-
-                        Button(
-                            onClick = {
-                                if (!isAnswerSelected) {
-                                    selectedAnswer = listOf("Falso")
-                                    falseButtonColor = Color(0xFFFFA500)
-                                    trueButtonColor = Color(0xFF2196F3)
-                                }
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = falseButtonColor),
-                            enabled = !isAnswerSelected,
-                            modifier = Modifier.weight(1f) // Ocupa el mismo espacio que el botón de Verdadero
-                        ) {
-                            Text(text = "Falso", color = Color.White)
-                        }
-                    }
                 } else if (currentQuestion.tipo == TipoPregunta.OPCION_MULTIPLE_UNA) {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
-                    ) {
-                        currentQuestion.opciones.forEach { opcion ->
-                            val isSelected = selectedAnswer?.contains(opcion) == true
+                    OneMultChoicesScreen(
+                        currentQuestion = currentQuestion,
+                        selectedAnswer = selectedAnswer,
+                        onSelectedAnswerChange = { newAnswer ->
+                            selectedAnswer = newAnswer
+                        },
+                        isAcceptButtonClicked = isAcceptButtonClicked
+                    )
+                    if (selectedAnswer != null) enableAcept = true
 
-                            Button(
-                                onClick = {
-                                    if (!isSelected) {
-                                        selectedAnswer = listOf(opcion) // Solo seleccionamos una opción
-                                    }
-                                },
-                                colors = ButtonDefaults.buttonColors(containerColor = if (isSelected) Color(0xFFFFA500) else Color(0xFF2196F3)),
-                                enabled = !isAnswerSelected,
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(text = opcion, color = Color.White)
-                            }
-                        }
-                    }
                 } else if (currentQuestion.tipo == TipoPregunta.OPCION_MULTIPLE_MULTIPLES) {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
-                    ) {
-                        currentQuestion.opciones.forEach { opcion ->
-                            val isSelected = selectedAnswer?.contains(opcion) == true
+                    MultChoicesScreen(
+                        currentQuestion = currentQuestion,
+                        selectedAnswer = selectedAnswer,
+                        onSelectedAnswerChange = { newAnswers ->
+                            selectedAnswer = newAnswers
+                        },
+                        isAcceptButtonClicked = isAcceptButtonClicked
+                    )
 
-                            Button(
-                                onClick = {
-                                    if (isSelected) {
-                                        selectedAnswer = selectedAnswer?.filter { it != opcion }
-                                    } else {
-                                        selectedAnswer = selectedAnswer?.toMutableList()?.apply { add(opcion) } ?: listOf(opcion)
-                                    }
-                                },
-                                colors = ButtonDefaults.buttonColors(containerColor = if (isSelected) Color(0xFFFFA500) else Color(0xFF2196F3)),
-                                enabled = !isAnswerSelected,
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(text = opcion, color = Color.White)
-                            }
-                        }
-                    }
-
-
-
-
+                    if (selectedAnswer != null) enableAcept = true
 
 
                 }else if (currentQuestion.tipo == TipoPregunta.COMPLETAR_ESPACIOS) {
@@ -393,48 +349,66 @@ fun UserQuizzesScreen(
                     onClick = {
                         //USO DE ENABLEACEPT PARA VERIFICAR QUE HAY UNA RESPUESTA
 
-                        //if (selectedAnswer != null || currentQuestion.tipo == TipoPregunta.COMPLETAR_PALABRAS) {
-                            val correctAnswers = currentQuestion.respuestasCorrectas
-                            when (currentQuestion.tipo) {
-                                TipoPregunta.VERDADERO_FALSO -> if (selectedAnswer == correctAnswers) isAnswerCorrect = true
-                                TipoPregunta.OPCION_MULTIPLE_UNA -> if (selectedAnswer?.sorted() == correctAnswers.sorted()) isAnswerCorrect = true
-                                TipoPregunta.OPCION_MULTIPLE_MULTIPLES -> if (selectedAnswer?.sorted() == correctAnswers.sorted()) isAnswerCorrect = true
-                                TipoPregunta.COMPLETAR_ESPACIOS -> if (selectedOption == currentQuestion.opcionCorrecta) isAnswerCorrect = true
-                                TipoPregunta.ORDENAR -> if( userOrderedItems == currentQuestion.itemsOrdenados) isAnswerCorrect = true
-                                TipoPregunta.EMPAREJAR -> {
-                                    var isAllCorrect = true
-                                    currentQuestion.emparejamientos.forEach { correctPair ->
-                                        // Obtener la clave y el valor correctos de emparejamientos
-                                        val (key, correctValue) = correctPair.entries.first() // Asumimos un solo par clave-valor por item
-                                        // Comparar si el valor seleccionado por el usuario coincide con el valor correcto
+                        val correctAnswers = currentQuestion.respuestasCorrectas
+                        when (currentQuestion.tipo) {
+                            TipoPregunta.VERDADERO_FALSO -> if (selectedAnswer == correctAnswers) isAnswerCorrect =
+                                true
 
-                                        if (userSelections[key] != correctValue) {
-                                            isAllCorrect = false
-                                            return@forEach
-                                        }
+                            TipoPregunta.OPCION_MULTIPLE_UNA -> if (selectedAnswer?.sorted() == correctAnswers.sorted()) isAnswerCorrect =
+                                true
+
+                            TipoPregunta.OPCION_MULTIPLE_MULTIPLES -> if (selectedAnswer?.sorted() == correctAnswers.sorted()) isAnswerCorrect =
+                                true
+
+                            TipoPregunta.COMPLETAR_ESPACIOS -> if (selectedOption == currentQuestion.opcionCorrecta) isAnswerCorrect =
+                                true
+
+                            TipoPregunta.ORDENAR -> if (userOrderedItems == currentQuestion.itemsOrdenados) isAnswerCorrect =
+                                true
+
+                            TipoPregunta.EMPAREJAR -> {
+                                var isAllCorrect = true
+                                currentQuestion.emparejamientos.forEach { correctPair ->
+                                    // Obtener la clave y el valor correctos de emparejamientos
+                                    val (key, correctValue) = correctPair.entries.first() // Asumimos un solo par clave-valor por item
+                                    // Comparar si el valor seleccionado por el usuario coincide con el valor correcto
+
+                                    if (userSelections[key] != correctValue) {
+                                        isAllCorrect = false
+                                        return@forEach
                                     }
-                                    if (isAllCorrect) isAnswerCorrect = true
                                 }
-                                else -> false
+                                if (isAllCorrect) isAnswerCorrect = true
                             }
 
-                            isAcceptButtonClicked = true //para luego mostrar si es correcta o no la respuesta en un Text(
+                            else -> false
+                        }
 
-                            if (isAnswerCorrect == true) {
-                                // Primero, obtener el valor actualizado de las respuestas correctas desde Firestore
-                                usersViewModel.obtenerRespuestasCorrectas(userId, codigoQuiz!!) { respuestasCorrectas ->
-                                    // Incrementar el número de respuestas correctas
-                                    val respuestasCorrectasActualizadas = respuestasCorrectas + 1
-                                    usersViewModel.actualizarRespuestasCorrectas(userId, codigoQuiz, respuestasCorrectasActualizadas)
-                                    println("Respuestas correctas actualizadas: $respuestasCorrectasActualizadas")
-                                }
-                            }
+                        isAcceptButtonClicked =
+                            true //para luego mostrar si es correcta o no la respuesta en un Text(
 
-                            resultMessage = if (isAnswerCorrect == true){
-                                "¡Respuesta correcta!"
-                            } else {
-                                "Respuesta incorrecta"
+                        if (isAnswerCorrect == true) {
+                            // Primero, obtener el valor actualizado de las respuestas correctas desde Firestore
+                            usersViewModel.obtenerRespuestasCorrectas(
+                                userId,
+                                codigoQuiz!!
+                            ) { respuestasCorrectas ->
+                                // Incrementar el número de respuestas correctas
+                                val respuestasCorrectasActualizadas = respuestasCorrectas + 1
+                                usersViewModel.actualizarRespuestasCorrectas(
+                                    userId,
+                                    codigoQuiz,
+                                    respuestasCorrectasActualizadas
+                                )
+                                println("Respuestas correctas actualizadas: $respuestasCorrectasActualizadas")
                             }
+                        }
+
+                        resultMessage = if (isAnswerCorrect == true) {
+                            "¡Respuesta correcta!"
+                        } else {
+                            "Respuesta incorrecta"
+                        }
                         Log.d("RESULT", "resultMessage: ${resultMessage}")
 
                         //}
