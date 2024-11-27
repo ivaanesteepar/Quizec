@@ -141,6 +141,8 @@ fun CreateQuizScreen(navController: NavHostController, quizViewModel: QuizViewMo
             Text("Crear Preguntas")
         }
 
+        Spacer(modifier = Modifier.height(16.dp))
+
         Button(
             onClick = { navController.navigate("select_cuestionario") },
             modifier = Modifier.fillMaxWidth(0.8f)

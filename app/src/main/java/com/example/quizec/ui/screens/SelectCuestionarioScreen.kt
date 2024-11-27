@@ -10,20 +10,25 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.quizec.ui.viewmodel.QuizViewModel
 import com.example.quizec.ui.viewmodel.QuestionsViewModel
 import com.google.firebase.auth.FirebaseAuth
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.quizec.data.model.Cuestionario
 import com.example.quizec.data.model.Rol
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -47,21 +52,26 @@ fun SelectCuestionarioScreen(
     // Estado de los cuestionarios
     val cuestionariosState = questionsViewModel.cuestionariosState.collectAsState()
 
+    // Estado del diálogo de confirmación de eliminación
+    var showDeleteConfirmationDialog by remember { mutableStateOf(false) }
+    var cuestionarioToDelete by remember { mutableStateOf<Cuestionario?>(null) }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
     ) {
         Text(
-            text = "Seleccione un Cuestionario",
-            style = MaterialTheme.typography.bodyMedium
+            text = "SELECCIONE UN CUESTIONARIO",
+            style = MaterialTheme.typography.bodyMedium,
+            fontSize = 20.sp
         )
 
         // Reducir el tamaño de la LazyColumn
         LazyColumn(
             modifier = Modifier
-                .padding(top = 16.dp)
-                .heightIn(max = 350.dp) // Limitar la altura de la LazyColumn para que quepan los botones debajo
+                .padding(top = 26.dp)
+                .height(550.dp) // Limitar la altura de la LazyColumn para que quepan los botones debajo
         ) {
             items(cuestionariosState.value) { cuestionario ->
                 val isSelected = questionsViewModel.selectedCuestionario == cuestionario.id
@@ -118,6 +128,29 @@ fun SelectCuestionarioScreen(
                             }
                         }
                     }
+
+                    // Botón de Edición
+                    Button(
+                        onClick = {
+                            navController.navigate("editCuestionario/${cuestionario.id}")
+                        },
+                        modifier = Modifier.padding(start = 8.dp)
+                    ) {
+                        Text(text = "Editar")
+                    }
+
+                    // Botón de Eliminación
+                    Button(
+                        onClick = {
+                            // Mostrar el diálogo de confirmación de eliminación
+                            showDeleteConfirmationDialog = true
+                            cuestionarioToDelete = cuestionario
+                        },
+                        modifier = Modifier.padding(start = 8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text(text = "Eliminar")
+                    }
                 }
             }
         }
@@ -152,8 +185,38 @@ fun SelectCuestionarioScreen(
             Text(text = "Volver")
         }
     }
-}
 
+    // Diálogo de confirmación de eliminación
+    if (showDeleteConfirmationDialog && cuestionarioToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirmationDialog = false },
+            title = { Text("Confirmar Eliminación") },
+            text = { Text("¿Estás seguro de que quieres eliminar este cuestionario?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        cuestionarioToDelete?.let {
+                            println("Id del cuestionario a eliminar: ${it.id}")
+                            questionsViewModel.eliminarCuestionario(it.id)
+                        }
+                        showDeleteConfirmationDialog = false
+                    }
+                ) {
+                    Text("Sí")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteConfirmationDialog = false
+                    }
+                ) {
+                    Text("No")
+                }
+            }
+        )
+    }
+}
 
 // Función para actualizar el rol del usuario en Firestore
 private fun actualizarRolUsuario(userUid: String, rol: Rol) {
@@ -170,7 +233,6 @@ private fun actualizarRolUsuario(userUid: String, rol: Rol) {
         }
 }
 
-
 // Función para cargar la imagen desde un URI usando ContentResolver
 fun loadImageFromUri(context: Context, imageUri: String): Bitmap? {
     return try {
@@ -183,3 +245,4 @@ fun loadImageFromUri(context: Context, imageUri: String): Bitmap? {
         null
     }
 }
+
