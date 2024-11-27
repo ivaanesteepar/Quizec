@@ -202,9 +202,6 @@ fun CreateQuizScreen(navController: NavHostController, quizViewModel: QuizViewMo
     }
 }
 
-
-
-
 private fun crearCuestionario(
     navController: NavHostController,
     titulo: String,

@@ -1,3 +1,4 @@
+
 package com.example.quizec.ui.viewmodel
 
 import android.content.SharedPreferences
@@ -8,6 +9,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.quizec.data.model.Cuestionario
 import com.example.quizec.data.model.Pregunta
+import com.example.quizec.data.model.TipoPregunta
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,14 +39,31 @@ class QuestionsViewModel : ViewModel() {
     fun cargarPreguntasUsuario(userId: String) {
         if (_preguntasState.value.isNotEmpty()) return
         viewModelScope.launch {
-            val preguntasList = cargarPreguntas(userId)
-            if (preguntasList.isNotEmpty()) {
-                _preguntasState.value = preguntasList
-            } else {
-                Log.d("QuestionsViewModel", "No se encontraron preguntas para el usuario.")
+            try {
+                val preguntasList = mutableListOf<Pregunta>()
+                val snapshot = db.collection("preguntas")
+                    .whereEqualTo("user_id", userId)
+                    .get()
+                    .await()
+
+                Log.d("QuestionsViewModel", "Número de preguntas obtenidas: ${snapshot.size()}")
+
+                for (document in snapshot) {
+                    val pregunta = document.toObject(Pregunta::class.java)
+                    preguntasList.add(pregunta)
+                }
+
+                if (preguntasList.isNotEmpty()) {
+                    _preguntasState.value = preguntasList
+                } else {
+                    Log.d("QuestionsViewModel", "No se encontraron preguntas para el usuario.")
+                }
+            } catch (e: Exception) {
+                Log.e("QuestionsViewModel", "Error al cargar preguntas: ${e.message}")
             }
         }
     }
+
 
     // Función para cargar todos los cuestionarios de un usuario desde Firestore
     fun cargarCuestionariosUsuario(userId: String) {
@@ -58,26 +77,53 @@ class QuestionsViewModel : ViewModel() {
         }
     }
 
-    // Función para cargar todas las preguntas del usuario desde Firestore
-    private suspend fun cargarPreguntas(userId: String): List<Pregunta> {
+    suspend fun cargarPreguntasCuestionario(codigoQuiz: String): List<Pregunta> {
+        println("Cargando preguntas del cuestionario con código: $codigoQuiz")
         val preguntasList = mutableListOf<Pregunta>()
         try {
-            val snapshot = db.collection("preguntas")
-                .whereEqualTo("user_id", userId)
+            // Consulta para obtener el documento del cuestionario por código de cuestionario (codigoQuiz)
+            val snapshot = db.collection("cuestionarios")
+                .whereEqualTo("id", codigoQuiz) // Filtramos por el codigoQuiz del cuestionario
                 .get()
                 .await()
 
-            Log.d("QuestionsViewModel", "Número de preguntas obtenidas: ${snapshot.size()}")
+            Log.d("QuestionsViewModel", "Número de cuestionarios obtenidos: ${snapshot.size()}")
 
+            // Iterar sobre los documentos obtenidos
             for (document in snapshot) {
-                val pregunta = document.toObject(Pregunta::class.java)
-                preguntasList.add(pregunta)
+                // Obtenemos el campo 'preguntas' que debe ser un array de mapas o documentos
+                val preguntasArray = document.get("preguntas") as? List<Map<String, Any>>
+
+                preguntasArray?.forEach { preguntaMap ->
+                    // Aquí convertimos los datos del mapa en un objeto Pregunta
+                    val pregunta = Pregunta(
+                        id = preguntaMap["id"] as? String ?: UUID.randomUUID().toString(),
+                        titulo = preguntaMap["titulo"] as? String ?: "",
+                        tipo = TipoPregunta.valueOf(preguntaMap["tipo"] as? String ?: "VERDADERO_FALSO"),
+                        opciones = preguntaMap["opciones"] as? List<String> ?: listOf(),
+                        imagen = preguntaMap["imagen"] as? String,
+                        respuestasCorrectas = preguntaMap["respuestasCorrectas"] as? List<String> ?: listOf(),
+                        emparejamientos = preguntaMap["emparejamientos"] as? List<Map<String, String>> ?: listOf(),
+                        itemsOrdenados = preguntaMap["itemsOrdenados"] as? List<String> ?: listOf(),
+                        user_id = preguntaMap["user_id"] as? String,
+                        isSelected = preguntaMap["isSelected"] as? Boolean ?: false,
+                        fraseCompletar = preguntaMap["fraseCompletar"] as? String ?: "",
+                        opcionCorrecta = preguntaMap["opcionCorrecta"] as? String ?: "",
+                        conceptosYDefiniciones = preguntaMap["conceptosYDefiniciones"] as? List<Map<String, String>> ?: listOf(),
+                        opcionesCorrectasCompletarPalabras = preguntaMap["opcionesCorrectasCompletarPalabras"] as? List<String> ?: listOf(),
+                        leftItems = preguntaMap["leftItems"] as? List<String> ?: listOf(),
+                        rightItems = preguntaMap["rightItems"] as? List<String> ?: listOf()
+                    )
+
+                    preguntasList.add(pregunta)
+                }
             }
         } catch (e: Exception) {
             Log.e("QuestionsViewModel", "Error al cargar preguntas: ${e.message}")
         }
         return preguntasList
     }
+
 
     // Función para cargar los cuestionarios del usuario desde Firestore
     private suspend fun cargarCuestionarios(userId: String): List<Cuestionario> {
@@ -183,8 +229,6 @@ class QuestionsViewModel : ViewModel() {
                     _preguntasState.value = _preguntasState.value + newPregunta
                 }
 
-                // No es necesario recargar las preguntas si ya las tienes actualizadas
-                // cargarPreguntasUsuario(userId) // Solo llama a esta función si realmente es necesario
             } catch (e: Exception) {
                 Log.e("QuestionsViewModel", "Error al duplicar la pregunta: ${e.message}")
             }

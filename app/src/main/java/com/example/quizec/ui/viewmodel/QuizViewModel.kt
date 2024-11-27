@@ -14,10 +14,10 @@ import com.example.quizec.data.model.Pregunta
 import com.example.quizec.data.model.TipoPregunta
 import com.example.quizec.data.model.Usuario
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
@@ -34,8 +34,8 @@ class QuizViewModel : ViewModel() {
     val userRole: StateFlow<String?> = _userRole
 
     // Estado para almacenar los cuestionarios
-    private val _cuestionarios = mutableStateOf<List<Cuestionario>>(emptyList())
-    val cuestionarios: State<List<Cuestionario>> = _cuestionarios
+    private val _cuestionario = mutableStateOf<Cuestionario?>(null)
+    val cuestionario: State<Cuestionario?> get() = _cuestionario
 
     //var imageUri = mutableStateOf<Uri?>(null) NO SIRVE
     var imageUri by mutableStateOf<Uri?>(null)
@@ -46,7 +46,6 @@ class QuizViewModel : ViewModel() {
     // Flujo para el mensaje de error
     private val _errorMessage = MutableStateFlow("")
     val errorMessage: StateFlow<String> = _errorMessage
-
 
     // Declara el tipo del Map explícitamente
     val _respuestas = MutableStateFlow<Map<String, Any>>(emptyMap())
@@ -72,6 +71,280 @@ class QuizViewModel : ViewModel() {
     }
 
 
+    suspend fun obtenerCuestionarioPorCodigo(codigoQuiz: String, userId: String) {
+        try {
+            // Buscar el cuestionario en la colección "cuestionarios" por su código
+            val cuestionariosQuery = firestore.collection("cuestionarios")
+                .whereEqualTo("id", codigoQuiz)
+
+            // Obtener los documentos del cuestionario
+            val documentos = cuestionariosQuery.get().await()
+
+            if (documentos.isEmpty) {
+                Log.e("QuizViewModel", "No se encontró ningún cuestionario con el código $codigoQuiz.")
+            } else {
+                // Suponemos que solo hay un documento con ese 'id', por lo que obtenemos el primer documento
+                val documento = documentos.documents.first()
+
+                // Obtener los datos del cuestionario
+                val cuestionarioData = documento.data ?: emptyMap<String, Any>()
+
+                // Mapeo de las preguntas desde Firestore
+                val preguntasData = (cuestionarioData["preguntas"] as? List<Map<String, Any>>) ?: emptyList()
+
+                // Convertir cada pregunta en un objeto Pregunta
+                val preguntas = preguntasData.map { preguntaData ->
+                    val id = preguntaData["id"] as? String ?: ""
+                    val titulo = preguntaData["titulo"] as? String ?: ""
+                    val tipo = (preguntaData["tipo"] as? String)?.let { TipoPregunta.valueOf(it) } ?: TipoPregunta.VERDADERO_FALSO
+                    val opciones = (preguntaData["opciones"] as? List<String>) ?: emptyList()
+                    val imagen = preguntaData["imagen"] as? String
+                    val respuestasCorrectas = (preguntaData["respuestasCorrectas"] as? List<String>) ?: emptyList()
+                    val emparejamientos = (preguntaData["emparejamientos"] as? List<Map<String, String>>) ?: emptyList()
+                    val itemsOrdenados = (preguntaData["itemsOrdenados"] as? List<String>) ?: emptyList()
+                    val fraseCompletar = preguntaData["fraseCompletar"] as? String ?: ""
+                    val opcionCorrecta = preguntaData["opcionCorrecta"] as? String ?: ""
+                    val conceptosYDefiniciones = (preguntaData["conceptosYDefiniciones"] as? List<Map<String, String>>) ?: emptyList()
+                    val user_id = preguntaData["user_id"] as? String
+                    val isSelected = preguntaData["isSelected"] as? Boolean ?: false
+                    val opcionesCorrectasCompletarPalabras = preguntaData["opcionesCorrectasCompletarPalabras"] as? List<String> ?: emptyList()
+                    val leftItems = preguntaData["leftItems"] as? List<String> ?: emptyList()
+                    val rightItems = preguntaData["rightItems"] as? List<String> ?: emptyList()
+
+                    // Crear y devolver el objeto Pregunta
+                    Pregunta(
+                        id = id,
+                        titulo = titulo,
+                        tipo = tipo,
+                        opciones = opciones,
+                        imagen = imagen,
+                        respuestasCorrectas = respuestasCorrectas,
+                        emparejamientos = emparejamientos,
+                        itemsOrdenados = itemsOrdenados,
+                        fraseCompletar = fraseCompletar,
+                        opcionCorrecta = opcionCorrecta,
+                        conceptosYDefiniciones = conceptosYDefiniciones,
+                        user_id = user_id,
+                        isSelected = isSelected,
+                        opcionesCorrectasCompletarPalabras = opcionesCorrectasCompletarPalabras,
+                        leftItems = leftItems,
+                        rightItems = rightItems
+                    )
+                }
+
+                // Crear el objeto Cuestionario con las preguntas mapeadas
+                val cuestionario = Cuestionario(
+                    id = documento.id,
+                    titulo = cuestionarioData["titulo"] as? String ?: "",
+                    descripcion = cuestionarioData["descripcion"] as? String ?: "",
+                    creadorId = cuestionarioData["creadorId"] as? String ?: "",
+                    imagen = cuestionarioData["imagen"] as? String,
+                    preguntas = preguntas // Asignar la lista de preguntas obtenidas
+                )
+
+                // Crear un historialData con la información del cuestionario
+                val historialData = mapOf(
+                    "codigoQuiz" to cuestionario.id,
+                    "titulo" to cuestionario.titulo,
+                    "descripcion" to cuestionario.descripcion,
+                    "preguntas" to cuestionario.preguntas
+                )
+
+                // Guardar el cuestionario en el historial del usuario con su códigoQuiz
+                guardarCuestionarioEnHistorial(userId, codigoQuiz)
+            }
+        } catch (e: Exception) {
+            Log.e("QuizViewModel", "Error al obtener el cuestionario de Firestore: ${e.message}")
+        }
+    }
+
+    // Función para obtener el nombre del usuario actual
+    fun obtenerNombreUsuario(userId: String, callback: (String?) -> Unit) {
+        val db = FirebaseFirestore.getInstance()
+        db.collection("users")
+            .document(userId)
+            .get()
+            .addOnSuccessListener { document ->
+                if (document != null && document.exists()) {
+                    callback(document.getString("nombre")) // Si el campo existe, devuelve su valor
+                } else {
+                    callback(null) // Si no existe, devuelve null
+                }
+            }
+            .addOnFailureListener { e ->
+                Log.e("Firestore", "Error al obtener el nombre del usuario", e)
+                callback(null) // Si hay error, devuelve null
+            }
+    }
+
+
+    fun guardarCuestionarioEnHistorial(userId: String, codigoQuiz: String) {
+        // Llamamos a la función para obtener el nombre del usuario
+        obtenerNombreUsuario(userId) { userName ->
+            if (userName != null) {
+                val db = FirebaseFirestore.getInstance()
+                // Referencia al documento de historial del usuario con el codigoQuiz como el nombre del documento
+                val historialRef = db.collection("usuarioHistorial")
+                    .document(userName) // Documento identificado por el nombre de usuario
+                    .collection("cuestionarios") // Subcolección de 'cuestionarios' para cada usuario
+                    .document(codigoQuiz) // Documento con el nombre igual al codigoQuiz
+
+                // Recuperar el cuestionario por su 'codigoQuiz'
+                val cuestionariosQuery = db.collection("cuestionarios")
+                    .whereEqualTo("id", codigoQuiz)
+
+                cuestionariosQuery.get()
+                    .addOnSuccessListener { documentos ->
+                        if (documentos.documents.isNotEmpty()) {
+                            val documento = documentos.documents.first()
+
+                            // Obtener los datos del cuestionario
+                            val cuestionarioData = documento.data ?: emptyMap<String, Any>()
+                            val preguntasData = (cuestionarioData["preguntas"] as? List<Map<String, Any>>) ?: emptyList()
+
+                            // Mapeo de las preguntas desde Firestore
+                            val preguntas = preguntasData.map { preguntaData ->
+                                Pregunta(
+                                    id = (preguntaData["id"] as? String ?: ""),
+                                    titulo = (preguntaData["titulo"] as? String ?: ""),
+                                    tipo = TipoPregunta.valueOf((preguntaData["tipo"] as? String ?: "VERDADERO_FALSO")),
+                                    opciones = (preguntaData["opciones"] as? List<String>) ?: listOf(),
+                                    imagen = (preguntaData["imagen"] as? String),
+                                    respuestasCorrectas = (preguntaData["respuestasCorrectas"] as? List<String>) ?: listOf(),
+                                    emparejamientos = (preguntaData["emparejamientos"] as? List<Map<String, String>>) ?: listOf(),
+                                    itemsOrdenados = (preguntaData["itemsOrdenados"] as? List<String>) ?: listOf(),
+                                    user_id = (preguntaData["user_id"] as? String),
+                                    isSelected = (preguntaData["isSelected"] as? Boolean ?: false),
+                                    fraseCompletar = (preguntaData["fraseCompletar"] as? String ?: ""),
+                                    opcionCorrecta = (preguntaData["opcionCorrecta"] as? String ?: ""),
+                                    conceptosYDefiniciones = (preguntaData["conceptosYDefiniciones"] as? List<Map<String, String>>) ?: listOf(),
+                                    opcionesCorrectasCompletarPalabras = (preguntaData["opcionesCorrectasCompletarPalabras"] as? List<String>) ?: listOf(),
+                                    leftItems = (preguntaData["leftItems"] as? List<String>) ?: listOf(),
+                                    rightItems = (preguntaData["rightItems"] as? List<String>) ?: listOf()
+                                )
+                            }
+
+                            // Creamos un mapa con los datos del cuestionario
+                            val cuestionarioMap = mapOf(
+                                "codigoQuiz" to codigoQuiz,
+                                "titulo" to (cuestionarioData["titulo"] as? String ?: ""),
+                                "descripcion" to (cuestionarioData["descripcion"] as? String ?: ""),
+                                "creadorId" to (cuestionarioData["creadorId"] as? String ?: ""),
+                                "imagen" to cuestionarioData["imagen"], // Imagen es opcional
+                                "preguntas" to preguntas // Lista de preguntas mapeadas
+                            )
+
+                            // Guardamos los datos en Firestore
+                            historialRef.set(cuestionarioMap)
+                                .addOnSuccessListener {
+                                    Log.d("Historial", "Cuestionario guardado exitosamente para $userName con código $codigoQuiz")
+                                }
+                                .addOnFailureListener { e ->
+                                    Log.w("Historial", "Error al guardar el cuestionario", e)
+                                }
+                        } else {
+                            Log.e("Historial", "No se encontró el cuestionario con código $codigoQuiz")
+                        }
+                    }
+                    .addOnFailureListener { e ->
+                        Log.e("Historial", "Error al obtener el cuestionario", e)
+                    }
+            } else {
+                Log.w("Historial", "No se pudo obtener el nombre del usuario")
+            }
+        }
+    }
+
+
+    // Carga los cuestionarios del historial del usuario
+    fun cargarCuestionariosDeUsuario(
+        userId: String,
+        onSuccess: (List<Cuestionario>) -> Unit,
+        onFailure: (Exception) -> Unit
+    ) {
+        val db = FirebaseFirestore.getInstance()
+
+        obtenerNombreUsuario(userId) { nombreUsuario ->
+            if (nombreUsuario != null) {
+                val cuestionariosRef = db.collection("usuarioHistorial")
+                    .document(nombreUsuario)
+                    .collection("cuestionarios")
+
+                cuestionariosRef.get()
+                    .addOnSuccessListener { documents ->
+                        if (documents.documents.isNotEmpty()) {
+                            val cuestionarios = documents.documents.mapNotNull { document ->
+                                val cuestionarioData = document.data
+                                println("Cuestionario data: $cuestionarioData")
+
+                                // Recuperar las preguntas de la subcolección 'preguntas' si existe
+                                val preguntasRef = document.reference.collection("preguntas")
+                                preguntasRef.get()
+                                    .addOnSuccessListener { preguntasDocuments ->
+                                        val preguntas = preguntasDocuments.documents.mapNotNull { preguntaDocument ->
+                                            val preguntaData = preguntaDocument.data
+                                            preguntaData?.let {
+                                                // Asignación correcta a la clase Pregunta
+                                                Pregunta(
+                                                    id = it["codigoQuiz"] as? String ?: "",
+                                                    titulo = it["titulo"] as? String ?: "",
+                                                    tipo = TipoPregunta.valueOf(it["tipo"] as? String ?: "VERDADERO_FALSO"), // Convertimos el tipo
+                                                    opciones = it["opciones"] as? List<String> ?: listOf(),
+                                                    imagen = it["imagen"] as? String,
+                                                    respuestasCorrectas = it["respuestasCorrectas"] as? List<String> ?: listOf(),
+                                                    emparejamientos = it["emparejamientos"] as? List<Map<String, String>> ?: listOf(),
+                                                    itemsOrdenados = it["itemsOrdenados"] as? List<String> ?: listOf(),
+                                                    user_id = it["user_id"] as? String,
+                                                    isSelected = it["isSelected"] as? Boolean ?: false,
+                                                    fraseCompletar = it["fraseCompletar"] as? String ?: "",
+                                                    opcionCorrecta = it["opcionCorrecta"] as? String ?: "",
+                                                    conceptosYDefiniciones = it["conceptosYDefiniciones"] as? List<Map<String, String>> ?: listOf(),
+                                                    opcionesCorrectasCompletarPalabras = it["opcionesCorrectasCompletarPalabras"] as? List<String> ?: listOf(),
+                                                    leftItems = it["leftItems"] as? List<String> ?: listOf(),
+                                                    rightItems = it["rightItems"] as? List<String> ?: listOf()
+                                                )
+                                            }
+                                        }
+
+                                        // Ahora incluimos las preguntas en el cuestionario
+                                        val cuestionario = Cuestionario(
+                                            id = cuestionarioData?.get("codigoQuiz") as? String ?: "", // Código del cuestionario
+                                            titulo = cuestionarioData?.get("titulo") as? String ?: "Sin título",
+                                            descripcion = cuestionarioData?.get("descripcion") as? String ?: "",
+                                            creadorId = cuestionarioData?.get("creadorId") as? String ?: "",
+                                            imagen = cuestionarioData?.get("imagen") as? String,
+                                            preguntas = preguntas // Asignamos las preguntas recuperadas
+                                        )
+
+                                        // Pasamos el cuestionario con las preguntas
+                                        onSuccess(listOf(cuestionario))
+                                    }
+                            }
+                        } else {
+                            onFailure(Exception("No se encontraron cuestionarios"))
+                        }
+                    }
+                    .addOnFailureListener { exception ->
+                        onFailure(exception)
+                    }
+            } else {
+                onFailure(Exception("No se pudo obtener el nombre del usuario"))
+            }
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+    // Función para decrementar el tiempo total
     fun tick() {
         // Solo decrementa si el tiempo no es 0
         if (_totalTime.value > 0) {
@@ -84,6 +357,7 @@ class QuizViewModel : ViewModel() {
     }
 
 
+    // Función que permite iniciar el quiz
     fun iniciarQuiz(codigoQuiz: String, usuarioUid: String) {
         val db = FirebaseFirestore.getInstance()
 
@@ -180,7 +454,7 @@ class QuizViewModel : ViewModel() {
 
 
 
-    // Método para restablecer los tiempos cuando se inicia un nuevo quiz o pregunta (QUITAR!!!)
+    // Método para restablecer los tiempos cuando se inicia un nuevo quiz o pregunta
     fun resetTimes() {
         _totalTime.value = 600  // Restablece el tiempo total a 10 minutos
         _remainingTime.value = 30 // Restablece el tiempo por pregunta a 30 segundos
@@ -253,25 +527,6 @@ class QuizViewModel : ViewModel() {
         }
     }
 
-    // Función para cargar los cuestionarios del usuario
-    suspend fun cargarCuestionariosPorUsuario(userId: String) {
-        try {
-            val cuestionariosRef = firestore.collection("cuestionarios")
-                .whereEqualTo("creadorId", userId)
-
-            val result = cuestionariosRef.get().await()
-
-            // Transformar los resultados a una lista de Cuestionario
-            val cuestionarios = result.documents.mapNotNull { document ->
-                document.toObject(Cuestionario::class.java)
-            }
-
-            // Actualizar el estado con los cuestionarios cargados
-            _cuestionarios.value = cuestionarios
-        } catch (e: Exception) {
-            Log.e("QuizViewModel", "Error al cargar cuestionarios: ${e.message}")
-        }
-    }
 
 
     suspend fun cargarPreguntasPorCodigo(codigoQuiz: String) {
@@ -349,7 +604,7 @@ class QuizViewModel : ViewModel() {
         }
     }
 
-    // Función para generar un código de 6 dígitos (CAMBIAR A ALFANUMERICO)
+    // Función para generar un código de 6 dígitos
     fun generarClave(): String {
         return (100000..999999).random().toString()  // Genera un código de 6 dígitos
     }

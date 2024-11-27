@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.example.quizec.ui.viewmodel.QuizViewModel
 import com.example.quizec.ui.viewmodel.UsersViewModel
 import com.google.firebase.auth.FirebaseAuth
 
@@ -22,21 +23,62 @@ fun ResultsScreen(
     // Estado para almacenar la lista de usuarios y sus respuestas correctas
     val (usuariosConRespuestas, setUsuariosConRespuestas) = remember { mutableStateOf<List<Pair<String, Int>>>(emptyList()) }
 
-    // Usar un LaunchedEffect para obtener los datos una vez que el composable se monta
-    LaunchedEffect(key1 = codigoQuiz) {
-        // Escuchar todos los usuarios y sus respuestas correctas
-        usersViewModel.escucharNombreYRespuestasCorrectas(codigoQuiz ?: "") { usuarios ->
-            setUsuariosConRespuestas(usuarios)
+    // Usuario autenticado
+    val userId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
+
+    // Nombre del usuario
+    var userName by remember { mutableStateOf("Usuario Anónimo") }
+
+    // ViewModel para historial
+    val quizViewModel = remember { QuizViewModel() }
+
+    // Obtener el nombre del usuario autenticado
+    LaunchedEffect(userId) {
+        if (userId.isNotEmpty()) {
+            quizViewModel.obtenerNombreUsuario(userId) { nombre ->
+                userName = nombre ?: "Usuario Anónimo"
+                println("Nombre del usuario: $userName")
+
+                // Guardar el cuestionario en el historial después de obtener el nombre del usuario
+                if (codigoQuiz != null) {
+                    // Suponiendo que tienes el historialData en alguna variable (debes crearla o recuperarla)
+                    val historialData = mapOf(
+                        "codigoQuiz" to codigoQuiz,
+                        "resultado" to usuariosConRespuestas // O lo que sea que desees guardar
+                    )
+                    quizViewModel.guardarCuestionarioEnHistorial(userId, codigoQuiz)
+                }
+            }
         }
     }
 
-    // Ordenar la lista de usuarios por respuestas correctas (de mayor a menor)
-    val sortedUsers = usuariosConRespuestas.sortedByDescending { it.second }
+    // Escuchar datos del quiz
+    LaunchedEffect(codigoQuiz) {
+        if (codigoQuiz != null) {
+            usersViewModel.escucharNombreYRespuestasCorrectas(codigoQuiz) { usuarios ->
+                setUsuariosConRespuestas(usuarios)
 
-    // Obtener el userId para eliminar al usuario cuando se haga click en el botón
-    val userId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
+            }
+        }
+    }
 
-    // Mostrar los resultados en la interfaz de usuario
+    // Obtener el cuestionario completo
+    LaunchedEffect(codigoQuiz, userId) {
+        if (codigoQuiz != null) {
+            // Obtener el cuestionario y hacer println
+            quizViewModel.obtenerCuestionarioPorCodigo(codigoQuiz, userId)
+            val cuestionario = quizViewModel.cuestionario.value
+            if (cuestionario != null) {
+                println("Cuestionario: $cuestionario")
+            } else {
+                println("No se pudo obtener el cuestionario con el código: $codigoQuiz")
+            }
+        }
+    }
+
+
+
+    // Interfaz de usuario
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -44,32 +86,30 @@ fun ResultsScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
-        // Título en la parte superior
+        // Título
         Text(
             text = "Leaderboard",
             style = MaterialTheme.typography.headlineLarge.copy(color = Color.Black),
-            modifier = Modifier.padding(bottom = 32.dp) // Espacio entre el título y el contenido
+            modifier = Modifier.padding(bottom = 32.dp)
         )
 
-        // Mostrar la lista de resultados de los usuarios con LazyColumn
+        // Lista de resultados
         Box(modifier = Modifier.weight(1f)) {
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .fillMaxHeight(0.6f) // Limita la altura de la LazyColumn a un 60% de la pantalla
+                    .fillMaxHeight(0.6f)
             ) {
-                items(sortedUsers.size) { index ->
-                    val (nombre, respuestasCorrectas) = sortedUsers[index]
+                items(usuariosConRespuestas.size) { index ->
+                    val (nombre, respuestasCorrectas) = usuariosConRespuestas[index]
 
-                    // Destacar al usuario en primer lugar
                     val backgroundColor = when (index) {
-                        0 -> MaterialTheme.colorScheme.primary // Mejor jugador, color sólido
-                        1 -> MaterialTheme.colorScheme.secondary // Segundo lugar
-                        2 -> MaterialTheme.colorScheme.tertiary // Tercer lugar
-                        else -> Color.LightGray // Para los demás usuarios
+                        0 -> MaterialTheme.colorScheme.primary
+                        1 -> MaterialTheme.colorScheme.secondary
+                        2 -> MaterialTheme.colorScheme.tertiary
+                        else -> Color.LightGray
                     }
 
-                    // Contenedor de cada fila de usuario
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -77,21 +117,19 @@ fun ResultsScreen(
                             .background(backgroundColor, shape = MaterialTheme.shapes.medium)
                             .padding(16.dp)
                     ) {
-                        // Texto con nombre y respuestas
                         Text(
                             text = "${index + 1}. $nombre - $respuestasCorrectas respuestas",
                             style = MaterialTheme.typography.bodyLarge,
-                            color = if (index < 3) Color.White else Color.Black // Colores especiales para los primeros 3
+                            color = if (index < 3) Color.White else Color.Black
                         )
                     }
                 }
             }
         }
 
-        // Botón para regresar al home y eliminar al usuario
+        // Botón para regresar
         Button(
             onClick = {
-                // Eliminar al usuario antes de navegar
                 if (userId.isNotEmpty() && codigoQuiz != null) {
                     usersViewModel.eliminarUsuarioDeQuiz(codigoQuiz)
                 }
@@ -106,3 +144,4 @@ fun ResultsScreen(
         }
     }
 }
+

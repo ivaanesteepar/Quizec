@@ -1,5 +1,6 @@
 package com.example.quizec.ui
 
+import android.util.Log
 import com.example.quizec.ui.screens.SelectCuestionarioScreen
 import com.example.quizec.ui.screens.CreateQuestionsScreen
 import com.example.quizec.ui.screens.LoginScreen
@@ -25,7 +26,9 @@ import com.example.quizec.data.model.Pregunta
 import com.example.quizec.ui.screens.SelectQuestionsScreen
 import com.example.quizec.ui.screens.UserQuizzesScreen
 import com.example.quizec.ui.screens.CreatorQuizzesScreen
+import com.example.quizec.ui.screens.DetalleCuestionarioScreen
 import com.example.quizec.ui.screens.EditarPreguntaScreen
+import com.example.quizec.ui.screens.HistorialScreen
 import com.example.quizec.ui.screens.ResultsScreen
 import com.example.quizec.ui.screens.WaitingScreen
 import com.example.quizec.ui.viewmodel.QuestionsViewModel
@@ -140,7 +143,36 @@ fun QuizecApp() {
                     CircularProgressIndicator()
                 }
             }
-
+            composable("historial/{userId}") {
+                val userId = FirebaseAuth.getInstance().currentUser?.uid
+                if (userId != null) {
+                    HistorialScreen(navController, quizViewModel, userId)
+                } else {
+                    Text("Error: No se pudo obtener el ID del usuario")
+                }
+            }
+            composable("detalleCuestionarios/{cuestionarioId}") { backStackEntry ->
+                val cuestionarioId = backStackEntry.arguments?.getString("cuestionarioId") // Obtener el ID del cuestionario desde la ruta
+                if (cuestionarioId != null) {
+                    // Obtener el userId del usuario autenticado
+                    val userId = FirebaseAuth.getInstance().currentUser?.uid
+                    if (userId != null) {
+                        // Pasar los parámetros necesarios a la pantalla de detalles
+                        DetalleCuestionarioScreen(
+                            navController = navController,
+                            codigoQuiz = cuestionarioId, // ID del cuestionario
+                            userId = userId, // User ID del usuario autenticado
+                            questionsViewModel = viewModel() // El ViewModel que contiene la lógica para las preguntas
+                        )
+                    } else {
+                        // Manejar caso en el que el usuario no esté autenticado
+                        Log.e("Navigation", "User not authenticated")
+                    }
+                } else {
+                    // Manejar caso en el que no se recibe el cuestionarioId
+                    Log.e("Navigation", "No cuestionarioId provided")
+                }
+            }
 
         }
     }

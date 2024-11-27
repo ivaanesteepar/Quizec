@@ -22,6 +22,7 @@ fun HomeScreen(navController: NavHostController) {
     val auth = FirebaseAuth.getInstance()
     val db = FirebaseFirestore.getInstance()
     var userName by remember { mutableStateOf("Usuario") }  // Nombre por defecto
+    var isLoading by remember { mutableStateOf(true) }  // Estado para indicar si la carga está en proceso
 
     // Obtener el nombre del usuario desde Firestore o FirebaseAuth
     LaunchedEffect(Unit) {
@@ -35,10 +36,14 @@ fun HomeScreen(navController: NavHostController) {
                         // Suponiendo que el nombre está guardado en el campo "nombre"
                         userName = document.getString("nombre") ?: "Usuario"
                     }
+                    isLoading = false  // Indicamos que la carga ha finalizado
                 }
                 .addOnFailureListener { exception ->
                     Log.e("HomeScreen", "Error obteniendo el nombre del usuario", exception)
+                    isLoading = false  // Indicamos que la carga ha fallado
                 }
+        } ?: run {
+            isLoading = false  // Si no hay usuario autenticado
         }
     }
 
@@ -60,34 +65,57 @@ fun HomeScreen(navController: NavHostController) {
             verticalArrangement = Arrangement.Center,
             modifier = Modifier.padding(16.dp)
         ) {
-            // Saludo de bienvenida con el nombre del usuario
-            Text(
-                text = "¡Bienvenido, $userName!",
-                style = androidx.compose.material3.MaterialTheme.typography.headlineMedium,
-                color = Color.White,
-                modifier = Modifier.padding(bottom = 32.dp)
-            )
+            if (isLoading) {
+                // Si aún estamos cargando, mostrar un mensaje de carga
+                Text(
+                    text = "Cargando...",
+                    style = androidx.compose.material3.MaterialTheme.typography.headlineMedium,
+                    color = Color.White
+                )
+            } else {
+                // Saludo de bienvenida con el nombre del usuario
+                Text(
+                    text = "¡Bienvenido, $userName!",
+                    style = androidx.compose.material3.MaterialTheme.typography.headlineMedium,
+                    color = Color.White,
+                    modifier = Modifier.padding(bottom = 32.dp)
+                )
 
-            // Botón para unirse a un quiz
-            Button(
-                onClick = {
-                    navController.navigate("joinQuiz")
-                },
-                modifier = Modifier
-                    .fillMaxWidth(0.8f)
-                    .padding(bottom = 16.dp)
-            ) {
-                Text(text = "Unirse a un Quiz")
-            }
+                // Botón para unirse a un quiz
+                Button(
+                    onClick = {
+                        navController.navigate("joinQuiz")
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth(0.8f)
+                        .padding(bottom = 16.dp)
+                ) {
+                    Text(text = "Unirse a un Quiz")
+                }
 
-            // Botón para crear un quiz
-            Button(
-                onClick = {
-                    navController.navigate("createQuiz")
-                },
-                modifier = Modifier.fillMaxWidth(0.8f)
-            ) {
-                Text(text = "Crear un Quiz")
+                // Botón para crear un quiz
+                Button(
+                    onClick = {
+                        navController.navigate("createQuiz")
+                    },
+                    modifier = Modifier.fillMaxWidth(0.8f)
+                ) {
+                    Text(text = "Crear un Quiz")
+                }
+
+                // Botón para ir al historial, pasando el userId
+                Button(
+                    onClick = {
+                        val user = auth.currentUser
+                        val userId = user?.uid ?: ""
+                        navController.navigate("historial/$userId")
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth(0.8f)
+                        .padding(bottom = 16.dp)
+                ) {
+                    Text(text = "Historial")
+                }
             }
         }
     }
