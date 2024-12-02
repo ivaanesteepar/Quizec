@@ -27,6 +27,8 @@ fun SelectQuestionsScreen(
         questionsViewModel.cargarPreguntasUsuario(userId)
     }
 
+    // Aquí debes asegurarte de que se actualicen automáticamente cuando las preguntas cambien.
+    // Esto hará que se recarguen las preguntas cuando el estado de preguntas cambie.
     val preguntasState = questionsViewModel.preguntasState.collectAsState() // Obtiene las preguntas desde el ViewModel
     val preguntasSeleccionadas = questionsViewModel.preguntasSeleccionadas.value // Almacena las preguntas seleccionadas
 
@@ -35,6 +37,7 @@ fun SelectQuestionsScreen(
     var showDuplicateConfirmationDialog by remember { mutableStateOf(false) }
     var questionToDelete by remember { mutableStateOf<Pregunta?>(null) }
     var questionToDuplicate by remember { mutableStateOf<Pregunta?>(null) }
+
 
     Box(modifier = Modifier.fillMaxSize()) {
         if (preguntasState.value.isEmpty()) {
@@ -77,6 +80,7 @@ fun SelectQuestionsScreen(
                 }
             }
         }
+
 
         // Diálogo de confirmación para eliminar
         if (showDeleteConfirmationDialog && questionToDelete != null) {
@@ -173,7 +177,7 @@ fun SelectQuestionsScreen(
 
             Button(
                 onClick = {
-                    navController.popBackStack()
+                    navController.navigate("createQuiz")
                 },
                 modifier = Modifier.fillMaxWidth(0.4f)
             ) {

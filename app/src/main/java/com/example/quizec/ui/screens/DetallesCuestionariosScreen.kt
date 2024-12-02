@@ -159,8 +159,9 @@ fun DetalleCuestionarioScreen(
                         onClick = {
                             val preguntaDuplicada = selectedPregunta.value?.copy(id = UUID.randomUUID().toString()) // Duplica la pregunta
                             preguntaDuplicada?.let {
+                                println("Pregunta duplicada es $preguntaDuplicada")
                                 // Aquí puedes agregar la lógica para guardar la pregunta duplicada en la base de datos
-                                questionsViewModel.duplicarPregunta(it, userId)
+                                questionsViewModel.duplicarPreguntaConUsuarioActual(it, userId)
 
                                 // Mostrar el Toast de notificación
                                 Toast.makeText(

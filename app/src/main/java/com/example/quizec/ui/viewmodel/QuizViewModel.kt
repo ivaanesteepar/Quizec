@@ -256,7 +256,6 @@ class QuizViewModel : ViewModel() {
     }
 
 
-    // Carga los cuestionarios del historial del usuario
     fun cargarCuestionariosDeUsuario(
         userId: String,
         onSuccess: (List<Cuestionario>) -> Unit,
@@ -273,11 +272,14 @@ class QuizViewModel : ViewModel() {
                 cuestionariosRef.get()
                     .addOnSuccessListener { documents ->
                         if (documents.documents.isNotEmpty()) {
-                            val cuestionarios = documents.documents.mapNotNull { document ->
+                            val cuestionarios = mutableListOf<Cuestionario>() // Lista mutable para almacenar los cuestionarios
+
+                            // Recorremos los documentos (cuestionarios)
+                            documents.forEach { document ->
                                 val cuestionarioData = document.data
                                 println("Cuestionario data: $cuestionarioData")
 
-                                // Recuperar las preguntas de la subcolección 'preguntas' si existe
+                                // Recuperamos las preguntas de la subcolección 'preguntas' si existe
                                 val preguntasRef = document.reference.collection("preguntas")
                                 preguntasRef.get()
                                     .addOnSuccessListener { preguntasDocuments ->
@@ -288,7 +290,7 @@ class QuizViewModel : ViewModel() {
                                                 Pregunta(
                                                     id = it["codigoQuiz"] as? String ?: "",
                                                     titulo = it["titulo"] as? String ?: "",
-                                                    tipo = TipoPregunta.valueOf(it["tipo"] as? String ?: "VERDADERO_FALSO"), // Convertimos el tipo
+                                                    tipo = TipoPregunta.valueOf(it["tipo"] as? String ?: "VERDADERO_FALSO"),
                                                     opciones = it["opciones"] as? List<String> ?: listOf(),
                                                     imagen = it["imagen"] as? String,
                                                     respuestasCorrectas = it["respuestasCorrectas"] as? List<String> ?: listOf(),
@@ -306,9 +308,9 @@ class QuizViewModel : ViewModel() {
                                             }
                                         }
 
-                                        // Ahora incluimos las preguntas en el cuestionario
+                                        // Crear el cuestionario y agregarlo a la lista
                                         val cuestionario = Cuestionario(
-                                            id = cuestionarioData?.get("codigoQuiz") as? String ?: "", // Código del cuestionario
+                                            id = cuestionarioData?.get("codigoQuiz") as? String ?: "",
                                             titulo = cuestionarioData?.get("titulo") as? String ?: "Sin título",
                                             descripcion = cuestionarioData?.get("descripcion") as? String ?: "",
                                             creadorId = cuestionarioData?.get("creadorId") as? String ?: "",
@@ -316,8 +318,13 @@ class QuizViewModel : ViewModel() {
                                             preguntas = preguntas // Asignamos las preguntas recuperadas
                                         )
 
-                                        // Pasamos el cuestionario con las preguntas
-                                        onSuccess(listOf(cuestionario))
+                                        // Añadir el cuestionario a la lista
+                                        cuestionarios.add(cuestionario)
+
+                                        // Una vez se procesen todos los cuestionarios, llamar a onSuccess
+                                        if (cuestionarios.size == documents.size()) {
+                                            onSuccess(cuestionarios) // Devolver la lista completa
+                                        }
                                     }
                             }
                         } else {
@@ -332,6 +339,7 @@ class QuizViewModel : ViewModel() {
             }
         }
     }
+
 
 
 

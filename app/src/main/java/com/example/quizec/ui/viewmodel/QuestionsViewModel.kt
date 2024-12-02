@@ -206,6 +206,33 @@ class QuestionsViewModel : ViewModel() {
         }
     }
 
+    // Función para duplicar una pregunta cambiando el userId al del usuario actual
+    fun duplicarPreguntaConUsuarioActual(preguntaToDuplicate: Pregunta, userIdActual: String) {
+        viewModelScope.launch {
+            try {
+                // Crear una copia de la pregunta con un nuevo ID y el userId del usuario actual
+                val nuevaPregunta = preguntaToDuplicate.copy(
+                    id = UUID.randomUUID().toString(), // Generar un nuevo ID único
+                    user_id = userIdActual // Cambiar el userId al del usuario actual
+                )
+
+                // Guardar la nueva pregunta duplicada en la base de datos
+                db.collection("preguntas")
+                    .add(nuevaPregunta)
+                    .await()
+
+                Log.d("QuestionsViewModel", "Pregunta duplicada correctamente: ${nuevaPregunta.id}")
+
+                // Actualizar el estado local añadiendo la nueva pregunta
+                _preguntasState.value = _preguntasState.value + nuevaPregunta
+
+            } catch (e: Exception) {
+                Log.e("QuestionsViewModel", "Error al duplicar la pregunta: ${e.message}")
+            }
+        }
+    }
+
+
 
     // Función para duplicar una pregunta
     fun duplicarPregunta(preguntaToDuplicate: Pregunta, userId: String) {
@@ -306,4 +333,37 @@ class QuestionsViewModel : ViewModel() {
             }
         }
     }
+
+    fun eliminarCuestionario(id: String) {
+        // Buscar el documento por el campo 'id' en la colección 'cuestionarios'
+        db.collection("cuestionarios")
+            .whereEqualTo("id", id)  // Filtramos por el campo 'id' del documento
+            .get()
+            .addOnSuccessListener { querySnapshot ->
+                // Verificar si la consulta devuelve documentos
+                if (querySnapshot.isEmpty) {
+                    Log.e("QuestionsViewModel", "No se encontró el cuestionario con id: $id")
+                    return@addOnSuccessListener
+                }
+
+                // Si encontramos el cuestionario, eliminarlo
+                val documentRef = querySnapshot.documents[0].reference
+                documentRef.delete()
+                    .addOnSuccessListener {
+                        // Si la eliminación fue exitosa, actualizar el estado local
+                        _cuestionariosState.value = _cuestionariosState.value.filterNot { it.id == id }
+                        Log.d("QuestionsViewModel", "Cuestionario eliminado correctamente: $id")
+                    }
+                    .addOnFailureListener { e ->
+                        // Manejar el error si la eliminación falla
+                        Log.e("QuestionsViewModel", "Error al eliminar el cuestionario: ${e.message}")
+                    }
+            }
+            .addOnFailureListener { e ->
+                // Manejar el error si la consulta falla
+                Log.e("QuestionsViewModel", "Error al buscar el cuestionario: ${e.message}")
+            }
+    }
+
+
 }

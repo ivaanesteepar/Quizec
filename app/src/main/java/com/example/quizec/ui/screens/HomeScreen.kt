@@ -88,10 +88,11 @@ fun HomeScreen(navController: NavHostController) {
                     },
                     modifier = Modifier
                         .fillMaxWidth(0.8f)
-                        .padding(bottom = 16.dp)
                 ) {
                     Text(text = "Unirse a un Quiz")
                 }
+
+                Spacer(modifier = Modifier.height(16.dp))
 
                 // Botón para crear un quiz
                 Button(
@@ -102,6 +103,8 @@ fun HomeScreen(navController: NavHostController) {
                 ) {
                     Text(text = "Crear un Quiz")
                 }
+
+                Spacer(modifier = Modifier.height(16.dp))
 
                 // Botón para ir al historial, pasando el userId
                 Button(

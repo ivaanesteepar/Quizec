@@ -37,12 +37,13 @@ fun HistorialScreen(navController: NavHostController, quizViewModel: QuizViewMod
         quizViewModel.cargarCuestionariosDeUsuario(
             userId = userId,
             onSuccess = { cuestionarios ->
+                println("Cuestionarios de usuario cargados: ${cuestionarios.size}")
                 cuestionariosState.value = cuestionarios
                 loading.value = false
                 errorMessage.value = null
             },
             onFailure = { error ->
-                Log.e("CuestionariosDeUsuarioScreen", "Error al cargar los cuestionarios", error)
+                Log.e("CuestionariosDeUsuarioScreen", "No se encontraron cuestionarios para el usuario.", error)
                 loading.value = false
                 errorMessage.value = "Error al cargar los cuestionarios"
             }
