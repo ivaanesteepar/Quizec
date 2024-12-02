@@ -282,7 +282,6 @@ fun UserQuizzesScreen(
                         opcionesCorrectas = opcionesCorrectas,
                         userInputs = userInputs
                     )
-                    Log.d("MISSING","${userInputs}")
                     if (userInputs.all { it.isNotBlank()} && userInputs.size == currentQuestion.opcionesCorrectasCompletarPalabras.size) enableAcept = true
                 }
 

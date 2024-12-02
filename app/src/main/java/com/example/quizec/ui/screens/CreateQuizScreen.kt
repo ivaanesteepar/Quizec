@@ -41,6 +41,19 @@ fun CreateQuizScreen(navController: NavHostController, quizViewModel: QuizViewMo
     val nombreUsuario by quizViewModel.nombreUsuario.collectAsState()
     val userUid = FirebaseAuth.getInstance().currentUser?.uid
 
+    // Si ya se ha creado el cuesitonario, se resetean los valores de creación
+    var isCuestionarioCreado by remember { mutableStateOf(false) }
+    if (isCuestionarioCreado) {
+        quizViewModel.contadorPreguntas.value = 0
+        titulo = ""
+        descripcion = ""
+        imageUri = null
+        errorMessage = ""
+        tituloError = false
+        descripcionError = false
+    }
+
+
     // Launcher for picking an image
     val pickImageLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
@@ -185,6 +198,7 @@ fun CreateQuizScreen(navController: NavHostController, quizViewModel: QuizViewMo
                 if (!valid) {
                     errorMessage = "Por favor, complete todos los campos requeridos."  // Mostrar el mensaje de error
                 } else {
+                    isCuestionarioCreado = true
                     crearCuestionario(navController, titulo, descripcion, nombreUsuario, quizViewModel) { errorMessage = it }
                 }
             },

@@ -72,7 +72,7 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
     var opcionesCorrectasCompletarPalabras by remember { mutableStateOf(listOf<String>()) }
 
 
-
+    //ARREGLAR LO DE LAS IMAGENES (hacer q se pueda poner una imagen)
     var imageUri by rememberSaveable { mutableStateOf<Uri?>(null) }
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
