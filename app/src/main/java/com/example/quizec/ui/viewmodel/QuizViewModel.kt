@@ -139,7 +139,10 @@ class QuizViewModel : ViewModel() {
                     descripcion = cuestionarioData["descripcion"] as? String ?: "",
                     creadorId = cuestionarioData["creadorId"] as? String ?: "",
                     imagen = cuestionarioData["imagen"] as? String,
-                    preguntas = preguntas // Asignar la lista de preguntas obtenidas
+                    preguntas = preguntas, // Asignar la lista de preguntas obtenidas
+                    immediateAccess = cuestionarioData["immediateAccess"] as? Boolean ?: false,
+                    locationRestricted = cuestionarioData["locationRestricted"] as? Boolean ?: false,
+                    immediateResults = cuestionarioData["immediateResults"] as? Boolean ?: false
                 )
 
                 // Crear un historialData con la información del cuestionario
@@ -315,7 +318,10 @@ class QuizViewModel : ViewModel() {
                                             descripcion = cuestionarioData?.get("descripcion") as? String ?: "",
                                             creadorId = cuestionarioData?.get("creadorId") as? String ?: "",
                                             imagen = cuestionarioData?.get("imagen") as? String,
-                                            preguntas = preguntas // Asignamos las preguntas recuperadas
+                                            preguntas = preguntas, // Asignamos las preguntas recuperadas
+                                            immediateAccess = cuestionarioData?.get("immediateAccess") as? Boolean ?: false,
+                                            locationRestricted = cuestionarioData?.get("locationRestricted") as? Boolean ?: false,
+                                            immediateResults = cuestionarioData?.get("immediateResults") as? Boolean ?: false
                                         )
 
                                         // Añadir el cuestionario a la lista

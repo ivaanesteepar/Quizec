@@ -41,6 +41,11 @@ fun CreateQuizScreen(navController: NavHostController, quizViewModel: QuizViewMo
     val nombreUsuario by quizViewModel.nombreUsuario.collectAsState()
     val userUid = FirebaseAuth.getInstance().currentUser?.uid
 
+    var immediateAccess by remember { mutableStateOf(false) }
+    var locationRestricted by remember { mutableStateOf(false) }
+    var immediateResults by remember { mutableStateOf(false) }
+
+
     // Si ya se ha creado el cuesitonario, se resetean los valores de creación
     var isCuestionarioCreado by remember { mutableStateOf(false) }
     if (isCuestionarioCreado) {
@@ -92,7 +97,10 @@ fun CreateQuizScreen(navController: NavHostController, quizViewModel: QuizViewMo
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(8.dp)
-                .border(1.dp, if (tituloError) Color.Red else Color.Gray)  // Cambiar color si hay error
+                .border(
+                    1.dp,
+                    if (tituloError) Color.Red else Color.Gray
+                )  // Cambiar color si hay error
                 .padding(12.dp)
         )
 
@@ -112,7 +120,10 @@ fun CreateQuizScreen(navController: NavHostController, quizViewModel: QuizViewMo
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(8.dp)
-                .border(1.dp, if (descripcionError) Color.Red else Color.Gray)  // Cambiar color si hay error
+                .border(
+                    1.dp,
+                    if (descripcionError) Color.Red else Color.Gray
+                )  // Cambiar color si hay error
                 .padding(12.dp)
         )
 
@@ -184,6 +195,67 @@ fun CreateQuizScreen(navController: NavHostController, quizViewModel: QuizViewMo
 
         Spacer(modifier = Modifier.height(16.dp))
 
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp) // Añadir algo de padding a la columna general para mejorar la legibilidad
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Acceso Inmediato al Cuestionario",
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.bodyLarge // Puede ajustar el estilo para mejorar la visibilidad
+                )
+                Switch(
+                    checked = immediateAccess,
+                    onCheckedChange = { immediateAccess = it },
+                    modifier = Modifier.padding(start = 8.dp) // Añadir espacio entre el texto y el switch
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp)) // Más espacio entre los elementos
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Restringir por Ubicación",
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Switch(
+                    checked = locationRestricted,
+                    onCheckedChange = { locationRestricted = it },
+                    modifier = Modifier.padding(start = 8.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Acceso Inmediato a Resultados",
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Switch(
+                    checked = immediateResults,
+                    onCheckedChange = { immediateResults = it },
+                    modifier = Modifier.padding(start = 8.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         Button(
             onClick = {
                 var valid = true
@@ -201,7 +273,17 @@ fun CreateQuizScreen(navController: NavHostController, quizViewModel: QuizViewMo
                     errorMessage = "Por favor, complete todos los campos requeridos."  // Mostrar el mensaje de error
                 } else {
                     isCuestionarioCreado = true
-                    crearCuestionario(navController, titulo, descripcion, nombreUsuario, quizViewModel) { errorMessage = it }
+                    crearCuestionario(
+                        navController,
+                        titulo,
+                        descripcion,
+                        nombreUsuario,
+                        quizViewModel,
+                        { errorMessage = it },
+                        immediateAccess,
+                        locationRestricted,
+                        immediateResults
+                    )
                 }
             },
             modifier = Modifier.fillMaxWidth(0.8f)
@@ -224,7 +306,11 @@ private fun crearCuestionario(
     descripcion: String,
     nombreUsuario: String?,
     quizViewModel: QuizViewModel,
-    onError: (String) -> Unit
+    onError: (String) -> Unit,
+    //NEW
+    immediateAccess: Boolean,
+    locationRestricted: Boolean,
+    immediateResults: Boolean
 ) {
     if (titulo.isEmpty() || descripcion.isEmpty()) {
         onError("Por favor, complete todos los campos requeridos.")
@@ -245,7 +331,11 @@ private fun crearCuestionario(
                 descripcion = descripcion,
                 creadorId = userUid ?: "",
                 imagen = imageUriString,
-                preguntas = quizViewModel.preguntas // Incluye la lista completa de preguntas
+                preguntas = quizViewModel.preguntas, // Incluye la lista completa de preguntas
+                //NEW
+                immediateAccess = immediateAccess,  // Nuevo parámetro
+                locationRestricted = locationRestricted,  // Nuevo parámetro
+                immediateResults = immediateResults  // Nuevo parámetro
             )
 
             Log.d("CreateQuizScreen", "URL firebase : ${imageUriString}")
@@ -259,7 +349,11 @@ private fun crearCuestionario(
                     if (userUid != null) {
                         actualizarRolUsuario(userUid, Rol.CREADOR)
                     }
-                    navController.navigate("waiting_screen/$quizCode")
+                    if (immediateAccess){
+                        // ir al quiz
+                    }else {
+                        navController.navigate("waiting_screen/$quizCode")
+                    }
                 }
             }
         }
@@ -293,7 +387,10 @@ fun Cuestionario.toMap(): Map<String, Any> {
                 "leftItems" to pregunta.leftItems,
                 "rightItems" to pregunta.rightItems
             )
-        }
+        },
+        "immediateAccess" to immediateAccess,
+        "locationRestricted" to locationRestricted,
+        "immediateResults" to immediateResults
     )
 }
 
