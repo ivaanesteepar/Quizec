@@ -39,7 +39,7 @@ fun JoinQuizScreen(
     var loading by remember { mutableStateOf(false) }
     var locationPermissionGranted by remember { mutableStateOf(false) }
 
-    val coroutineScope = rememberCoroutineScope()
+    //val coroutineScope = rememberCoroutineScope()
 
     // Solicitar permisos de ubicación
     val launcher = rememberLauncherForActivityResult(
@@ -91,41 +91,57 @@ fun JoinQuizScreen(
         } else {
             loading = true
 
-            // Ejecutar la lógica en una corrutina
-            coroutineScope.launch {
-                try {
-                    val datosQuiz = quizViewModel.obtenerDatosDelQuiz(codigoQuiz)
-                    if (datosQuiz == null) {
-                        errorMessage = "Error al obtener los datos del quiz."
-                        loading = false
-                        return@launch
-                    }
-                    val immediateAccess = quizViewModel.obtenerImmediateAccess(codigoQuiz)
+//            // Ejecutar la lógica en una corrutina
+//            coroutineScope.launch {
+//                try {
+//                    val datosQuiz = quizViewModel.obtenerDatosDelQuiz(codigoQuiz)
+//                    if (datosQuiz == null) {
+//                        errorMessage = "Error al obtener los datos del quiz."
+//                        loading = false
+//                        return@launch
+//                    }
+//                    val immediateAccess = quizViewModel.obtenerImmediateAccess(codigoQuiz)
+//
+//                    // Obtener la ubicación del usuario y calcular la distancia
+//                    fetchLocation(fusedLocationClient) { location ->
+//                        Log.d("Geolocalización", "Ubicación actual: $location")
+//
+//                        val (quizLat, quizLng, quizRadius) = datosQuiz
+//                        val distance = calculateDistance(location, quizLat, quizLng)
+//                        if (distance <= quizRadius) {
+//                            if (immediateAccess == null) {
+//                                errorMessage = "Error al verificar el acceso."
+//                            } else {
+//                                if (immediateAccess) {
+//                                    navController.navigate("user_quiz/$codigoQuiz")
+//                                } else {
+//                                    navController.navigate("waiting_screen/$codigoQuiz")
+//                                }
+//                            }
+//                        } else {
+//                            errorMessage = "No estás dentro del radio del quiz."
+//                        }
+//                        loading = false
+//                    }
+//                } catch (e: Exception) {
+//                    loading = false
+//                    errorMessage = "Hubo un error al verificar el acceso."
+//                }
+//            }
+            //JIMENA con QuizViewModel nueva funcion de obtenerAccess
+            // Llamada a la función del ViewModel que usa un callback
+            quizViewModel.obtenerImmediateAccess(codigoQuiz) { immediateAccess ->
+                loading = false
+                println("immediateAccess: $immediateAccess")
+                println("codigoQuiz: $codigoQuiz")
 
-                    // Obtener la ubicación del usuario y calcular la distancia
-                    fetchLocation(fusedLocationClient) { location ->
-                        Log.d("Geolocalización", "Ubicación actual: $location")
-
-                        val (quizLat, quizLng, quizRadius) = datosQuiz
-                        val distance = calculateDistance(location, quizLat, quizLng)
-                        if (distance <= quizRadius) {
-                            if (immediateAccess == null) {
-                                errorMessage = "Error al verificar el acceso."
-                            } else {
-                                if (immediateAccess) {
-                                    navController.navigate("user_quiz/$codigoQuiz")
-                                } else {
-                                    navController.navigate("waiting_screen/$codigoQuiz")
-                                }
-                            }
-                        } else {
-                            errorMessage = "No estás dentro del radio del quiz."
-                        }
-                        loading = false
-                    }
-                } catch (e: Exception) {
-                    loading = false
-                    errorMessage = "Hubo un error al verificar el acceso."
+                // Verificación del resultado recibido a través del callback
+                if (immediateAccess == null) {
+                    errorMessage = "Error al verificar el acceso."
+                } else if (immediateAccess == false) {
+                    navController.navigate("waiting_screen/$codigoQuiz")
+                } else {
+                    navController.navigate("user_quiz/$codigoQuiz")
                 }
             }
         }

@@ -23,6 +23,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
@@ -57,14 +58,16 @@ fun CreateQuizScreen(
     var immediateAccess by remember { mutableStateOf(false) }
     var locationRestricted by remember { mutableStateOf(false) }
     var immediateResults by remember { mutableStateOf(false) }
+    var isQuizIniciado by remember { mutableStateOf(false) }
+    //GPS
     var radio by rememberSaveable { mutableStateOf("") }
     val latitudActual by remember { mutableStateOf<Double?>(null) }
     val longitudActual by remember { mutableStateOf<Double?>(null) }
 
-    // Si ya se ha creado el cuesitonario, se resetean los valores de creación
-    var isCuestionarioCreado by remember { mutableStateOf(false) }
-    if (isCuestionarioCreado) {
-        quizViewModel.contadorPreguntas.value = 0
+    // se resetean los valores de creación
+    var reset by remember { mutableStateOf(false) }
+    if (reset) {
+        quizViewModel.resetearPreguntas()
         titulo = ""
         descripcion = ""
         imageUri = null
@@ -177,15 +180,6 @@ fun CreateQuizScreen(
             modifier = Modifier.fillMaxWidth(0.8f)
         ) {
             Text("Crear Preguntas")
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(
-            onClick = { navController.navigate("select_cuestionario") },
-            modifier = Modifier.fillMaxWidth(0.8f)
-        ) {
-            Text("Seleccionar Cuestionario")
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -321,7 +315,8 @@ fun CreateQuizScreen(
                 if (!valid) {
                     errorMessage = "Por favor, complete todos los campos requeridos."  // Mostrar el mensaje de error
                 } else {
-                    isCuestionarioCreado = true
+                    reset = true
+
                     crearCuestionario(
                         navController,
                         titulo,
@@ -332,6 +327,7 @@ fun CreateQuizScreen(
                         immediateAccess,
                         locationRestricted,
                         immediateResults,
+                        isQuizIniciado,
                         latitudActual ?: 0.0, // Si latitudActual es nulo, asigna 0.0
                         longitudActual ?: 0.0, // Si longitudActual es nulo, asigna 0.0
                         radioValue ?: 0.0 // Usamos el valor de radio, si no es válido, usamos 0.0
@@ -345,7 +341,10 @@ fun CreateQuizScreen(
         }
         Spacer(modifier = Modifier.height(16.dp))
         Button(
-            onClick = { navController.navigate("home") },
+            onClick = {
+                reset = true
+                navController.navigate("home")
+            },
             modifier = Modifier.fillMaxWidth(0.8f)
         ) {
             Text("Volver", color = Color.White)
@@ -364,6 +363,7 @@ private fun crearCuestionario(
     immediateAccess: Boolean,
     locationRestricted: Boolean,
     immediateResults: Boolean,
+    isQuizIniciado: Boolean,
     latitude: Double,
     longitude: Double,
     radio: Double
@@ -387,9 +387,10 @@ private fun crearCuestionario(
                 creadorId = userUid ?: "",
                 imagen = imageUriString,
                 preguntas = quizViewModel.preguntas, // Incluye la lista completa de preguntas
-                immediateAccess = immediateAccess,  // Nuevo parámetro
-                locationRestricted = locationRestricted,  // Nuevo parámetro
-                immediateResults = immediateResults,  // Nuevo parámetro
+                immediateAccess = immediateAccess,
+                locationRestricted = locationRestricted,
+                immediateResults = immediateResults,
+                isQuizIniciado = false,
                 latitude = latitude,
                 longitude = longitude,
                 radio = radio
@@ -405,19 +406,17 @@ private fun crearCuestionario(
                     onError("Error al crear el cuestionario: $error")
                 } else {
                     if (userUid != null) {
-                        actualizarRolUsuario(userUid, Rol.CREADOR)
+                        quizViewModel.actualizarRolUsuario2(userUid, Rol.CREADOR)
                     }
-                    if (immediateAccess){
-                        // ir al quiz
-                    } else {
-                        navController.navigate("waiting_screen/$quizCode")
-                    }
+                    Toast.makeText(navController.context, "Cuestionario creado exitosamente", Toast.LENGTH_SHORT).show()
+                    navController.navigate("home")
                 }
             }
         }
     }
 }
 
+// Extensión para convertir Cuestionario a Map<String, Any>
 fun Cuestionario.toMap(): Map<String, Any> {
     return mapOf(
         "id" to id,
@@ -448,25 +447,10 @@ fun Cuestionario.toMap(): Map<String, Any> {
         "immediateAccess" to immediateAccess,
         "locationRestricted" to locationRestricted,
         "immediateResults" to immediateResults,
+        "isQuizIniciado" to isQuizIniciado,
         "latitud" to latitude,
         "longitud" to longitude,
         "radio" to radio // Añadido el valor de radio
     )
 }
 
-
-
-// Función para actualizar el rol del usuario en Firestore
-private fun actualizarRolUsuario(userUid: String, rol: Rol) {
-    val db = FirebaseFirestore.getInstance()
-    val usuarioRef = db.collection("users").document(userUid)
-
-    // Actualizar el campo 'rol' en Firestore
-    usuarioRef.update("rol", rol)
-        .addOnSuccessListener {
-            Log.d("CrearCuestionario", "Rol de usuario actualizado a '${rol.name}'.")
-        }
-        .addOnFailureListener { e ->
-            Log.w("CrearCuestionario", "Error al actualizar el rol del usuario", e)
-        }
-}

@@ -56,7 +56,7 @@ fun QuizecApp() {
                 LoginScreen(navController)  // Pantalla de login
             }
             composable("home") {
-                HomeScreen(navController)  // Pantalla de inicio
+                HomeScreen(navController, quizViewModel)   // Pantalla de inicio
             }
             composable("creator_quiz/{quizCode}") { backStackEntry -> // Ruta para el quiz del creador
                 val quizCode: String? = backStackEntry.arguments?.getString("quizCode")

@@ -21,6 +21,16 @@ fun WaitingScreen(navController: NavHostController, codigoQuiz: String?, usersVi
     val quizViewModel = remember { QuizViewModel() }
     val userRole by quizViewModel.userRole.collectAsState()
 
+    val isQuizIniciado by quizViewModel.isQuizIniciado.collectAsState()
+    if (codigoQuiz != null) {
+        quizViewModel.getIsQuizIniciado(codigoQuiz) //obtiene de firebase y actualiza el estado del quiz
+    }
+    LaunchedEffect(isQuizIniciado) { //si cambia el estado del quiz, se ejecuta el código
+        if (isQuizIniciado && userRole == Rol.PARTICIPANTE.toString()) {
+            navController.navigate("user_quiz/$codigoQuiz") // Navegar al quiz del participante
+        }
+    }
+
     // Cuando cambia el código del quiz, agregamos el usuario y comenzamos a escuchar la lista
     LaunchedEffect(codigoQuiz) {
         if (codigoQuiz != null) {
@@ -43,6 +53,11 @@ fun WaitingScreen(navController: NavHostController, codigoQuiz: String?, usersVi
         // Título de jugadores en espera
         Text(
             text = "Esperando jugadores",
+            style = MaterialTheme.typography.headlineMedium
+        )
+        //Codigo quiz
+        Text(
+            text = "$codigoQuiz",
             style = MaterialTheme.typography.headlineMedium
         )
         // Indicador de progreso circular animado
@@ -76,22 +91,22 @@ fun WaitingScreen(navController: NavHostController, codigoQuiz: String?, usersVi
             // Botón "Iniciar Quiz"
             Button(
                 onClick = {
-                    when (userRole) {
-                        Rol.CREADOR.toString() -> {
-                            println("El usuario es el creador. Navegando a creator_quiz.")
-                            navController.navigate("creator_quiz/$codigoQuiz")
+                    if (userRole == Rol.CREADOR.toString()) {
+                        quizViewModel.actualizarEstadoQuiz(codigoQuiz){ exito ->
+                            if (exito){
+                                println("El usuario es el creador. Navegando a creator_quiz.")
+                                navController.navigate("creator_quiz/$codigoQuiz")
+                            }
+                            else{
+                                println("Error al actualizar el estado del quiz.")
+                            }
+
                         }
-                        Rol.PARTICIPANTE.toString() -> {
-                            println("El usuario es participante. Navegando a user_quiz.")
-                            navController.navigate("user_quiz/$codigoQuiz")
-                            println("El usuario es participante. Codigo del quiz: $codigoQuiz")
-                        }
-                        else -> {
-                            println("Rol desconocido: $userRole")
-                        }
+                    } else {
+                        println("Rol desconocido: $userRole")
                     }
                 },
-                enabled = userRole != null && (userRole == Rol.CREADOR.toString() || userRole == Rol.PARTICIPANTE.toString())
+                enabled = userRole != null && (userRole == Rol.CREADOR.toString()) //|| userRole == Rol.PARTICIPANTE.toString())
             ) {
                 Text("Iniciar Quiz")
             }

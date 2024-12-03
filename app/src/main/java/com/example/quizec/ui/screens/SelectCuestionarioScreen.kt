@@ -111,8 +111,8 @@ fun SelectCuestionarioScreen(
 
     LaunchedEffect(userId) {
         userId?.let {
-            quizViewModel.cargarImagenesCuestionariosUsuario(it)
-            questionsViewModel.cargarCuestionariosUsuario(it)
+            quizViewModel.cargarImagenesCuestionariosUsuario(it) // Cargar las imágenes de los cuestionarios del usuario desde la base de datos
+            questionsViewModel.cargarCuestionariosUsuario(it) // Cargar los cuestionarios
         }
     }
 
@@ -145,7 +145,7 @@ fun SelectCuestionarioScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.padding(vertical = 8.dp)
                         ) {
-                            Checkbox(
+                            Checkbox( //// Mostrar checkbox para seleccionar el cuestionario
                                 checked = isSelected,
                                 onCheckedChange = {
                                     questionsViewModel.toggleCuestionarioSelection(cuestionario.id)
@@ -153,7 +153,7 @@ fun SelectCuestionarioScreen(
                                 modifier = Modifier.size(20.dp)
                             )
 
-                            Column(
+                            Column( // Mostrar título, ID y URL del cuestionario
                                 modifier = Modifier
                                     .weight(1f)
                                     .padding(start = 8.dp)
@@ -174,7 +174,7 @@ fun SelectCuestionarioScreen(
                                         modifier = Modifier.padding(top = 4.dp)
                                     )
 
-                                    val imageBitmap by remember(imageUrl) {
+                                    val imageBitmap by remember(imageUrl) { // Cargar y mostrar la imagen desde URI
                                         mutableStateOf(loadImageFromUri(context, imageUrl))
                                     }
 
@@ -190,7 +190,7 @@ fun SelectCuestionarioScreen(
                                 }
                             }
 
-                            Button(
+                            Button( // Botón de Edit
                                 onClick = {
                                     navController.navigate("editCuestionario/${cuestionario.id}")
                                 },
@@ -199,7 +199,7 @@ fun SelectCuestionarioScreen(
                                 Text(text = "Editar")
                             }
 
-                            Button(
+                            Button( // Botón de Eliminación
                                 onClick = {
                                     showDeleteConfirmationDialog = true
                                     cuestionarioToDelete = cuestionario
@@ -215,7 +215,7 @@ fun SelectCuestionarioScreen(
             }
         }
 
-        Column(
+        Column( // Botones inferiores de "Continuar" y "Volver"
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(16.dp)
@@ -260,7 +260,7 @@ fun SelectCuestionarioScreen(
             }
 
             Button(
-                onClick = { navController.popBackStack() },
+                onClick = { navController.popBackStack() }, // Navegar hacia atrás
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(text = "Volver")
@@ -268,6 +268,7 @@ fun SelectCuestionarioScreen(
         }
     }
 
+    // Diálogo de confirmación de eliminación
     if (showDeleteConfirmationDialog && cuestionarioToDelete != null) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirmationDialog = false },
@@ -286,7 +287,9 @@ fun SelectCuestionarioScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteConfirmationDialog = false }) {
+                TextButton(
+                    onClick = { showDeleteConfirmationDialog = false }
+                ) {
                     Text("No")
                 }
             }
@@ -294,6 +297,7 @@ fun SelectCuestionarioScreen(
     }
 }
 
+// Función para cargar la imagen desde un URI usando ContentResolver
 fun loadImageFromUri(context: Context, imageUri: String): Bitmap? {
     return try {
         val uri = Uri.parse(imageUri)

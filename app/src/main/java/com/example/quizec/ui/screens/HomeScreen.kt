@@ -17,14 +17,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.quizec.R
+import com.example.quizec.data.model.Rol
+import com.example.quizec.ui.viewmodel.QuizViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
 @Composable
-fun HomeScreen(navController: NavHostController) {
+fun HomeScreen(navController: NavHostController, quizViewModel: QuizViewModel) {
     val auth = FirebaseAuth.getInstance()
     val db = FirebaseFirestore.getInstance()
     var userName by remember { mutableStateOf("Usuario") }  // Nombre por defecto
+    val userUid = FirebaseAuth.getInstance().currentUser?.uid
     var isLoading by remember { mutableStateOf(true) }  // Estado para indicar si la carga está en proceso
 
     // Obtener el nombre del usuario desde Firestore o FirebaseAuth
@@ -115,6 +118,20 @@ fun HomeScreen(navController: NavHostController) {
                     modifier = Modifier.fillMaxWidth(0.8f)
                 ) {
                     Text(text = "Crear un Quiz")
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Button(
+                    onClick = {
+                        if (userUid != null) {
+                            quizViewModel.actualizarRolUsuario2(userUid, Rol.CREADOR)
+                        }
+                        navController.navigate("select_cuestionario")
+                    },
+                    modifier = Modifier.fillMaxWidth(0.8f)
+                ) {
+                    Text("Seleccionar Cuestionario")
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
