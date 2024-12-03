@@ -1,4 +1,3 @@
-
 package com.example.quizec.data.model
 
 // Clase que representa un cuestionario
@@ -9,11 +8,17 @@ data class Cuestionario(
     val creadorId: String,      // ID del creador del cuestionario
     val imagen: String? = null, // Imagen opcional del cuestionario
     val preguntas: List<Pregunta>, // Lista de preguntas completas asociadas al cuestionario
-    //NEW
+    // Nuevos campos agregados
     val immediateAccess: Boolean,
     val locationRestricted: Boolean,
-    val immediateResults: Boolean
-){
-    constructor() : this("", "", "", "", null, emptyList(), false, false, false)
-
+    val immediateResults: Boolean,
+    val latitude: Double,
+    val longitude: Double,
+    val radio: Double           // Radio de ubicación
+) {
+    // Constructor secundario para inicialización por defecto
+    constructor() : this(
+        "", "", "", "", null, emptyList(),
+        false, false, false, 0.0, 0.0, 0.0  // Valor por defecto para radio
+    )
 }

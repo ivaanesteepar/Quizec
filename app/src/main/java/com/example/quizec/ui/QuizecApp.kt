@@ -25,7 +25,6 @@ import com.example.quizec.ui.screens.JoinQuizScreen
 import com.example.quizec.ui.screens.RegisterScreen
 import com.example.quizec.ui.viewmodel.QuizViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.listacontactos.utils.location.LocationManagerHandler
 import com.example.quizec.data.model.Pregunta
 import com.example.quizec.ui.screens.SelectQuestionsScreen
 import com.example.quizec.ui.screens.UserQuizzesScreen
@@ -78,12 +77,8 @@ fun QuizecApp() {
             }
 
             composable("createQuiz") {
-                // Obtener la instancia de LocationManager (asegúrate de que el contexto esté disponible)
-                val locationManager = LocalContext.current.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-                // Crear una instancia de LocationManagerHandler
-                val locationManagerHandler = LocationManagerHandler(locationManager)
                 // Pasa el ViewModel y el LocationManagerHandler a CreateQuizScreen
-                CreateQuizScreen(navController, quizViewModel, locationManagerHandler)
+                CreateQuizScreen(navController, quizViewModel)
             }
 
             composable("joinQuiz") {
@@ -124,8 +119,7 @@ fun QuizecApp() {
                 SelectCuestionarioScreen(
                     navController,
                     quizViewModel,
-                    questionsViewModel = viewModel(),
-                    context = navController.context
+                    questionsViewModel = viewModel()
                 )
             }
             composable("editPregunta/{preguntaId}") { backStackEntry ->

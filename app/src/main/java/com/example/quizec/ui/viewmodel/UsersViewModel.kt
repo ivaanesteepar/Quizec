@@ -115,7 +115,6 @@ class UsersViewModel : ViewModel() {
         }
     }
 
-
     // Escuchar los cambios en los usuarios y sus respuestas correctas
     fun escucharNombreYRespuestasCorrectas(codigoQuiz: String, callback: (List<Pair<String, Int>>) -> Unit) {
         val quizRef = db.collection("usuariosEspera").document(codigoQuiz)

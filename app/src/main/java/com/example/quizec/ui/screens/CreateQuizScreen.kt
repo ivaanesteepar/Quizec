@@ -1,6 +1,8 @@
 package com.example.quizec.ui.screens
 
-import android.location.Location
+import android.Manifest
+import android.annotation.SuppressLint
+import android.content.pm.PackageManager
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -22,12 +24,17 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import android.util.Log
 import androidx.activity.result.PickVisualMediaRequest
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.core.content.ContextCompat
 import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
-import com.example.listacontactos.utils.location.LocationManagerHandler
 import com.example.quizec.data.model.Cuestionario
 import com.example.quizec.data.model.Rol
 import com.example.quizec.ui.viewmodel.QuizViewModel
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.tasks.CancellationTokenSource
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
@@ -35,9 +42,9 @@ import kotlinx.coroutines.launch
 @Composable
 fun CreateQuizScreen(
     navController: NavHostController,
-    quizViewModel: QuizViewModel,
-    locationManagerHandler: LocationManagerHandler
+    quizViewModel: QuizViewModel
 ) {
+    val context = LocalContext.current
     var titulo by rememberSaveable { mutableStateOf("") }
     var descripcion by rememberSaveable { mutableStateOf("") }
     var imageUri by rememberSaveable { mutableStateOf<Uri?>(null) }
@@ -50,10 +57,9 @@ fun CreateQuizScreen(
     var immediateAccess by remember { mutableStateOf(false) }
     var locationRestricted by remember { mutableStateOf(false) }
     var immediateResults by remember { mutableStateOf(false) }
-
-    // Estado para la ubicación
-    var currentLocation by remember { mutableStateOf<Location?>(null) }
-
+    var radio by rememberSaveable { mutableStateOf("") }
+    val latitudActual by remember { mutableStateOf<Double?>(null) }
+    val longitudActual by remember { mutableStateOf<Double?>(null) }
 
     // Si ya se ha creado el cuesitonario, se resetean los valores de creación
     var isCuestionarioCreado by remember { mutableStateOf(false) }
@@ -79,26 +85,6 @@ fun CreateQuizScreen(
             Log.d("CreateQuizScreen", "No se seleccionó ninguna imagen.")
         }
     }
-
-    // Manejar el cambio de ubicación
-    DisposableEffect(locationRestricted) {
-        val locationListener = { location: Location ->
-            currentLocation = location
-        }
-
-        locationManagerHandler.onLocation = locationListener
-
-        if (locationRestricted) {
-            locationManagerHandler.startLocationUpdates()
-        } else {
-            locationManagerHandler.stopLocationUpdates()
-        }
-
-        onDispose {
-            locationManagerHandler.stopLocationUpdates()
-        }
-    }
-
 
     Column(
         modifier = Modifier
@@ -264,11 +250,25 @@ fun CreateQuizScreen(
                     checked = locationRestricted,  // El estado actual del switch depende de locationRestricted
                     onCheckedChange = { newValue ->  // Cuando el usuario cambia el estado del switch
                         locationRestricted = newValue  // Se actualiza locationRestricted con el nuevo valor de newValue
-
-                        // Imprimir el nuevo valor de locationRestricted
-                        println("El valor de locationRestricted es: $locationRestricted")
                     },
                     modifier = Modifier.padding(start = 8.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Este campo de texto solo aparecerá si locationRestricted es true
+            if (locationRestricted) {
+                Text("Radio del área permitida (km)", style = MaterialTheme.typography.bodyMedium)
+                BasicTextField(
+                    value = radio,
+                    onValueChange = { radio = it },
+                    keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp)
+                        .border(1.dp, Color.Gray)
+                        .padding(12.dp)
                 )
             }
 
@@ -298,14 +298,6 @@ fun CreateQuizScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Mostrar la ubicación actual
-        currentLocation?.let { location ->
-            Text(
-                text = "Ubicación actual: Lat ${location.latitude}, Long ${location.longitude}",
-                style = MaterialTheme.typography.bodyMedium
-            )
-        }
-
         Button(
             onClick = {
                 var valid = true
@@ -316,6 +308,13 @@ fun CreateQuizScreen(
 
                 if (descripcion.isEmpty()) {
                     descripcionError = true  // Activar el error de la descripción
+                    valid = false
+                }
+
+                // Intentamos convertir el valor de radio a Double
+                val radioValue = radio.toDoubleOrNull()
+                if (radioValue == null) {
+                    errorMessage = "Por favor, ingrese un valor válido para el radio."
                     valid = false
                 }
 
@@ -332,8 +331,12 @@ fun CreateQuizScreen(
                         { errorMessage = it },
                         immediateAccess,
                         locationRestricted,
-                        immediateResults
+                        immediateResults,
+                        latitudActual ?: 0.0, // Si latitudActual es nulo, asigna 0.0
+                        longitudActual ?: 0.0, // Si longitudActual es nulo, asigna 0.0
+                        radioValue ?: 0.0 // Usamos el valor de radio, si no es válido, usamos 0.0
                     )
+
                 }
             },
             modifier = Modifier.fillMaxWidth(0.8f)
@@ -360,7 +363,10 @@ private fun crearCuestionario(
     //NEW
     immediateAccess: Boolean,
     locationRestricted: Boolean,
-    immediateResults: Boolean
+    immediateResults: Boolean,
+    latitude: Double,
+    longitude: Double,
+    radio: Double
 ) {
     if (titulo.isEmpty() || descripcion.isEmpty()) {
         onError("Por favor, complete todos los campos requeridos.")
@@ -374,7 +380,6 @@ private fun crearCuestionario(
 
             val userUid = FirebaseAuth.getInstance().currentUser?.uid
 
-            // Crear una instancia de Cuestionario con todos los detalles de las preguntas
             val cuestionario = Cuestionario(
                 id = quizCode,
                 titulo = titulo,
@@ -382,11 +387,14 @@ private fun crearCuestionario(
                 creadorId = userUid ?: "",
                 imagen = imageUriString,
                 preguntas = quizViewModel.preguntas, // Incluye la lista completa de preguntas
-                //NEW
                 immediateAccess = immediateAccess,  // Nuevo parámetro
                 locationRestricted = locationRestricted,  // Nuevo parámetro
-                immediateResults = immediateResults  // Nuevo parámetro
+                immediateResults = immediateResults,  // Nuevo parámetro
+                latitude = latitude,
+                longitude = longitude,
+                radio = radio
             )
+
 
             Log.d("CreateQuizScreen", "URL firebase : $imageUriString")
             Log.d("CreateQuizScreen", "URL quizView : ${quizViewModel.imageUri.toString()}")
@@ -410,7 +418,6 @@ private fun crearCuestionario(
     }
 }
 
-// Extensión para convertir Cuestionario a Map<String, Any>
 fun Cuestionario.toMap(): Map<String, Any> {
     return mapOf(
         "id" to id,
@@ -440,9 +447,13 @@ fun Cuestionario.toMap(): Map<String, Any> {
         },
         "immediateAccess" to immediateAccess,
         "locationRestricted" to locationRestricted,
-        "immediateResults" to immediateResults
+        "immediateResults" to immediateResults,
+        "latitud" to latitude,
+        "longitud" to longitude,
+        "radio" to radio // Añadido el valor de radio
     )
 }
+
 
 
 // Función para actualizar el rol del usuario en Firestore
