@@ -58,12 +58,8 @@ fun CreateQuizScreen(
     var locationRestricted by remember { mutableStateOf(false) }
     var immediateResults by remember { mutableStateOf(false) }
     var radio by rememberSaveable { mutableStateOf("") }
-
-    val fusedLocationClient = LocationServices.getFusedLocationProviderClient(LocalContext.current)
-    var latitudActual by remember { mutableStateOf<Double?>(null) }
-    var longitudActual by remember { mutableStateOf<Double?>(null) }
-    var locationPermissionGranted by remember { mutableStateOf(false) }
-    var locationCancellationTokenSource by remember { mutableStateOf<CancellationTokenSource?>(null) }
+    val latitudActual by remember { mutableStateOf<Double?>(null) }
+    val longitudActual by remember { mutableStateOf<Double?>(null) }
 
     // Si ya se ha creado el cuesitonario, se resetean los valores de creación
     var isCuestionarioCreado by remember { mutableStateOf(false) }
@@ -76,38 +72,6 @@ fun CreateQuizScreen(
         tituloError = false
         descripcionError = false
     }
-    // Solicitar permisos de ubicación
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        locationPermissionGranted = isGranted
-    }
-
-    // Solicitar permisos al inicio
-    LaunchedEffect(Unit) {
-        val hasPermission = ContextCompat.checkSelfPermission(
-            context,
-            Manifest.permission.ACCESS_FINE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED
-
-        if (!hasPermission) {
-            launcher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-        } else {
-            locationPermissionGranted = true
-        }
-    }
-
-//    LaunchedEffect(Unit) {
-//        fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-//            if (location != null) {
-//                latitudActual = location.latitude
-//                longitudActual = location.longitude
-//                Log.d("Location", "Latitud: $latitudActual, Longitud: $longitudActual")
-//            } else {
-//                Log.e("Location", "No se pudo obtener la ubicación actual.")
-//            }
-//        }
-//    }
 
     // Launcher for picking an image
     val pickImageLauncher = rememberLauncherForActivityResult(
@@ -286,22 +250,6 @@ fun CreateQuizScreen(
                     checked = locationRestricted,  // El estado actual del switch depende de locationRestricted
                     onCheckedChange = { newValue ->  // Cuando el usuario cambia el estado del switch
                         locationRestricted = newValue  // Se actualiza locationRestricted con el nuevo valor de newValue
-//                        if (locationPermissionGranted) {
-//                            if (newValue) {
-//                                locationCancellationTokenSource = CancellationTokenSource()
-//                                fetchLocation(fusedLocationClient) { location ->
-//                                    // Solo imprime el log si el switch está encendido
-//                                    Log.d("Geolocalización", "Ubicación actual createquiz: $location")
-//                                }
-//                            } else {
-//                                locationCancellationTokenSource?.cancel()
-//                                locationCancellationTokenSource = null
-//                                // No imprimir log cuando el switch está apagado
-//                                Log.d("Geolocalización", "Localización detenida.")
-//                            }
-//                        } else {
-//                            Log.e("Permisos", "Permisos de ubicación no concedidos.")
-//                        }
                     },
                     modifier = Modifier.padding(start = 8.dp)
                 )
@@ -521,25 +469,4 @@ private fun actualizarRolUsuario(userUid: String, rol: Rol) {
         .addOnFailureListener { e ->
             Log.w("CrearCuestionario", "Error al actualizar el rol del usuario", e)
         }
-}
-
-@SuppressLint("MissingPermission")
-private fun fetchLocation(
-    fusedLocationClient: FusedLocationProviderClient,
-    onLocationFetched: (String) -> Unit
-) {
-    val cancellationTokenSource = CancellationTokenSource()
-    fusedLocationClient.getCurrentLocation(
-        com.google.android.gms.location.Priority.PRIORITY_HIGH_ACCURACY, // Usar el nuevo valor constante
-        cancellationTokenSource.token
-    ).addOnSuccessListener { location ->
-        if (location != null) {
-            val locationString = "Lat: ${location.latitude}, Lng: ${location.longitude}"
-            onLocationFetched(locationString)
-        } else {
-            Log.e("Geolocalización", "Ubicación no disponible.")
-        }
-    }.addOnFailureListener { exception ->
-        Log.e("Geolocalización", "Error obteniendo la ubicación: ${exception.message}")
-    }
 }

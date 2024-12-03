@@ -38,6 +38,7 @@ import com.google.firebase.auth.FirebaseAuth
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.quizec.data.model.Cuestionario
 import com.example.quizec.data.model.Rol
+import com.example.quizec.utils.LocationUtils
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.tasks.CancellationTokenSource
@@ -232,7 +233,7 @@ fun SelectCuestionarioScreen(
                                     // Paso 2: Si la actualización del rol es exitosa, obtener la ubicación actual
                                     if (locationPermissionGranted) {
                                         // Obtener la ubicación más reciente
-                                        fetchLocation(fusedLocationClient) { location ->
+                                        LocationUtils.fetchLocation(fusedLocationClient) { location ->
                                             // Imprimir el log solo si la ubicación se obtiene correctamente
                                             Log.d("Geolocalización", "Ubicación actual: $location")
 
