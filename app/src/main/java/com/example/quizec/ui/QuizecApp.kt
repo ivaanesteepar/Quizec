@@ -119,8 +119,7 @@ fun QuizecApp() {
                 SelectCuestionarioScreen(
                     navController,
                     quizViewModel,
-                    questionsViewModel = viewModel(),
-                    context = navController.context
+                    questionsViewModel = viewModel()
                 )
             }
             composable("editPregunta/{preguntaId}") { backStackEntry ->
