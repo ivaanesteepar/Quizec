@@ -15,7 +15,6 @@ import com.example.quizec.data.model.Pregunta
 import com.example.quizec.data.model.TipoPregunta
 import com.example.quizec.data.model.Usuario
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -84,14 +83,15 @@ class QuizViewModel : ViewModel() {
                 .await()  // Esperar la respuesta de Firestore
 
             // Imprimir el snapshot para depuración
-            println("Cuestionario snapshot: $cuestionarioSnapshot")
+            Log.d("QuizViewModel", "Cuestionario snapshot: $cuestionarioSnapshot")
 
             if (!cuestionarioSnapshot.isEmpty) {
+                // Verificar que se obtienen documentos
                 val cuestionario = cuestionarioSnapshot.documents[0]
                 val immediateAccess = cuestionario.getBoolean("immediateAccess")
 
                 // Imprimir el valor de immediateAccess
-                println("Valor de immediateAccess: $immediateAccess")
+                Log.d("QuizViewModel", "Valor de immediateAccess: $immediateAccess")
 
                 immediateAccess  // Devolver el valor de immediateAccess (true o false)
             } else {
@@ -103,6 +103,7 @@ class QuizViewModel : ViewModel() {
             null  // En caso de error, devolver null
         }
     }
+
 
 
 
@@ -284,12 +285,17 @@ class QuizViewModel : ViewModel() {
                                             titulo = cuestionarioData?.get("titulo") as? String ?: "Sin título",
                                             descripcion = cuestionarioData?.get("descripcion") as? String ?: "",
                                             creadorId = cuestionarioData?.get("creadorId") as? String ?: "",
-                                            imagen = cuestionarioData?.get("imagen") as? String,
+                                            imagen = cuestionarioData?.get("imagen") as? String, // Deja que sea nulo si no está presente
                                             preguntas = preguntas, // Asignamos las preguntas recuperadas
                                             immediateAccess = cuestionarioData?.get("immediateAccess") as? Boolean ?: false,
                                             locationRestricted = cuestionarioData?.get("locationRestricted") as? Boolean ?: false,
-                                            immediateResults = cuestionarioData?.get("immediateResults") as? Boolean ?: false
+                                            immediateResults = cuestionarioData?.get("immediateResults") as? Boolean ?: false,
+                                            latitude = (cuestionarioData?.get("latitude") as? String)?.toDoubleOrNull() ?: 0.0,
+                                            longitude = (cuestionarioData?.get("longitude") as? String)?.toDoubleOrNull() ?: 0.0,
+                                            // Conversión de radio a Double (si es necesario)
+                                            radio = (cuestionarioData?.get("radio") as? String)?.toDoubleOrNull() ?: 0.0 // Valor por defecto en caso de error
                                         )
+
 
                                         // Añadir el cuestionario a la lista
                                         cuestionarios.add(cuestionario)
@@ -313,14 +319,84 @@ class QuizViewModel : ViewModel() {
         }
     }
 
+    fun actualizarCoordenadasCuestionario(
+        codigoQuiz: String,
+        nuevaLatitud: Double?,
+        nuevaLongitud: Double?,
+        onComplete: (String?) -> Unit // Callback para manejar el resultado
+    ) {
+        if (nuevaLatitud == null || nuevaLongitud == null) {
+            onComplete("La ubicación no es válida.")
+            return
+        }
+        val db = FirebaseFirestore.getInstance()
+        // Realizamos una consulta para encontrar el cuestionario cuyo campo "id" sea igual a "codigoQuiz"
+        db.collection("cuestionarios")
+            .whereEqualTo("id", codigoQuiz)  // Filtro por el campo "id"
+            .get()
+            .addOnSuccessListener { querySnapshot ->
+                if (querySnapshot.isEmpty) {
+                    // Si no se encontró ningún documento con ese id
+                    onComplete("No se encontró el cuestionario con el id especificado.")
+                    return@addOnSuccessListener
+                }
+
+                // Obtener el primer documento de la consulta
+                val cuestionarioDoc = querySnapshot.documents.first()
+
+                // Referencia al documento que vamos a actualizar
+                val cuestionarioRef = cuestionarioDoc.reference
+
+                // Datos a actualizar
+                val updatedData = mapOf(
+                    "latitud" to nuevaLatitud,
+                    "longitud" to nuevaLongitud
+                )
+
+                // Llamar a `update` para actualizar las coordenadas
+                cuestionarioRef.update(updatedData)
+                    .addOnSuccessListener {
+                        onComplete(null) // No hubo error, la actualización fue exitosa
+                    }
+                    .addOnFailureListener { e ->
+                        onComplete("Error al actualizar las coordenadas: ${e.message}")
+                    }
+            }
+            .addOnFailureListener { e ->
+                onComplete("Error al realizar la consulta: ${e.message}")
+            }
+    }
 
 
+    // Función para obtener los datos del quiz desde Firestore (latitud, longitud y radio)
+    suspend fun obtenerDatosDelQuiz(codigoQuiz: String): Triple<Double, Double, Float>? {
+        try {
+            // Hacemos la consulta para obtener el documento del quiz con el código indicado
+            val quizQuerySnapshot = firestore.collection("cuestionarios")
+                .whereEqualTo("id", codigoQuiz)
+                .get()
+                .await() // Esperamos el resultado de la consulta asincrónica
 
+            // Verificamos si encontramos algún documento que coincida con el código del quiz
+            if (!quizQuerySnapshot.isEmpty) {
+                val quizDoc = quizQuerySnapshot.documents.first() // Obtenemos el primer (y único) documento
 
+                // Obtenemos la latitud, longitud y radio del documento
+                val latitude = quizDoc.getDouble("latitud") ?: return null
+                val longitude = quizDoc.getDouble("longitud") ?: return null
+                val radius = quizDoc.getDouble("radio")?.toFloat() ?: return null
 
+                // Retornamos los datos en un Triple (latitud, longitud, radio)
+                return Triple(latitude, longitude, radius)
+            }
 
-
-
+            return null // Si no se encuentra ningún documento con el código de quiz
+        } catch (e: Exception) {
+            // Manejo de errores si hay un problema al obtener los datos
+            Log.e("FirebaseError", "Error al obtener datos del quiz: ${e.message}")
+            return null
+        }
+    }
 
 
 

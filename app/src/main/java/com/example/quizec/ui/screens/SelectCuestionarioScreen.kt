@@ -1,11 +1,16 @@
 package com.example.quizec.ui.screens
 
+import android.Manifest
+import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.content.ContentResolver
 import android.content.Context
+import android.content.pm.PackageManager
 import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -22,8 +27,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.navigation.NavHostController
 import com.example.quizec.ui.viewmodel.QuizViewModel
 import com.example.quizec.ui.viewmodel.QuestionsViewModel
@@ -31,6 +38,9 @@ import com.google.firebase.auth.FirebaseAuth
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.quizec.data.model.Cuestionario
 import com.example.quizec.data.model.Rol
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.tasks.CancellationTokenSource
 import com.google.firebase.firestore.FirebaseFirestore
 
 @Composable
@@ -47,11 +57,50 @@ fun SelectCuestionarioScreen(
     var showDeleteConfirmationDialog by remember { mutableStateOf(false) }
     var cuestionarioToDelete by remember { mutableStateOf<Cuestionario?>(null) }
 
+    val fusedLocationClient = LocationServices.getFusedLocationProviderClient(LocalContext.current)
+    var latitudActual by remember { mutableStateOf<Double?>(null) }
+    var longitudActual by remember { mutableStateOf<Double?>(null) }
+    var locationPermissionGranted by remember { mutableStateOf(false) }
+    var locationCancellationTokenSource by remember { mutableStateOf<CancellationTokenSource?>(null) }
+
+    // Solicitar permisos de ubicación
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        locationPermissionGranted = isGranted
+    }
+
+    // Solicitar permisos al inicio
+    LaunchedEffect(Unit) {
+        val hasPermission = ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+
+        if (!hasPermission) {
+            launcher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+        } else {
+            locationPermissionGranted = true
+        }
+    }
+
     // Cargar los cuestionarios y sus imágenes desde la base de datos cuando la pantalla se muestra
     LaunchedEffect(userId) {
         userId?.let {
             quizViewModel.cargarImagenesCuestionariosUsuario(it) // Cargar las imágenes de los cuestionarios del usuario desde la base de datos
             questionsViewModel.cargarCuestionariosUsuario(it) // Cargar los cuestionarios
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+            if (location != null) {
+                latitudActual = location.latitude
+                longitudActual = location.longitude
+                Log.d("Location", "Latitud: $latitudActual, Longitud: $longitudActual")
+            } else {
+                Log.e("Location", "No se pudo obtener la ubicación actual.")
+            }
         }
     }
 
@@ -175,24 +224,54 @@ fun SelectCuestionarioScreen(
                     val selectedCuestionarioId = questionsViewModel.selectedCuestionario
                     if (selectedCuestionarioId != null) {
                         if (userId != null) {
-                            // Llamada a la función actualizarRolUsuario de QuizViewModel
+                            // Paso 1: Actualizar el rol del usuario
                             quizViewModel.actualizarRolUsuario(
                                 nuevoRol = Rol.CREADOR.toString()
                             ) { errorMessage ->
                                 if (errorMessage == null) {
-                                    navController.navigate("waiting_screen/$selectedCuestionarioId")
+                                    // Paso 2: Si la actualización del rol es exitosa, obtener la ubicación actual
+                                    if (locationPermissionGranted) {
+                                        // Obtener la ubicación más reciente
+                                        fetchLocation(fusedLocationClient) { location ->
+                                            // Imprimir el log solo si la ubicación se obtiene correctamente
+                                            Log.d("Geolocalización", "Ubicación actual: $location")
+
+                                            // Paso 3: Actualizar las coordenadas del cuestionario en Firebase
+                                            quizViewModel.actualizarCoordenadasCuestionario(
+                                                selectedCuestionarioId,
+                                                latitudActual,
+                                                longitudActual
+                                            ) { updateError ->
+                                                if (updateError == null) {
+                                                    // Si no hubo error en la actualización de coordenadas
+                                                    Log.d("SelectCuestionario", "Coordenadas actualizadas con éxito.")
+                                                    // Paso 4: Navegar a la waiting room
+                                                    navController.navigate("waiting_screen/$selectedCuestionarioId")
+                                                } else {
+                                                    // Manejo de error en la actualización de coordenadas
+                                                    Log.e("SelectCuestionario", "Error al actualizar las coordenadas: $updateError")
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        Log.e("Permisos", "Permisos de ubicación no concedidos.")
+                                    }
                                 } else {
-                                    // Manejo de error
+                                    // Manejo de error al actualizar el rol
                                     Log.e("SelectCuestionario", "Error al actualizar el rol: $errorMessage")
                                 }
                             }
                         }
                     }
                 },
-                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp)
             ) {
                 Text(text = "Continuar")
             }
+
+
 
             // Botón de "Volver"
             Button(
@@ -249,6 +328,27 @@ fun loadImageFromUri(context: Context, imageUri: String): Bitmap? {
     } catch (e: Exception) {
         e.printStackTrace()
         null
+    }
+}
+
+@SuppressLint("MissingPermission")
+private fun fetchLocation(
+    fusedLocationClient: FusedLocationProviderClient,
+    onLocationFetched: (String) -> Unit
+) {
+    val cancellationTokenSource = CancellationTokenSource()
+    fusedLocationClient.getCurrentLocation(
+        com.google.android.gms.location.Priority.PRIORITY_HIGH_ACCURACY, // Usar el nuevo valor constante
+        cancellationTokenSource.token
+    ).addOnSuccessListener { location ->
+        if (location != null) {
+            val locationString = "Lat: ${location.latitude}, Lng: ${location.longitude}"
+            onLocationFetched(locationString)
+        } else {
+            Log.e("Geolocalización", "Ubicación no disponible.")
+        }
+    }.addOnFailureListener { exception ->
+        Log.e("Geolocalización", "Error obteniendo la ubicación: ${exception.message}")
     }
 }
 
