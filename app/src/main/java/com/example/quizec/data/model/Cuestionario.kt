@@ -1,3 +1,4 @@
+
 package com.example.quizec.data.model
 
 // Clase que representa un cuestionario

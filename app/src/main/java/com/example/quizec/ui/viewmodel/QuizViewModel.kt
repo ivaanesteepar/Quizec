@@ -1,3 +1,4 @@
+
 package com.example.quizec.ui.viewmodel
 
 import android.net.Uri
@@ -61,104 +62,70 @@ class QuizViewModel : ViewModel() {
     private val _usuariosTiempo = mutableStateOf<Map<String, Int>>(emptyMap())
     val usuariosTiempo: State<Map<String, Int>> get() = _usuariosTiempo
 
-
     private val _remainingTime = mutableStateOf(60) // Tiempo restante para la pregunta
     val remainingTime: State<Int> = _remainingTime // Exponer el tiempo restante como un estado observable
+
+    // MutableState para almacenar el valor de immediateAccess
+    private val _immediateAccess = mutableStateOf(false)  // Iniciar en false
+    val immediateAccess: State<Boolean> = _immediateAccess
 
 
     init {
         obtenerRolUsuario()
     }
 
+    suspend fun obtenerImmediateAccess(codigoQuiz: String): Boolean? {
+        val db = FirebaseFirestore.getInstance()
 
-    suspend fun obtenerCuestionarioPorCodigo(codigoQuiz: String, userId: String) {
-        try {
-            // Buscar el cuestionario en la colección "cuestionarios" por su código
-            val cuestionariosQuery = firestore.collection("cuestionarios")
-                .whereEqualTo("id", codigoQuiz)
+        return try {
+            val cuestionarioSnapshot = db.collection("cuestionarios")
+                .whereEqualTo("id", codigoQuiz)  // Filtrar por el campo "id"
+                .get()
+                .await()  // Esperar la respuesta de Firestore
 
-            // Obtener los documentos del cuestionario
-            val documentos = cuestionariosQuery.get().await()
+            // Imprimir el snapshot para depuración
+            println("Cuestionario snapshot: $cuestionarioSnapshot")
 
-            if (documentos.isEmpty) {
-                Log.e("QuizViewModel", "No se encontró ningún cuestionario con el código $codigoQuiz.")
+            if (!cuestionarioSnapshot.isEmpty) {
+                val cuestionario = cuestionarioSnapshot.documents[0]
+                val immediateAccess = cuestionario.getBoolean("immediateAccess")
+
+                // Imprimir el valor de immediateAccess
+                println("Valor de immediateAccess: $immediateAccess")
+
+                immediateAccess  // Devolver el valor de immediateAccess (true o false)
             } else {
-                // Suponemos que solo hay un documento con ese 'id', por lo que obtenemos el primer documento
-                val documento = documentos.documents.first()
-
-                // Obtener los datos del cuestionario
-                val cuestionarioData = documento.data ?: emptyMap<String, Any>()
-
-                // Mapeo de las preguntas desde Firestore
-                val preguntasData = (cuestionarioData["preguntas"] as? List<Map<String, Any>>) ?: emptyList()
-
-                // Convertir cada pregunta en un objeto Pregunta
-                val preguntas = preguntasData.map { preguntaData ->
-                    val id = preguntaData["id"] as? String ?: ""
-                    val titulo = preguntaData["titulo"] as? String ?: ""
-                    val tipo = (preguntaData["tipo"] as? String)?.let { TipoPregunta.valueOf(it) } ?: TipoPregunta.VERDADERO_FALSO
-                    val opciones = (preguntaData["opciones"] as? List<String>) ?: emptyList()
-                    val imagen = preguntaData["imagen"] as? String
-                    val respuestasCorrectas = (preguntaData["respuestasCorrectas"] as? List<String>) ?: emptyList()
-                    val emparejamientos = (preguntaData["emparejamientos"] as? List<Map<String, String>>) ?: emptyList()
-                    val itemsOrdenados = (preguntaData["itemsOrdenados"] as? List<String>) ?: emptyList()
-                    val fraseCompletar = preguntaData["fraseCompletar"] as? String ?: ""
-                    val opcionCorrecta = preguntaData["opcionCorrecta"] as? String ?: ""
-                    val conceptosYDefiniciones = (preguntaData["conceptosYDefiniciones"] as? List<Map<String, String>>) ?: emptyList()
-                    val user_id = preguntaData["user_id"] as? String
-                    val isSelected = preguntaData["isSelected"] as? Boolean ?: false
-                    val opcionesCorrectasCompletarPalabras = preguntaData["opcionesCorrectasCompletarPalabras"] as? List<String> ?: emptyList()
-                    val leftItems = preguntaData["leftItems"] as? List<String> ?: emptyList()
-                    val rightItems = preguntaData["rightItems"] as? List<String> ?: emptyList()
-
-                    // Crear y devolver el objeto Pregunta
-                    Pregunta(
-                        id = id,
-                        titulo = titulo,
-                        tipo = tipo,
-                        opciones = opciones,
-                        imagen = imagen,
-                        respuestasCorrectas = respuestasCorrectas,
-                        emparejamientos = emparejamientos,
-                        itemsOrdenados = itemsOrdenados,
-                        fraseCompletar = fraseCompletar,
-                        opcionCorrecta = opcionCorrecta,
-                        conceptosYDefiniciones = conceptosYDefiniciones,
-                        user_id = user_id,
-                        isSelected = isSelected,
-                        opcionesCorrectasCompletarPalabras = opcionesCorrectasCompletarPalabras,
-                        leftItems = leftItems,
-                        rightItems = rightItems
-                    )
-                }
-
-                // Crear el objeto Cuestionario con las preguntas mapeadas
-                val cuestionario = Cuestionario(
-                    id = documento.id,
-                    titulo = cuestionarioData["titulo"] as? String ?: "",
-                    descripcion = cuestionarioData["descripcion"] as? String ?: "",
-                    creadorId = cuestionarioData["creadorId"] as? String ?: "",
-                    imagen = cuestionarioData["imagen"] as? String,
-                    preguntas = preguntas, // Asignar la lista de preguntas obtenidas
-                    immediateAccess = cuestionarioData["immediateAccess"] as? Boolean ?: false,
-                    locationRestricted = cuestionarioData["locationRestricted"] as? Boolean ?: false,
-                    immediateResults = cuestionarioData["immediateResults"] as? Boolean ?: false
-                )
-
-                // Crear un historialData con la información del cuestionario
-                val historialData = mapOf(
-                    "codigoQuiz" to cuestionario.id,
-                    "titulo" to cuestionario.titulo,
-                    "descripcion" to cuestionario.descripcion,
-                    "preguntas" to cuestionario.preguntas
-                )
-
-                // Guardar el cuestionario en el historial del usuario con su códigoQuiz
-                guardarCuestionarioEnHistorial(userId, codigoQuiz)
+                Log.d("QuizViewModel", "No se encontró el cuestionario con el código: $codigoQuiz")
+                null
             }
         } catch (e: Exception) {
-            Log.e("QuizViewModel", "Error al obtener el cuestionario de Firestore: ${e.message}")
+            Log.e("QuizViewModel", "Error al obtener el cuestionario: ${e.localizedMessage}")
+            null  // En caso de error, devolver null
         }
+    }
+
+
+
+
+    // Esta función obtiene el título del cuestionario por su código (codigoQuiz)
+    fun obtenerTitulo(codigoQuiz: String, onResult: (String?) -> Unit) {
+        firestore.collection("cuestionarios") // Suponiendo que tienes una colección llamada "cuestionarios"
+            .whereEqualTo("id", codigoQuiz) // Buscamos por el campo 'id' que debe coincidir con 'codigoQuiz'
+            .get()
+            .addOnSuccessListener { querySnapshot ->
+                if (!querySnapshot.isEmpty) {
+                    // Si se encuentra un documento que cumple con la condición
+                    val document = querySnapshot.documents.first()
+                    val titulo = document.getString("titulo") // Obtenemos el campo 'titulo' del documento
+                    onResult(titulo) // Llamamos al callback con el título encontrado
+                } else {
+                    onResult(null) // Si no se encuentra ningún documento, retornamos null
+                }
+            }
+            .addOnFailureListener { exception ->
+                Log.e("QuizViewModel", "Error al obtener el título: ", exception)
+                onResult(null) // Si hay un error en la consulta, retornamos null
+            }
     }
 
     // Función para obtener el nombre del usuario actual

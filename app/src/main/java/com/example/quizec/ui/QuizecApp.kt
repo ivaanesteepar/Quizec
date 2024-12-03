@@ -1,5 +1,7 @@
 package com.example.quizec.ui
 
+import android.content.Context
+import android.location.LocationManager
 import android.util.Log
 import com.example.quizec.ui.screens.SelectCuestionarioScreen
 import com.example.quizec.ui.screens.CreateQuestionsScreen
@@ -14,6 +16,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -22,6 +25,7 @@ import com.example.quizec.ui.screens.JoinQuizScreen
 import com.example.quizec.ui.screens.RegisterScreen
 import com.example.quizec.ui.viewmodel.QuizViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.listacontactos.utils.location.LocationManagerHandler
 import com.example.quizec.data.model.Pregunta
 import com.example.quizec.ui.screens.SelectQuestionsScreen
 import com.example.quizec.ui.screens.UserQuizzesScreen
@@ -74,9 +78,14 @@ fun QuizecApp() {
             }
 
             composable("createQuiz") {
-                // Pasa el ViewModel a CreateQuizScreen
-                CreateQuizScreen(navController, quizViewModel)
+                // Obtener la instancia de LocationManager (asegúrate de que el contexto esté disponible)
+                val locationManager = LocalContext.current.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+                // Crear una instancia de LocationManagerHandler
+                val locationManagerHandler = LocationManagerHandler(locationManager)
+                // Pasa el ViewModel y el LocationManagerHandler a CreateQuizScreen
+                CreateQuizScreen(navController, quizViewModel, locationManagerHandler)
             }
+
             composable("joinQuiz") {
                 JoinQuizScreen(navController, quizViewModel)  // Pantalla para unirse a un quiz
             }

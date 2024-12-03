@@ -4,8 +4,10 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -53,6 +55,7 @@ fun LoginScreen(navController: NavHostController) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
                 .padding(16.dp)
                 .background(Color.Black.copy(alpha = 0.6f)), // Pantalla oscura
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -199,7 +202,7 @@ private fun loginUser(
 
                                 // Actualizar el rol del usuario en la base de datos (si es necesario)
                                 db.collection("users").document(auth.currentUser!!.uid)
-                                    .update("rol", Rol.PARTICIPANTE.name)
+                                    .update("rol", Rol.PARTICIPANTE)
                                     .addOnFailureListener { e ->
                                         // Puedes manejar un posible error al actualizar el rol
                                         onError("Error al actualizar el rol: ${e.message}")

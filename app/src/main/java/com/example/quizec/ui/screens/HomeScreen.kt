@@ -11,7 +11,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.quizec.R
 import com.google.firebase.auth.FirebaseAuth
@@ -65,6 +68,16 @@ fun HomeScreen(navController: NavHostController) {
             verticalArrangement = Arrangement.Center,
             modifier = Modifier.padding(16.dp)
         ) {
+            // Imagen del título QUIZEC
+            Image(
+                painter = painterResource(id = R.drawable.quizec_title),
+                contentDescription = "QUIZEC Title",
+                modifier = Modifier
+                    .fillMaxWidth(0.8f)
+                    .height(100.dp) // Puedes ajustar la altura según sea necesario
+                    .padding(bottom = 16.dp),
+                contentScale = ContentScale.Fit
+            )
             if (isLoading) {
                 // Si aún estamos cargando, mostrar un mensaje de carga
                 Text(

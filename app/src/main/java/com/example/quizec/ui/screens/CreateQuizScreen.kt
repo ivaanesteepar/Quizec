@@ -1,5 +1,6 @@
 package com.example.quizec.ui.screens
 
+import android.location.Location
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -23,6 +24,7 @@ import android.util.Log
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
+import com.example.listacontactos.utils.location.LocationManagerHandler
 import com.example.quizec.data.model.Cuestionario
 import com.example.quizec.data.model.Rol
 import com.example.quizec.ui.viewmodel.QuizViewModel
@@ -31,7 +33,11 @@ import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
 
 @Composable
-fun CreateQuizScreen(navController: NavHostController, quizViewModel: QuizViewModel) {
+fun CreateQuizScreen(
+    navController: NavHostController,
+    quizViewModel: QuizViewModel,
+    locationManagerHandler: LocationManagerHandler
+) {
     var titulo by rememberSaveable { mutableStateOf("") }
     var descripcion by rememberSaveable { mutableStateOf("") }
     var imageUri by rememberSaveable { mutableStateOf<Uri?>(null) }
@@ -44,6 +50,9 @@ fun CreateQuizScreen(navController: NavHostController, quizViewModel: QuizViewMo
     var immediateAccess by remember { mutableStateOf(false) }
     var locationRestricted by remember { mutableStateOf(false) }
     var immediateResults by remember { mutableStateOf(false) }
+
+    // Estado para la ubicación
+    var currentLocation by remember { mutableStateOf<Location?>(null) }
 
 
     // Si ya se ha creado el cuesitonario, se resetean los valores de creación
@@ -58,7 +67,6 @@ fun CreateQuizScreen(navController: NavHostController, quizViewModel: QuizViewMo
         descripcionError = false
     }
 
-
     // Launcher for picking an image
     val pickImageLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
@@ -71,6 +79,26 @@ fun CreateQuizScreen(navController: NavHostController, quizViewModel: QuizViewMo
             Log.d("CreateQuizScreen", "No se seleccionó ninguna imagen.")
         }
     }
+
+    // Manejar el cambio de ubicación
+    DisposableEffect(locationRestricted) {
+        val locationListener = { location: Location ->
+            currentLocation = location
+        }
+
+        locationManagerHandler.onLocation = locationListener
+
+        if (locationRestricted) {
+            locationManagerHandler.startLocationUpdates()
+        } else {
+            locationManagerHandler.stopLocationUpdates()
+        }
+
+        onDispose {
+            locationManagerHandler.stopLocationUpdates()
+        }
+    }
+
 
     Column(
         modifier = Modifier
@@ -212,9 +240,13 @@ fun CreateQuizScreen(navController: NavHostController, quizViewModel: QuizViewMo
                 )
                 Switch(
                     checked = immediateAccess,
-                    onCheckedChange = { immediateAccess = it },
-                    modifier = Modifier.padding(start = 8.dp) // Añadir espacio entre el texto y el switch
+                    onCheckedChange = { newValue ->
+                        immediateAccess = newValue // Cambia el valor de immediateAccess según la acción del usuario
+                        println("El valor de immediateAccess es: $immediateAccess")
+                    },
+                    modifier = Modifier.padding(start = 8.dp)
                 )
+
             }
 
             Spacer(modifier = Modifier.height(12.dp)) // Más espacio entre los elementos
@@ -229,8 +261,13 @@ fun CreateQuizScreen(navController: NavHostController, quizViewModel: QuizViewMo
                     style = MaterialTheme.typography.bodyLarge
                 )
                 Switch(
-                    checked = locationRestricted,
-                    onCheckedChange = { locationRestricted = it },
+                    checked = locationRestricted,  // El estado actual del switch depende de locationRestricted
+                    onCheckedChange = { newValue ->  // Cuando el usuario cambia el estado del switch
+                        locationRestricted = newValue  // Se actualiza locationRestricted con el nuevo valor de newValue
+
+                        // Imprimir el nuevo valor de locationRestricted
+                        println("El valor de locationRestricted es: $locationRestricted")
+                    },
                     modifier = Modifier.padding(start = 8.dp)
                 )
             }
@@ -247,14 +284,27 @@ fun CreateQuizScreen(navController: NavHostController, quizViewModel: QuizViewMo
                     style = MaterialTheme.typography.bodyLarge
                 )
                 Switch(
-                    checked = immediateResults,
-                    onCheckedChange = { immediateResults = it },
+                    checked = immediateResults,  // El estado actual del switch depende de immediateResults
+                    onCheckedChange = { newValue ->  // Cuando el usuario cambia el estado del switch
+                        immediateResults = newValue  // Se actualiza immediateResults con el nuevo valor de newValue
+
+                        // Imprimir el nuevo valor de immediateResults
+                        println("El valor de immediateResults es: $immediateResults")
+                    },
                     modifier = Modifier.padding(start = 8.dp)
                 )
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
+
+        // Mostrar la ubicación actual
+        currentLocation?.let { location ->
+            Text(
+                text = "Ubicación actual: Lat ${location.latitude}, Long ${location.longitude}",
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
 
         Button(
             onClick = {
@@ -338,7 +388,7 @@ private fun crearCuestionario(
                 immediateResults = immediateResults  // Nuevo parámetro
             )
 
-            Log.d("CreateQuizScreen", "URL firebase : ${imageUriString}")
+            Log.d("CreateQuizScreen", "URL firebase : $imageUriString")
             Log.d("CreateQuizScreen", "URL quizView : ${quizViewModel.imageUri.toString()}")
 
             // Guardar el cuestionario en Firestore
@@ -351,7 +401,7 @@ private fun crearCuestionario(
                     }
                     if (immediateAccess){
                         // ir al quiz
-                    }else {
+                    } else {
                         navController.navigate("waiting_screen/$quizCode")
                     }
                 }

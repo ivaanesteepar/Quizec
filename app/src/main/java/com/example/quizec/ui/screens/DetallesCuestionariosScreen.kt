@@ -17,11 +17,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.navigation.NavHostController
 import com.example.quizec.data.model.Pregunta
 import com.example.quizec.ui.viewmodel.QuestionsViewModel
+import com.example.quizec.ui.viewmodel.QuizViewModel
 import java.util.*
 
 @Composable
@@ -36,10 +35,23 @@ fun DetalleCuestionarioScreen(
     val errorMessage = remember { mutableStateOf<String?>(null) }
     val showDialog = remember { mutableStateOf(false) }
     val selectedPregunta = remember { mutableStateOf<Pregunta?>(null) }
+    // Estado para el título del cuestionario
+    val cuestionarioTitulo = remember { mutableStateOf<String>("") }
+    val quizViewModel = QuizViewModel()
 
     // Cargar las preguntas cuando se entra en la pantalla
     LaunchedEffect(codigoQuiz) {
         try {
+            // Obtener el título del cuestionario
+            quizViewModel.obtenerTitulo(codigoQuiz) { titulo ->
+                if (titulo != null) {
+                    cuestionarioTitulo.value = titulo
+                } else {
+                    cuestionarioTitulo.value = "Título no disponible"
+                }
+            }
+
+            // Cargar las preguntas del cuestionario
             val preguntas = questionsViewModel.cargarPreguntasCuestionario(codigoQuiz)
             preguntasState.value = preguntas
             loading.value = false
@@ -67,7 +79,7 @@ fun DetalleCuestionarioScreen(
                 Box(
                     modifier = Modifier
                         .align(Alignment.Start)
-                        .padding(16.dp)
+                        .padding(8.dp)
                         .size(48.dp) // Tamaño del círculo
                         .clip(CircleShape) // Hace que el botón sea circular
                         .background(Color.Gray) // Color de fondo del círculo
@@ -84,7 +96,7 @@ fun DetalleCuestionarioScreen(
                 }
 
                 Text(
-                    text = "Cuestionario: ${codigoQuiz}",
+                    text = "Cuestionario: ${cuestionarioTitulo.value}",
                     style = MaterialTheme.typography.headlineLarge,
                     modifier = Modifier.padding(bottom = 16.dp)
                 )

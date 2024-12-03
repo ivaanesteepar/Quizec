@@ -41,21 +41,28 @@ fun WaitingScreen(navController: NavHostController, codigoQuiz: String?, usersVi
     ) {
         // Título de jugadores en espera
         Text(
-            text = "Jugadores en espera:",
+            text = "Esperando jugadores",
             style = MaterialTheme.typography.headlineMedium
+        )
+        // Indicador de progreso circular animado
+        CircularProgressIndicator(
+            modifier = Modifier.size(24.dp),
+            color = Color.Gray,
+            strokeWidth = 2.dp
         )
 
         LazyColumn(
             modifier = Modifier
+                .width(250.dp)
                 .height(250.dp) // Ajustar el tamaño de la lista para que no ocupe demasiado espacio
-                .fillMaxWidth()
                 .border(width = 2.dp, color = Color(0xFF800080)), // Borde morado
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             items(usuariosEnEspera) { nombre ->
                 Text(
                     text = nombre,
-                    style = MaterialTheme.typography.bodyLarge
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.padding(top = if (usuariosEnEspera.indexOf(nombre) == 0) 8.dp else 0.dp)
                 )
             }
         }
