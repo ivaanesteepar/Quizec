@@ -305,12 +305,11 @@ fun CreateQuizScreen(
                     valid = false
                 }
 
-                // Intentamos convertir el valor de radio a Double
                 val radioValue = radio.toDoubleOrNull()
-                if (radioValue == null) {
-                    errorMessage = "Por favor, ingrese un valor válido para el radio."
-                    valid = false
-                }
+//                if (radioValue == null) { //HACER ESTO SOLO SI ESTÁ ACTIVADA LA OPCIÓN DE RADIO!!!!!!!
+//                    errorMessage = "Por favor, ingrese un valor válido para el radio."
+//                    valid = false
+//                }
 
                 if (!valid) {
                     errorMessage = "Por favor, complete todos los campos requeridos."  // Mostrar el mensaje de error
