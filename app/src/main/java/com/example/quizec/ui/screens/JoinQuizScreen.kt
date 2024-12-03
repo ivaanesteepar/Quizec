@@ -13,63 +13,68 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import com.example.quizec.data.model.Rol
 import com.example.quizec.ui.viewmodel.QuizViewModel
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.launch
 
 @Composable
 fun JoinQuizScreen(navController: NavHostController, quizViewModel: QuizViewModel) {
     var codigoQuiz by remember { mutableStateOf("") }  // Estado para almacenar el código del quiz
     var errorMessage by remember { mutableStateOf("") }  // Mensaje de error si el código es vacío
+    var loading by remember { mutableStateOf(false) }  // Estado para manejar la carga de la verificación
 
-    // Obtener el nombre del jugador desde Firebase Authentication
-    val auth = FirebaseAuth.getInstance()
-    val nombreJugador = auth.currentUser?.displayName ?: "Jugador Anónimo"  // Si no hay nombre, mostrar "Jugador Anónimo"
+    // Usamos un scope para las funciones suspendidas en composables
+    val coroutineScope = rememberCoroutineScope()
 
-    // Observamos el estado del mensaje de error desde el ViewModel
-    val errorState by quizViewModel.errorMessage.collectAsState()
-
+    // Función para unirse al quiz
     fun unirseAlQuiz() {
         if (codigoQuiz.isEmpty()) {
             errorMessage = "Por favor, ingrese el código del quiz."
         } else {
-            quizViewModel.verificarCodigoQuiz(codigoQuiz) { esValido ->
-                if (esValido) {
-                    // Actualizar el rol del usuario a PARTICIPANTE en Firestore
-                    quizViewModel.actualizarRolUsuario("PARTICIPANTE") {
-                        if (it == null) {
-                            // Si se actualiza el rol correctamente, navegar a la pantalla de espera
-                            navController.navigate("waiting_screen/$codigoQuiz")
-                        } else {
-                            // Mostrar un mensaje de error si falla la actualización
-                            errorMessage = "Error al unirse al quiz: ${it}"
-                        }
+            loading = true
+
+            // Usamos LaunchedEffect para ejecutar código suspendido en un Composable
+            coroutineScope.launch {
+                try {
+                    // Llamada a la función suspendida para obtener immediateAccess
+                    val immediateAccess = quizViewModel.obtenerImmediateAccess(codigoQuiz)
+                    loading = false
+                    println("immediateAccess: $immediateAccess")
+                    println("codigoQuiz: $codigoQuiz")
+
+                    if (immediateAccess == null) {
+                        errorMessage = "Error al verificar el acceso."
+                    } else if (immediateAccess == false) {
+                        // Si immediateAccess es false, navegar a la pantalla restringida
+                        navController.navigate("waiting_screen/$codigoQuiz")
+                    } else {
+                        // Si immediateAccess es true, navegar a la pantalla de espera
+                        navController.navigate("user_quiz/$codigoQuiz")
                     }
-                } else {
-                    errorMessage = "Código de quiz inválido o no encontrado."
+                } catch (e: Exception) {
+                    loading = false
+                    errorMessage = "Hubo un error al verificar el acceso."
                 }
             }
         }
     }
 
-
-    // Caja para centrar el contenido
     Box(
         modifier = Modifier
-            .fillMaxSize()  // Ocupa toda la pantalla
+            .fillMaxSize()
             .padding(16.dp)
-            .wrapContentSize(Alignment.Center)  // Centra el contenido dentro de la pantalla
+            .wrapContentSize(Alignment.Center)
     ) {
-        // Contenedor de Column con un diseño centrado
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .wrapContentHeight(),  // Asegura que la columna no se estire demasiado verticalmente
+                .wrapContentHeight(),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp)  // Reduce el espaciado entre los elementos (4dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text("Unirse a un Quiz", style = MaterialTheme.typography.titleLarge)
 
-            // Campo para ingresar el código del quiz
             Text("Código del Quiz", style = MaterialTheme.typography.bodyMedium)
             BasicTextField(
                 value = codigoQuiz,
@@ -81,32 +86,31 @@ fun JoinQuizScreen(navController: NavHostController, quizViewModel: QuizViewMode
                     .padding(12.dp)
             )
 
-            // Botón para unirse al quiz
             Button(
                 onClick = { unirseAlQuiz() },
-                modifier = Modifier.padding(bottom = 4.dp)  // Reducir el padding alrededor del botón
+                modifier = Modifier.padding(bottom = 4.dp)
             ) {
                 Text("Unirse al Quiz")
             }
 
-            // Mensaje de error si el código está vacío o el quiz no es válido
             if (errorMessage.isNotEmpty()) {
                 Text(text = errorMessage, color = Color.Red, modifier = Modifier.padding(top = 4.dp))
             }
 
-            // Botón para volver a la pantalla de inicio
+            if (loading) {
+                CircularProgressIndicator(modifier = Modifier.padding(top = 8.dp))
+            }
+
             Button(
-                onClick = {
-                    navController.navigate("home")  // Navegar a la pantalla de inicio
-                },
-                modifier = Modifier
-                    .padding(top = 1.dp)  // Reducir el padding alrededor del botón
+                onClick = { navController.navigate("home") },
+                modifier = Modifier.padding(top = 1.dp)
             ) {
                 Text("Volver", color = Color.White)
             }
         }
     }
 }
+
 
 
 

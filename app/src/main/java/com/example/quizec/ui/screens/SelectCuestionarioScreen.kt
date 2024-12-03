@@ -14,6 +14,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -40,6 +41,11 @@ fun SelectCuestionarioScreen(
     context: Context // Pasamos el contexto para usar ContentResolver
 ) {
     val userId = FirebaseAuth.getInstance().currentUser?.uid
+    // Estado de los cuestionarios
+    val cuestionariosState = questionsViewModel.cuestionariosState.collectAsState()
+    // Estado del diálogo de confirmación de eliminación
+    var showDeleteConfirmationDialog by remember { mutableStateOf(false) }
+    var cuestionarioToDelete by remember { mutableStateOf<Cuestionario?>(null) }
 
     // Cargar los cuestionarios y sus imágenes desde la base de datos cuando la pantalla se muestra
     LaunchedEffect(userId) {
@@ -49,140 +55,154 @@ fun SelectCuestionarioScreen(
         }
     }
 
-    // Estado de los cuestionarios
-    val cuestionariosState = questionsViewModel.cuestionariosState.collectAsState()
-
-    // Estado del diálogo de confirmación de eliminación
-    var showDeleteConfirmationDialog by remember { mutableStateOf(false) }
-    var cuestionarioToDelete by remember { mutableStateOf<Cuestionario?>(null) }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
+    Box(
+        modifier = Modifier.fillMaxSize()
     ) {
-        Text(
-            text = "SELECCIONE UN CUESTIONARIO",
-            style = MaterialTheme.typography.bodyMedium,
-            fontSize = 20.sp
-        )
+        if (cuestionariosState.value.isEmpty()) {
+            CircularProgressIndicator(modifier = Modifier.padding(16.dp)) // Indicador de carga
+        }
+        else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+            ) {
+                Text(
+                    text = "SELECCIONE UN CUESTIONARIO",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontSize = 20.sp
+                )
 
-        // Reducir el tamaño de la LazyColumn
-        LazyColumn(
-            modifier = Modifier
-                .padding(top = 26.dp)
-                .height(550.dp) // Limitar la altura de la LazyColumn para que quepan los botones debajo
-        ) {
-            items(cuestionariosState.value) { cuestionario ->
-                val isSelected = questionsViewModel.selectedCuestionario == cuestionario.id
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(vertical = 8.dp)
+                // LazyColumn para mostrar los cuestionarios
+                LazyColumn(
+                    modifier = Modifier
+                        .padding(top = 26.dp)
+                        .height(380.dp) // Esto hará que ocupe el espacio disponible
                 ) {
-                    // Mostrar checkbox para seleccionar el cuestionario
-                    Checkbox(
-                        checked = isSelected,
-                        onCheckedChange = {
-                            questionsViewModel.toggleCuestionarioSelection(cuestionario.id)
-                        },
-                        modifier = Modifier.size(20.dp)
-                    )
+                    items(cuestionariosState.value) { cuestionario ->
+                        val isSelected = questionsViewModel.selectedCuestionario == cuestionario.id
 
-                    // Mostrar título, ID y URL del cuestionario
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(start = 8.dp)
-                    ) {
-                        Text(
-                            text = cuestionario.titulo,
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                        Text(
-                            text = "ID: ${cuestionario.id}",
-                            style = MaterialTheme.typography.labelSmall
-                        )
-
-                        // Mostrar la URL de la imagen
-                        cuestionario.imagen?.let { imageUrl ->
-                            Text(
-                                text = "URL de la imagen: $imageUrl",
-                                style = MaterialTheme.typography.bodySmall,
-                                modifier = Modifier.padding(top = 4.dp)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        ) {
+                            // Mostrar checkbox para seleccionar el cuestionario
+                            Checkbox(
+                                checked = isSelected,
+                                onCheckedChange = {
+                                    questionsViewModel.toggleCuestionarioSelection(cuestionario.id)
+                                },
+                                modifier = Modifier.size(20.dp)
                             )
 
-                            // Cargar y mostrar la imagen desde URI
-                            val imageBitmap by remember(imageUrl) {
-                                mutableStateOf(loadImageFromUri(context, imageUrl))
+                            // Mostrar título, ID y URL del cuestionario
+                            Column(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(start = 8.dp)
+                            ) {
+                                Text(
+                                    text = cuestionario.titulo,
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                                Text(
+                                    text = "ID: ${cuestionario.id}",
+                                    style = MaterialTheme.typography.labelSmall
+                                )
+
+                                // Mostrar la URL de la imagen
+                                cuestionario.imagen?.let { imageUrl ->
+                                    Text(
+                                        text = "URL de la imagen: $imageUrl",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        modifier = Modifier.padding(top = 4.dp)
+                                    )
+
+                                    // Cargar y mostrar la imagen desde URI
+                                    val imageBitmap by remember(imageUrl) {
+                                        mutableStateOf(loadImageFromUri(context, imageUrl))
+                                    }
+
+                                    imageBitmap?.let { bitmap ->
+                                        Image(
+                                            bitmap = bitmap.asImageBitmap(),
+                                            contentDescription = "Imagen del cuestionario",
+                                            modifier = Modifier
+                                                .padding(top = 8.dp)
+                                                .size(100.dp)
+                                        )
+                                    }
+                                }
                             }
 
-                            imageBitmap?.let { bitmap ->
-                                Image(
-                                    bitmap = bitmap.asImageBitmap(),
-                                    contentDescription = "Imagen del cuestionario",
-                                    modifier = Modifier
-                                        .padding(top = 8.dp)
-                                        .size(100.dp)
-                                )
+                            // Botón de Edición
+                            Button(
+                                onClick = {
+                                    navController.navigate("editCuestionario/${cuestionario.id}")
+                                },
+                                modifier = Modifier.padding(start = 8.dp)
+                            ) {
+                                Text(text = "Editar")
+                            }
+
+                            // Botón de Eliminación
+                            Button(
+                                onClick = {
+                                    // Mostrar el diálogo de confirmación de eliminación
+                                    showDeleteConfirmationDialog = true
+                                    cuestionarioToDelete = cuestionario
+                                },
+                                modifier = Modifier.padding(start = 8.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                            ) {
+                                Text(text = "Eliminar")
                             }
                         }
-                    }
-
-                    // Botón de Edición
-                    Button(
-                        onClick = {
-                            navController.navigate("editCuestionario/${cuestionario.id}")
-                        },
-                        modifier = Modifier.padding(start = 8.dp)
-                    ) {
-                        Text(text = "Editar")
-                    }
-
-                    // Botón de Eliminación
-                    Button(
-                        onClick = {
-                            // Mostrar el diálogo de confirmación de eliminación
-                            showDeleteConfirmationDialog = true
-                            cuestionarioToDelete = cuestionario
-                        },
-                        modifier = Modifier.padding(start = 8.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                    ) {
-                        Text(text = "Eliminar")
                     }
                 }
             }
         }
 
-        // Botón de "Continuar"
-        Button(
-            onClick = {
-                val selectedCuestionarioId = questionsViewModel.selectedCuestionario
-                if (selectedCuestionarioId != null) {
-                    if (userId != null) {
-                        actualizarRolUsuario(userId, Rol.CREADOR)
+        // Los botones de "Continuar" y "Volver" se colocan en la parte inferior
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(16.dp)
+        ) {
+            // Botón de "Continuar"
+            Button(
+                onClick = {
+                    val selectedCuestionarioId = questionsViewModel.selectedCuestionario
+                    if (selectedCuestionarioId != null) {
+                        if (userId != null) {
+                            // Llamada a la función actualizarRolUsuario de QuizViewModel
+                            quizViewModel.actualizarRolUsuario(
+                                nuevoRol = Rol.CREADOR.toString()
+                            ) { errorMessage ->
+                                if (errorMessage == null) {
+                                    navController.navigate("waiting_screen/$selectedCuestionarioId")
+                                } else {
+                                    // Manejo de error
+                                    Log.e("SelectCuestionario", "Error al actualizar el rol: $errorMessage")
+                                }
+                            }
+                        }
                     }
-                    navController.navigate("waiting_screen/$selectedCuestionarioId")
-                }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 16.dp)
-        ) {
-            Text(text = "Continuar")
-        }
+                },
+                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+            ) {
+                Text(text = "Continuar")
+            }
 
-        // Botón de "Volver"
-        Button(
-            onClick = {
-                navController.popBackStack() // Navegar hacia atrás
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp)
-        ) {
-            Text(text = "Volver")
+            // Botón de "Volver"
+            Button(
+                onClick = {
+                    navController.popBackStack() // Navegar hacia atrás
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(text = "Volver")
+            }
         }
     }
 
@@ -218,20 +238,6 @@ fun SelectCuestionarioScreen(
     }
 }
 
-// Función para actualizar el rol del usuario en Firestore
-private fun actualizarRolUsuario(userUid: String, rol: Rol) {
-    val db = FirebaseFirestore.getInstance()
-    val usuarioRef = db.collection("users").document(userUid)
-
-    // Actualizar el campo 'rol' en Firestore
-    usuarioRef.update("rol", rol)
-        .addOnSuccessListener {
-            Log.d("CrearCuestionario", "Rol de usuario actualizado a '${rol.name}'.")
-        }
-        .addOnFailureListener { e ->
-            Log.w("CrearCuestionario", "Error al actualizar el rol del usuario", e)
-        }
-}
 
 // Función para cargar la imagen desde un URI usando ContentResolver
 fun loadImageFromUri(context: Context, imageUri: String): Bitmap? {

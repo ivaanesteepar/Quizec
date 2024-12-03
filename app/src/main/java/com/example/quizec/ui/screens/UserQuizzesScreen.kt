@@ -68,8 +68,6 @@ fun UserQuizzesScreen(
     val _remainingTime = quizViewModel.remainingTime // Obtenido desde el ViewModel
     val remainingTimeState: State<Int> = _remainingTime
 
-    //var chosenAnswers by remember { mutableStateOf(Any()) } //para poder mostrar las opciones mas elegidas
-
     LaunchedEffect(codigoQuiz) {
         if (codigoQuiz != null) {
             println("Usuario ha entrado con id: $userId al cuestionario: $codigoQuiz")

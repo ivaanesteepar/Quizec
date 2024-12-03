@@ -32,7 +32,7 @@ fun ResultsScreen(
     // ViewModel para historial
     val quizViewModel = remember { QuizViewModel() }
 
-    // Obtener el nombre del usuario autenticado
+    // Una vez entrado en esta pantalla, debe guardarse el cuestionario en el historial del usuario
     LaunchedEffect(userId) {
         if (userId.isNotEmpty()) {
             quizViewModel.obtenerNombreUsuario(userId) { nombre ->
@@ -41,37 +41,18 @@ fun ResultsScreen(
 
                 // Guardar el cuestionario en el historial después de obtener el nombre del usuario
                 if (codigoQuiz != null) {
-                    // Suponiendo que tienes el historialData en alguna variable (debes crearla o recuperarla)
-                    val historialData = mapOf(
-                        "codigoQuiz" to codigoQuiz,
-                        "resultado" to usuariosConRespuestas // O lo que sea que desees guardar
-                    )
                     quizViewModel.guardarCuestionarioEnHistorial(userId, codigoQuiz)
                 }
             }
         }
     }
 
-    // Escuchar datos del quiz
+    // Escuchar datos del quiz para los cambios de las respuestas correctas o si entra algun usuario nuevo
     LaunchedEffect(codigoQuiz) {
         if (codigoQuiz != null) {
             usersViewModel.escucharNombreYRespuestasCorrectas(codigoQuiz) { usuarios ->
                 setUsuariosConRespuestas(usuarios)
 
-            }
-        }
-    }
-
-    // Obtener el cuestionario completo
-    LaunchedEffect(codigoQuiz, userId) {
-        if (codigoQuiz != null) {
-            // Obtener el cuestionario y hacer println
-            quizViewModel.obtenerCuestionarioPorCodigo(codigoQuiz, userId)
-            val cuestionario = quizViewModel.cuestionario.value
-            if (cuestionario != null) {
-                println("Cuestionario: $cuestionario")
-            } else {
-                println("No se pudo obtener el cuestionario con el código: $codigoQuiz")
             }
         }
     }

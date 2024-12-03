@@ -66,7 +66,7 @@ fun HistorialScreen(navController: NavHostController, quizViewModel: QuizViewMod
                 // Título en la parte superior
                 Text(
                     text = "Historial de Cuestionarios",
-                    style = androidx.compose.material3.MaterialTheme.typography.headlineLarge,
+                    style = androidx.compose.material3.MaterialTheme.typography.headlineMedium,
                     modifier = Modifier.padding(bottom = 16.dp, top = 16.dp) // Espaciado debajo del título
                 )
 

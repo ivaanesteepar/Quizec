@@ -15,17 +15,32 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            Scaffold { padding -> //arreglar
+            Scaffold { padding ->
                 QuizecApp()
             }
         }
 
-
-
-        // Verificar permisos y solicitar los necesarios
-        if (ContextCompat.checkSelfPermission( // Verificar si se tienen los permisos para la cámara
+        // Permisos de localización
+        if (ContextCompat.checkSelfPermission(
                 this,
-                android.Manifest.permission.CAMERA // Permiso para la cámara
+                android.Manifest.permission.ACCESS_FINE_LOCATION // Permiso para ubicación precisa
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            askSinglePermissions.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
+        }
+
+        if (ContextCompat.checkSelfPermission(
+                this,
+                android.Manifest.permission.ACCESS_COARSE_LOCATION // Permiso para ubicación aproximada
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            askSinglePermissions.launch(android.Manifest.permission.ACCESS_COARSE_LOCATION)
+        }
+
+        // Verificar y solicitar otros permisos (cámara, almacenamiento) como ya tienes en tu código
+        if (ContextCompat.checkSelfPermission(
+                this,
+                android.Manifest.permission.CAMERA
             ) != PackageManager.PERMISSION_GRANTED
         ) {
             askSinglePermissions.launch(android.Manifest.permission.CAMERA)
@@ -33,22 +48,22 @@ class MainActivity : ComponentActivity() {
 
         // Solicitar permisos para leer imágenes en Android 13+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission( // Verificar si se tienen los permisos
+            if (ContextCompat.checkSelfPermission(
                     this,
-                    android.Manifest.permission.READ_MEDIA_IMAGES // Permiso para leer imágenes
+                    android.Manifest.permission.READ_MEDIA_IMAGES
                 ) != PackageManager.PERMISSION_GRANTED
             ) {
                 askSinglePermissions.launch(android.Manifest.permission.READ_MEDIA_IMAGES)
             }
         } else {
             // Solicitar permisos para acceder a almacenamiento en versiones anteriores a Android 10
-            if (ContextCompat.checkSelfPermission( // Verificar si se tienen los permisos
+            if (ContextCompat.checkSelfPermission(
                     this,
-                    android.Manifest.permission.READ_EXTERNAL_STORAGE // Permiso para leer archivos
+                    android.Manifest.permission.READ_EXTERNAL_STORAGE
                 ) != PackageManager.PERMISSION_GRANTED ||
                 ContextCompat.checkSelfPermission(
                     this,
-                    android.Manifest.permission.WRITE_EXTERNAL_STORAGE // Permiso para escribir archivos
+                    android.Manifest.permission.WRITE_EXTERNAL_STORAGE
                 ) != PackageManager.PERMISSION_GRANTED
             ) {
                 askMultiplePermissions.launch(
@@ -67,14 +82,12 @@ class MainActivity : ComponentActivity() {
         if (requestedPermissions != null) {
             for (permission in requestedPermissions) {
                 val isGranted = ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
-                // Imprimir si el permiso está otorgado o no
                 Log.d("Permissions", "Permiso: $permission, Otorgado: $isGranted")
             }
         } else {
             Log.d("Permissions", "No se encontraron permisos solicitados en el manifiesto.")
         }
     }
-
 
     // Manejo de permisos múltiples
     val askMultiplePermissions = registerForActivityResult(
