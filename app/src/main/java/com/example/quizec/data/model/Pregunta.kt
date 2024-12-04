@@ -17,7 +17,7 @@ data class Pregunta(
     val conceptosYDefiniciones: List<Map<String, String>> = listOf(),
     val opcionesCorrectasCompletarPalabras: List<String> = listOf(),
     val leftItems: List<String> = listOf(),
-    val rightItems: List<String> = listOf()
+    val rightItems: List<String> = listOf(),
 
 ) {
     // Constructor sin argumentos

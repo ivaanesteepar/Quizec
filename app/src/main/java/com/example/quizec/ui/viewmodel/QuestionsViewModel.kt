@@ -20,6 +20,7 @@ import java.util.UUID
 
 class QuestionsViewModel : ViewModel() {
     private val db = FirebaseFirestore.getInstance()
+    val quizViewModel = QuizViewModel()
 
     private val _preguntasSeleccionadas = mutableStateOf<List<Pregunta>>(emptyList())
     val preguntasSeleccionadas get() = _preguntasSeleccionadas
@@ -99,18 +100,24 @@ class QuestionsViewModel : ViewModel() {
                     val pregunta = Pregunta(
                         id = preguntaMap["id"] as? String ?: UUID.randomUUID().toString(),
                         titulo = preguntaMap["titulo"] as? String ?: "",
-                        tipo = TipoPregunta.valueOf(preguntaMap["tipo"] as? String ?: "VERDADERO_FALSO"),
+                        tipo = TipoPregunta.valueOf(
+                            preguntaMap["tipo"] as? String ?: "VERDADERO_FALSO"
+                        ),
                         opciones = preguntaMap["opciones"] as? List<String> ?: listOf(),
                         imagen = preguntaMap["imagen"] as? String,
-                        respuestasCorrectas = preguntaMap["respuestasCorrectas"] as? List<String> ?: listOf(),
-                        emparejamientos = preguntaMap["emparejamientos"] as? List<Map<String, String>> ?: listOf(),
+                        respuestasCorrectas = preguntaMap["respuestasCorrectas"] as? List<String>
+                            ?: listOf(),
+                        emparejamientos = preguntaMap["emparejamientos"] as? List<Map<String, String>>
+                            ?: listOf(),
                         itemsOrdenados = preguntaMap["itemsOrdenados"] as? List<String> ?: listOf(),
                         user_id = preguntaMap["user_id"] as? String,
                         isSelected = preguntaMap["isSelected"] as? Boolean ?: false,
                         fraseCompletar = preguntaMap["fraseCompletar"] as? String ?: "",
                         opcionCorrecta = preguntaMap["opcionCorrecta"] as? String ?: "",
-                        conceptosYDefiniciones = preguntaMap["conceptosYDefiniciones"] as? List<Map<String, String>> ?: listOf(),
-                        opcionesCorrectasCompletarPalabras = preguntaMap["opcionesCorrectasCompletarPalabras"] as? List<String> ?: listOf(),
+                        conceptosYDefiniciones = preguntaMap["conceptosYDefiniciones"] as? List<Map<String, String>>
+                            ?: listOf(),
+                        opcionesCorrectasCompletarPalabras = preguntaMap["opcionesCorrectasCompletarPalabras"] as? List<String>
+                            ?: listOf(),
                         leftItems = preguntaMap["leftItems"] as? List<String> ?: listOf(),
                         rightItems = preguntaMap["rightItems"] as? List<String> ?: listOf()
                     )
@@ -166,7 +173,8 @@ class QuestionsViewModel : ViewModel() {
     // Función para manejar la selección/deselección de un cuestionario
     fun toggleCuestionarioSelection(cuestionarioId: String) {
         // Si el cuestionario seleccionado ya está marcado, lo desmarcamos (establecer null)
-        _selectedCuestionario.value = if (_selectedCuestionario.value == cuestionarioId) null else cuestionarioId
+        _selectedCuestionario.value =
+            if (_selectedCuestionario.value == cuestionarioId) null else cuestionarioId
     }
 
 
@@ -178,7 +186,10 @@ class QuestionsViewModel : ViewModel() {
 
                 // Buscar el documento en la colección "preguntas" utilizando el campo "id" de la pregunta
                 val querySnapshot = db.collection("preguntas")
-                    .whereEqualTo("id", preguntaToDelete.id) // Filtrar por el campo "id" dentro del documento
+                    .whereEqualTo(
+                        "id",
+                        preguntaToDelete.id
+                    ) // Filtrar por el campo "id" dentro del documento
                     .get()
                     .await()
 
@@ -191,14 +202,21 @@ class QuestionsViewModel : ViewModel() {
                     documentRef.delete().await()
 
                     // Actualizamos el estado local de las preguntas eliminando la pregunta de la lista
-                    _preguntasState.value = _preguntasState.value.filter { it.id != preguntaToDelete.id }
+                    _preguntasState.value =
+                        _preguntasState.value.filter { it.id != preguntaToDelete.id }
 
                     // Recargar las preguntas del usuario después de eliminar la pregunta
                     cargarPreguntasUsuario(userId) // Esto volverá a cargar las preguntas inmediatamente
 
-                    Log.d("QuestionsViewModel", "Pregunta eliminada correctamente: ${preguntaToDelete.id}")
+                    Log.d(
+                        "QuestionsViewModel",
+                        "Pregunta eliminada correctamente: ${preguntaToDelete.id}"
+                    )
                 } else {
-                    Log.e("QuestionsViewModel", "No se encontró el documento con id: ${preguntaToDelete.id}")
+                    Log.e(
+                        "QuestionsViewModel",
+                        "No se encontró el documento con id: ${preguntaToDelete.id}"
+                    )
                 }
             } catch (e: Exception) {
                 Log.e("QuestionsViewModel", "Error al eliminar la pregunta: ${e.message}")
@@ -231,8 +249,6 @@ class QuestionsViewModel : ViewModel() {
             }
         }
     }
-
-
 
     // Función para duplicar una pregunta
     fun duplicarPregunta(preguntaToDuplicate: Pregunta, userId: String) {
@@ -324,9 +340,15 @@ class QuestionsViewModel : ViewModel() {
                     // Verificar que la lista de preguntas se haya actualizado correctamente
                     println("Lista de preguntas actualizada: ${_preguntasState.value}")
 
-                    Log.d("QuestionsViewModel", "Pregunta modificada correctamente: ${preguntaModificada.id}")
+                    Log.d(
+                        "QuestionsViewModel",
+                        "Pregunta modificada correctamente: ${preguntaModificada.id}"
+                    )
                 } else {
-                    Log.e("QuestionsViewModel", "No se encontró el documento con id: ${preguntaModificada.id}")
+                    Log.e(
+                        "QuestionsViewModel",
+                        "No se encontró el documento con id: ${preguntaModificada.id}"
+                    )
                 }
             } catch (e: Exception) {
                 Log.e("QuestionsViewModel", "Error al modificar la pregunta: ${e.message}")
@@ -351,12 +373,16 @@ class QuestionsViewModel : ViewModel() {
                 documentRef.delete()
                     .addOnSuccessListener {
                         // Si la eliminación fue exitosa, actualizar el estado local
-                        _cuestionariosState.value = _cuestionariosState.value.filterNot { it.id == id }
+                        _cuestionariosState.value =
+                            _cuestionariosState.value.filterNot { it.id == id }
                         Log.d("QuestionsViewModel", "Cuestionario eliminado correctamente: $id")
                     }
                     .addOnFailureListener { e ->
                         // Manejar el error si la eliminación falla
-                        Log.e("QuestionsViewModel", "Error al eliminar el cuestionario: ${e.message}")
+                        Log.e(
+                            "QuestionsViewModel",
+                            "Error al eliminar el cuestionario: ${e.message}"
+                        )
                     }
             }
             .addOnFailureListener { e ->
@@ -365,5 +391,129 @@ class QuestionsViewModel : ViewModel() {
             }
     }
 
+
+    fun actualizarPregunta(pregunta: Pregunta) {
+        // Obtener una instancia de Firebase Firestore
+        val firestore = FirebaseFirestore.getInstance()
+        println("Pregunta a actualizar: $pregunta con id: ${pregunta.id}")
+
+        // Referencia a la colección "preguntas"
+        val preguntasCollection = firestore.collection("preguntas")
+
+        // Verificar si el ID de la pregunta es válido
+        if (pregunta.id.isEmpty()) {
+            println("El ID de la pregunta no puede estar vacío.")
+            return
+        }
+
+        // Paso 1: Buscar el documento cuyo campo `id` coincide con el valor de `pregunta.id`
+        preguntasCollection
+            .whereEqualTo("id", pregunta.id)
+            .get()
+            .addOnSuccessListener { querySnapshot ->
+                if (!querySnapshot.isEmpty) {
+                    // Obtener el primer documento encontrado
+                    val documentSnapshot = querySnapshot.documents[0]
+                    val documentId = documentSnapshot.id // Obtener el verdadero `documentId`
+
+                    println("Documento encontrado con documentId: $documentId")
+
+                    // Paso 2: Actualizar los campos del documento encontrado
+                    preguntasCollection.document(documentId)
+                        .update(
+                            mapOf(
+                                "titulo" to pregunta.titulo,
+                                "tipo" to pregunta.tipo.name,
+                                "opciones" to pregunta.opciones,
+                                "respuestasCorrectas" to pregunta.respuestasCorrectas,
+                                "imagen" to pregunta.imagen,
+                                "user_id" to pregunta.user_id,
+                                "isSelected" to pregunta.isSelected,
+                                "fraseCompletar" to pregunta.fraseCompletar,
+                                "opcionCorrecta" to pregunta.opcionCorrecta,
+                                "conceptosYDefiniciones" to pregunta.conceptosYDefiniciones,
+                                "opcionesCorrectasCompletarPalabras" to pregunta.opcionesCorrectasCompletarPalabras,
+                                "leftItems" to pregunta.leftItems,
+                                "rightItems" to pregunta.rightItems
+                            )
+                        )
+                        .addOnSuccessListener {
+                            println("Pregunta actualizada correctamente con documentId: $documentId")
+                        }
+                        .addOnFailureListener { exception ->
+                            println("Error al actualizar la pregunta: ${exception.message}")
+                        }
+                } else {
+                    println("No se encontró un documento con el campo 'id' igual a: ${pregunta.id}")
+                }
+            }
+            .addOnFailureListener { exception ->
+                println("Error al buscar el documento: ${exception.message}")
+            }
+    }
+
+    fun guardarPreguntasCuestionario(codigoQuiz: String, preguntasNuevas: List<Pregunta>) {
+        // Creamos una referencia a la colección de cuestionarios en Firestore
+        val db = FirebaseFirestore.getInstance()
+        val cuestionariosRef = db.collection("cuestionarios") // La colección donde se encuentran los cuestionarios
+
+        // Buscamos el documento cuyo campo "id" coincida con el "codigoQuiz"
+        cuestionariosRef
+            .whereEqualTo("id", codigoQuiz) // Comparar el campo "id" con el "codigoQuiz"
+            .get()
+            .addOnSuccessListener { querySnapshot ->
+                if (!querySnapshot.isEmpty) {
+                    // Suponemos que hay un solo documento con este "id"
+                    val cuestionarioDoc = querySnapshot.documents.first() // Obtenemos el primer (y único) documento
+
+                    // Obtenemos la lista actual de preguntas en el documento
+                    val preguntasActuales =
+                        cuestionarioDoc.get("preguntas") as? List<Map<String, Any>> ?: emptyList()
+
+                    // Convertimos las preguntas nuevas de List<Pregunta> a una lista de mapas (List<Map<String, Any>>)
+                    val preguntasMapeadas = preguntasNuevas.map { pregunta ->
+                        mapOf(
+                            "id" to pregunta.id,
+                            "titulo" to pregunta.titulo,
+                            "tipo" to pregunta.tipo.name, // Convertir el enum TipoPregunta a string
+                            "opciones" to pregunta.opciones,
+                            "imagen" to (pregunta.imagen ?: ""),
+                            "respuestasCorrectas" to pregunta.respuestasCorrectas,
+                            "emparejamientos" to pregunta.emparejamientos,
+                            "itemsOrdenados" to pregunta.itemsOrdenados,
+                            "user_id" to (pregunta.user_id ?: ""),
+                            "isSelected" to pregunta.isSelected,
+                            "fraseCompletar" to pregunta.fraseCompletar,
+                            "opcionCorrecta" to pregunta.opcionCorrecta,
+                            "conceptosYDefiniciones" to pregunta.conceptosYDefiniciones,
+                            "opcionesCorrectasCompletarPalabras" to pregunta.opcionesCorrectasCompletarPalabras,
+                            "leftItems" to pregunta.leftItems,
+                            "rightItems" to pregunta.rightItems
+                        )
+                    }
+
+                    // Creamos la nueva lista combinando las preguntas actuales con las nuevas
+                    val listaFinalPreguntas = preguntasActuales + preguntasMapeadas
+
+                    // Actualizamos el campo "preguntas" en el documento del cuestionario
+                    cuestionarioDoc.reference.update("preguntas", listaFinalPreguntas)
+                        .addOnSuccessListener {
+                            // Si la actualización fue exitosa, mostramos un mensaje
+                            println("Las preguntas del cuestionario han sido actualizadas correctamente.")
+                        }
+                        .addOnFailureListener { exception ->
+                            // Si algo sale mal, mostramos el error
+                            println("Error al actualizar las preguntas: ${exception.message}")
+                        }
+                } else {
+                    // Si no se encuentra un documento con ese "id"
+                    println("No se encontró el cuestionario con id $codigoQuiz.")
+                }
+            }
+            .addOnFailureListener { exception ->
+                // Si hubo un error al buscar el documento, lo manejamos aquí
+                println("Error al buscar el cuestionario: ${exception.message}")
+            }
+    }
 
 }

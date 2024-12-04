@@ -90,11 +90,9 @@ fun SelectCuestionarioScreen(
                     val location = locationResult.lastLocation
                     if (location != null) {
                         latitudActual = location.latitude
-                        println("La latitud actual es: $latitudActual")
                     }
                     if (location != null) {
                         longitudActual = location.longitude
-                        println("La longitud actual es: $longitudActual")
                     }
                     Log.d("Location", "Latitud: $latitudActual, Longitud: $longitudActual")
                 }
@@ -260,7 +258,7 @@ fun SelectCuestionarioScreen(
             }
 
             Button(
-                onClick = { navController.popBackStack() }, // Navegar hacia atrás
+                onClick = { navController.navigate("home") }, // Navegar hacia atrás
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(text = "Volver")

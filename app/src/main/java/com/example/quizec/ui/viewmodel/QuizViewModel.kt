@@ -77,58 +77,125 @@ class QuizViewModel : ViewModel() {
         obtenerRolUsuario()
     }
 
-    //    suspend fun obtenerImmediateAccess(codigoQuiz: String): Boolean? {
-//        val db = FirebaseFirestore.getInstance()
-//
-//        return try {
-//            val cuestionarioSnapshot = db.collection("cuestionarios")
-//                .whereEqualTo("id", codigoQuiz)  // Filtrar por el campo "id"
-//                .get()
-//                .await()  // Esperar la respuesta de Firestore
-//
-//            // Imprimir el snapshot para depuración
-//            println("Cuestionario snapshot: $cuestionarioSnapshot")
-//
-//            if (!cuestionarioSnapshot.isEmpty) {
-//                val cuestionario = cuestionarioSnapshot.documents[0]
-//                val immediateAccess = cuestionario.getBoolean("immediateAccess")
-//
-//                // Imprimir el valor de immediateAccess
-//                println("Valor de immediateAccess: $immediateAccess")
-//
-//                immediateAccess  // Devolver el valor de immediateAccess (true o false)
-//            } else {
-//                Log.d("QuizViewModel", "No se encontró el cuestionario con el código: $codigoQuiz")
-//                null
-//            }
-//        } catch (e: Exception) {
-//            Log.e("QuizViewModel", "Error al obtener el cuestionario: ${e.localizedMessage}")
-//            null  // En caso de error, devolver null
-//        }
-//    }
-
-    // Esta función obtiene el valor de 'immediateAccess' de un cuestionario por su código (codigoQuiz)
-    fun obtenerImmediateAccess(codigoQuiz: String, onResult: (Boolean?) -> Unit) {
+    fun obtenerCuestionario(cuestionarioId: String, onResult: (Cuestionario?) -> Unit) {
         val db = FirebaseFirestore.getInstance()
+        val cuestionariosRef = db.collection("cuestionarios")
 
-        db.collection("cuestionarios")  // Suponiendo que tienes una colección llamada "cuestionarios"
-            .whereEqualTo("id", codigoQuiz)  // Filtramos por el campo 'id' que debe coincidir con 'codigoQuiz'
+        // Hacer una consulta para buscar el documento cuyo campo "id" coincida con el "cuestionarioId"
+        cuestionariosRef
+            .whereEqualTo("id", cuestionarioId)
             .get()
             .addOnSuccessListener { querySnapshot ->
                 if (!querySnapshot.isEmpty) {
-                    // Si se encuentra un documento que cumple con la condición
-                    val document = querySnapshot.documents.first()
-                    val immediateAccess = document.getBoolean("immediateAccess")  // Obtenemos el campo 'immediateAccess'
-                    onResult(immediateAccess)  // Llamamos al callback con el valor de immediateAccess
+                    // Si la consulta encuentra documentos, obtenemos el primero
+                    val document = querySnapshot.documents[0]
+                    val cuestionario = document.toObject(Cuestionario::class.java)
+                    onResult(cuestionario) // Retorna el cuestionario encontrado
                 } else {
-                    onResult(null)  // Si no se encuentra ningún documento, retornamos null
+                    onResult(null) // No se encontró el cuestionario
                 }
             }
             .addOnFailureListener { exception ->
-                Log.e("QuizViewModel", "Error al obtener el immediateAccess: ", exception)
-                onResult(null)  // Si hay un error en la consulta, retornamos null
+                onResult(null) // Si ocurre un error, retornamos null
+                Log.e("obtenerCuestionario", "Error al obtener el cuestionario: ${exception.message}")
             }
     }
+
+
+    fun actualizarCuestionario(
+        cuestionario: Cuestionario,
+        codigoQuiz: String,
+        onError: (String?) -> Unit
+    ) {
+        val db = FirebaseFirestore.getInstance()
+
+        // Buscar el documento usando whereEqualTo
+        db.collection("cuestionarios")
+            .whereEqualTo("id", codigoQuiz)  // Filtrar por el campo 'id' del cuestionario
+            .get()
+            .addOnSuccessListener { querySnapshot ->
+                // Si encontramos el documento con el id correcto
+                if (!querySnapshot.isEmpty) {
+                    val document = querySnapshot.documents[0]  // Obtener el primer documento que coincide
+
+                    // Crear un mapa con los campos que deseas actualizar
+                    val camposActualizados = hashMapOf<String, Any>(
+                        "titulo" to cuestionario.titulo,
+                        "descripcion" to cuestionario.descripcion,
+                        "creadorId" to cuestionario.creadorId,
+                        "immediateAccess" to cuestionario.immediateAccess,
+                        "locationRestricted" to cuestionario.locationRestricted,
+                        "immediateResults" to cuestionario.immediateResults,
+                        "isQuizIniciado" to cuestionario.isQuizIniciado,
+                        "latitude" to cuestionario.latitude,
+                        "longitude" to cuestionario.longitude,
+                        "radio" to cuestionario.radio
+                    )
+
+                    // Si la imagen ha cambiado, también actualizamos ese campo
+                    cuestionario.imagen?.let {
+                        camposActualizados["imagen"] = it
+                    }
+
+                    // Actualizar las preguntas del cuestionario si es necesario
+                    camposActualizados["preguntas"] = cuestionario.preguntas
+
+                    // Realizar la actualización de los campos seleccionados en Firestore
+                    document.reference.update(camposActualizados)
+                        .addOnSuccessListener {
+                            onError(null) // No error, actualizaciones exitosas
+                        }
+                        .addOnFailureListener { exception ->
+                            onError(exception.message) // En caso de error, pasa el mensaje
+                        }
+                } else {
+                    // Si no se encuentra ningún documento con el id
+                    onError("No se encontró el cuestionario con el código proporcionado.")
+                }
+            }
+            .addOnFailureListener { exception ->
+                onError("Error al obtener el cuestionario: ${exception.message}")
+            }
+    }
+
+
+    fun obtenerPreguntas(cuestionario: Cuestionario): List<Pregunta> {
+        return cuestionario.preguntas
+    }
+
+
+
+    suspend fun obtenerImmediateAccess(codigoQuiz: String): Boolean? {
+        val db = FirebaseFirestore.getInstance()
+
+        return try {
+            val cuestionarioSnapshot = db.collection("cuestionarios")
+                .whereEqualTo("id", codigoQuiz)  // Filtrar por el campo "id"
+                .get()
+                .await()  // Esperar la respuesta de Firestore
+
+            // Imprimir el snapshot para depuración
+            Log.d("QuizViewModel", "Cuestionario snapshot: $cuestionarioSnapshot")
+
+            if (!cuestionarioSnapshot.isEmpty) {
+                // Verificar que se obtienen documentos
+                val cuestionario = cuestionarioSnapshot.documents[0]
+                val immediateAccess = cuestionario.getBoolean("immediateAccess")
+
+                // Imprimir el valor de immediateAccess
+                Log.d("QuizViewModel", "Valor de immediateAccess: $immediateAccess")
+
+                immediateAccess  // Devolver el valor de immediateAccess (true o false)
+            } else {
+                Log.d("QuizViewModel", "No se encontró el cuestionario con el código: $codigoQuiz")
+                null
+            }
+        } catch (e: Exception) {
+            Log.e("QuizViewModel", "Error al obtener el cuestionario: ${e.localizedMessage}")
+            null  // En caso de error, devolver null
+        }
+    }
+
 
 
     // Esta función obtiene el título del cuestionario por su código (codigoQuiz)
@@ -378,8 +445,8 @@ class QuizViewModel : ViewModel() {
 
                 // Datos a actualizar
                 val updatedData = mapOf(
-                    "latitud" to nuevaLatitud,
-                    "longitud" to nuevaLongitud
+                    "latitude" to nuevaLatitud,
+                    "longitude" to nuevaLongitud
                 )
 
                 // Llamar a `update` para actualizar las coordenadas
@@ -411,8 +478,8 @@ class QuizViewModel : ViewModel() {
                 val quizDoc = quizQuerySnapshot.documents.first() // Obtenemos el primer (y único) documento
 
                 // Obtenemos la latitud, longitud y radio del documento
-                val latitude = quizDoc.getDouble("latitud") ?: return null
-                val longitude = quizDoc.getDouble("longitud") ?: return null
+                val latitude = quizDoc.getDouble("latitude") ?: return null
+                val longitude = quizDoc.getDouble("longitude") ?: return null
                 val radius = quizDoc.getDouble("radio")?.toFloat() ?: return null
 
                 // Retornamos los datos en un Triple (latitud, longitud, radio)
@@ -610,10 +677,9 @@ class QuizViewModel : ViewModel() {
         if (!_preguntas.contains(pregunta)) {
             _preguntas.add(pregunta) // Agregar la pregunta solo si no está en la lista
             contadorPreguntas.value += 1 // Aumentar el contador solo si la pregunta es nueva
+            println("Pregunta agregada en la lista $preguntas")
         }
     }
-
-
 
     suspend fun cargarPreguntasPorCodigo(codigoQuiz: String) {
         try {
@@ -712,24 +778,24 @@ class QuizViewModel : ViewModel() {
     }
 
 
-    // Función para verificar si el código del quiz existe en la base de datos
-    fun verificarCodigoQuiz(codigoQuiz: String, onComplete: (Boolean) -> Unit) {
-        val cuestionarioRef = firestore.collection("cuestionarios").whereEqualTo("id", codigoQuiz)
-
-        cuestionarioRef.get()
-            .addOnSuccessListener { querySnapshot ->
-                // Si hay al menos un documento, el código es válido
-                if (!querySnapshot.isEmpty) {
-                    onComplete(true)  // El código es válido, existe un cuestionario con ese código
-                } else {
-                    onComplete(false)  // El código no es válido
-                }
-            }
-            .addOnFailureListener { exception ->
-                onComplete(false)  // Error al verificar el código
-                println("Error al verificar el código del quiz: ${exception.message}")
-            }
-    }
+//    // Función para verificar si el código del quiz existe en la base de datos
+//    fun verificarCodigoQuiz(codigoQuiz: String, onComplete: (Boolean) -> Unit) {
+//        val cuestionarioRef = firestore.collection("cuestionarios").whereEqualTo("id", codigoQuiz)
+//
+//        cuestionarioRef.get()
+//            .addOnSuccessListener { querySnapshot ->
+//                // Si hay al menos un documento, el código es válido
+//                if (!querySnapshot.isEmpty) {
+//                    onComplete(true)  // El código es válido, existe un cuestionario con ese código
+//                } else {
+//                    onComplete(false)  // El código no es válido
+//                }
+//            }
+//            .addOnFailureListener { exception ->
+//                onComplete(false)  // Error al verificar el código
+//                println("Error al verificar el código del quiz: ${exception.message}")
+//            }
+//    }
 
     // Función para actualizar el rol del usuario en Firestore  (USADA EN CREATE QUIZ Y HOME)
     fun actualizarRolUsuario2(userUid: String, rol: Rol) {
@@ -811,8 +877,6 @@ class QuizViewModel : ViewModel() {
                 onComplete(false) // Llama al callback indicando error
             }
     }
-
-
 
 
 

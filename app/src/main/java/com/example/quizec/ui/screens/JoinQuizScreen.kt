@@ -19,12 +19,17 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavHostController
+import com.example.quizec.data.model.Rol
 import com.example.quizec.ui.viewmodel.QuizViewModel
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.tasks.CancellationTokenSource
 import kotlinx.coroutines.launch
+import kotlin.math.atan2
+import kotlin.math.cos
 import kotlin.math.pow
+import kotlin.math.sin
+import kotlin.math.sqrt
 
 @Composable
 fun JoinQuizScreen(
@@ -39,7 +44,7 @@ fun JoinQuizScreen(
     var loading by remember { mutableStateOf(false) }
     var locationPermissionGranted by remember { mutableStateOf(false) }
 
-    //val coroutineScope = rememberCoroutineScope()
+    val coroutineScope = rememberCoroutineScope()
 
     // Solicitar permisos de ubicación
     val launcher = rememberLauncherForActivityResult(
@@ -61,6 +66,7 @@ fun JoinQuizScreen(
         }
     }
 
+    // FORMULA DE HAVERSINE
     // Función para calcular la distancia entre dos puntos geográficos (latitud, longitud)
     fun calculateDistance(location: String, quizLat: Double, quizLng: Double): Float {
         // Parsear las coordenadas de la ubicación actual
@@ -71,8 +77,8 @@ fun JoinQuizScreen(
         val earthRadius = 6371 // Radio de la tierra en km
         val dLat = Math.toRadians(quizLat - userLat)
         val dLng = Math.toRadians(quizLng - userLng)
-        val a = Math.sin(dLat / 2).pow(2) + Math.cos(Math.toRadians(userLat)) * Math.cos(Math.toRadians(quizLat)) * Math.sin(dLng / 2).pow(2)
-        val c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+        val a = sin(dLat / 2).pow(2) + cos(Math.toRadians(userLat)) * cos(Math.toRadians(quizLat)) * sin(dLng / 2).pow(2)
+        val c = 2 * atan2(sqrt(a), sqrt(1 - a))
         val distance = earthRadius * c // Distancia en km
 
         val distanceInMeters = (distance * 1000).toFloat() // Convertir a metros
@@ -84,68 +90,72 @@ fun JoinQuizScreen(
     }
 
 
-    // Función para unirse al quiz
     fun unirseAlQuiz() {
         if (codigoQuiz.isEmpty()) {
             errorMessage = "Por favor, ingrese el código del quiz."
         } else {
             loading = true
 
-//            // Ejecutar la lógica en una corrutina
-//            coroutineScope.launch {
-//                try {
-//                    val datosQuiz = quizViewModel.obtenerDatosDelQuiz(codigoQuiz)
-//                    if (datosQuiz == null) {
-//                        errorMessage = "Error al obtener los datos del quiz."
-//                        loading = false
-//                        return@launch
-//                    }
-//                    val immediateAccess = quizViewModel.obtenerImmediateAccess(codigoQuiz)
-//
-//                    // Obtener la ubicación del usuario y calcular la distancia
-//                    fetchLocation(fusedLocationClient) { location ->
-//                        Log.d("Geolocalización", "Ubicación actual: $location")
-//
-//                        val (quizLat, quizLng, quizRadius) = datosQuiz
-//                        val distance = calculateDistance(location, quizLat, quizLng)
-//                        if (distance <= quizRadius) {
-//                            if (immediateAccess == null) {
-//                                errorMessage = "Error al verificar el acceso."
-//                            } else {
-//                                if (immediateAccess) {
-//                                    navController.navigate("user_quiz/$codigoQuiz")
-//                                } else {
-//                                    navController.navigate("waiting_screen/$codigoQuiz")
-//                                }
-//                            }
-//                        } else {
-//                            errorMessage = "No estás dentro del radio del quiz."
-//                        }
-//                        loading = false
-//                    }
-//                } catch (e: Exception) {
-//                    loading = false
-//                    errorMessage = "Hubo un error al verificar el acceso."
-//                }
-//            }
-            //JIMENA con QuizViewModel nueva funcion de obtenerAccess
-            // Llamada a la función del ViewModel que usa un callback
-            quizViewModel.obtenerImmediateAccess(codigoQuiz) { immediateAccess ->
-                loading = false
-                println("immediateAccess: $immediateAccess")
-                println("codigoQuiz: $codigoQuiz")
+            // Ejecutar la lógica en una corrutina
+            coroutineScope.launch {
+                try {
+                    val datosQuiz = quizViewModel.obtenerDatosDelQuiz(codigoQuiz)
+                    Log.d("JoinQuizScreen", "Datos del quiz: $datosQuiz")
 
-                // Verificación del resultado recibido a través del callback
-                if (immediateAccess == null) {
-                    errorMessage = "Error al verificar el acceso."
-                } else if (immediateAccess == false) {
-                    navController.navigate("waiting_screen/$codigoQuiz")
-                } else {
-                    navController.navigate("user_quiz/$codigoQuiz")
+                    if (datosQuiz == null) {
+                        errorMessage = "Error al obtener los datos del quiz."
+                        loading = false
+                        return@launch
+                    }
+                    quizViewModel.actualizarRolUsuario(Rol.PARTICIPANTE.toString()) { errorMessage ->
+                        if (errorMessage == null) {
+                            // Si no hay error, la actualización fue exitosa
+                            Log.d("JoinQuizScreen", "Rol actualizado a 'Participante'.")
+                        } else {
+                            // Si hay un error, se muestra el mensaje de error
+                            Log.e("JoinQuizScreen", "Error al actualizar el rol: $errorMessage")
+                        }
+                    }
+                    val immediateAccess = quizViewModel.obtenerImmediateAccess(codigoQuiz)
+
+                    // Obtener datos del quiz
+                    val (quizLat, quizLng, quizRadius) = datosQuiz
+
+                    // Si la latitud y longitud son 0, no comprobar ubicación
+                    if (quizLat == 0.0 && quizLng == 0.0) {
+                        if (immediateAccess == true) {
+                            navController.navigate("user_quiz/$codigoQuiz")
+                        } else {
+                            navController.navigate("waiting_screen/$codigoQuiz")
+                        }
+                        loading = false
+                        return@launch
+                    }
+
+                    // Obtener la ubicación del usuario y calcular la distancia
+                    fetchLocation(fusedLocationClient) { location ->
+                        Log.d("Geolocalización", "Ubicación actual: $location")
+
+                        val distance = calculateDistance(location, quizLat, quizLng)
+                        if (distance <= quizRadius) {
+                            if (immediateAccess == true) {
+                                navController.navigate("user_quiz/$codigoQuiz")
+                            } else {
+                                navController.navigate("waiting_screen/$codigoQuiz")
+                            }
+                        } else {
+                            errorMessage = "No estás dentro del radio del quiz."
+                        }
+                        loading = false
+                    }
+                } catch (e: Exception) {
+                    loading = false
+                    errorMessage = "Hubo un error al verificar el acceso."
                 }
             }
         }
     }
+
 
     // Interfaz de usuario
     Box(

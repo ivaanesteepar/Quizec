@@ -56,22 +56,42 @@ class MainActivity : ComponentActivity() {
                 askSinglePermissions.launch(android.Manifest.permission.READ_MEDIA_IMAGES)
             }
         } else {
-            // Solicitar permisos para acceder a almacenamiento en versiones anteriores a Android 10
-            if (ContextCompat.checkSelfPermission(
-                    this,
-                    android.Manifest.permission.READ_EXTERNAL_STORAGE
-                ) != PackageManager.PERMISSION_GRANTED ||
-                ContextCompat.checkSelfPermission(
-                    this,
-                    android.Manifest.permission.WRITE_EXTERNAL_STORAGE
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
-                askMultiplePermissions.launch(
-                    arrayOf(
-                        android.Manifest.permission.READ_EXTERNAL_STORAGE,
+            // Solicitar permisos para acceder a almacenamiento en versiones posteriores a Android 10
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                if (ContextCompat.checkSelfPermission(
+                        this,
+                        android.Manifest.permission.READ_EXTERNAL_STORAGE
+                    ) != PackageManager.PERMISSION_GRANTED ||
+                    ContextCompat.checkSelfPermission(
+                        this,
                         android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+                    ) != PackageManager.PERMISSION_GRANTED
+                ) {
+                    askMultiplePermissions.launch(
+                        arrayOf(
+                            android.Manifest.permission.READ_EXTERNAL_STORAGE,
+                            android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+                        )
                     )
-                )
+                }
+            } else {
+                // Solicitar permisos para acceder a almacenamiento en versiones anteriores a Android 10
+                if (ContextCompat.checkSelfPermission(
+                        this,
+                        android.Manifest.permission.READ_EXTERNAL_STORAGE
+                    ) != PackageManager.PERMISSION_GRANTED ||
+                    ContextCompat.checkSelfPermission(
+                        this,
+                        android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+                    ) != PackageManager.PERMISSION_GRANTED
+                ) {
+                    askMultiplePermissions.launch(
+                        arrayOf(
+                            android.Manifest.permission.READ_EXTERNAL_STORAGE,
+                            android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+                        )
+                    )
+                }
             }
         }
 

@@ -45,7 +45,6 @@ fun CreateQuizScreen(
     navController: NavHostController,
     quizViewModel: QuizViewModel
 ) {
-    val context = LocalContext.current
     var titulo by rememberSaveable { mutableStateOf("") }
     var descripcion by rememberSaveable { mutableStateOf("") }
     var imageUri by rememberSaveable { mutableStateOf<Uri?>(null) }
@@ -447,8 +446,8 @@ fun Cuestionario.toMap(): Map<String, Any> {
         "locationRestricted" to locationRestricted,
         "immediateResults" to immediateResults,
         "isQuizIniciado" to isQuizIniciado,
-        "latitud" to latitude,
-        "longitud" to longitude,
+        "latitude" to latitude,
+        "longitude" to longitude,
         "radio" to radio // Añadido el valor de radio
     )
 }

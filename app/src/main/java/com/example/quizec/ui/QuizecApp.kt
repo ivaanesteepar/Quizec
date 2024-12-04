@@ -13,8 +13,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
@@ -25,14 +27,17 @@ import com.example.quizec.ui.screens.JoinQuizScreen
 import com.example.quizec.ui.screens.RegisterScreen
 import com.example.quizec.ui.viewmodel.QuizViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.quizec.data.model.Cuestionario
 import com.example.quizec.data.model.Pregunta
 import com.example.quizec.ui.screens.SelectQuestionsScreen
 import com.example.quizec.ui.screens.UserQuizzesScreen
 import com.example.quizec.ui.screens.CreatorQuizzesScreen
 import com.example.quizec.ui.screens.DetalleCuestionarioScreen
+import com.example.quizec.ui.screens.EditarCuestionarioScreen
 import com.example.quizec.ui.screens.EditarPreguntaScreen
 import com.example.quizec.ui.screens.HistorialScreen
 import com.example.quizec.ui.screens.ResultsScreen
+import com.example.quizec.ui.screens.SelectQuestionsEditScreen
 import com.example.quizec.ui.screens.WaitingScreen
 import com.example.quizec.ui.viewmodel.QuestionsViewModel
 import com.example.quizec.ui.viewmodel.UsersViewModel
@@ -45,6 +50,7 @@ fun QuizecApp() {
     // Crea la instancia de QuizViewModel
     val quizViewModel: QuizViewModel = viewModel()
     val usersViewModel: UsersViewModel = viewModel()
+    val questionsViewModel: QuestionsViewModel = viewModel()
 
     Scaffold { padding ->
         NavHost(
@@ -111,6 +117,22 @@ fun QuizecApp() {
                     )
                 }
             }
+            composable("select_questions_edit/{userId}/{codigoQuiz}") { // Ruta para la pantalla de preguntas
+                // Recupera el userId de los argumentos
+                val userId = FirebaseAuth.getInstance().currentUser?.uid
+                val codigoQuiz = it.arguments?.getString("codigoQuiz")
+                if (userId != null) {
+                    // Si el usuario está autenticado, pasa el userId a la pantalla de preguntas
+                    if (codigoQuiz != null) {
+                        SelectQuestionsEditScreen(
+                            navController = navController,
+                            userId = userId,
+                            quizViewModel = quizViewModel,
+                            codigoQuiz = codigoQuiz
+                        )
+                    }
+                }
+            }
             composable("results_screen/{codigoQuiz}") {
                 val codigoQuiz = it.arguments?.getString("codigoQuiz")
                 ResultsScreen(navController, usersViewModel, codigoQuiz)
@@ -140,7 +162,7 @@ fun QuizecApp() {
 
                 if (pregunta != null) {
                     // Si la pregunta está cargada, mostramos la pantalla de edición
-                    EditarPreguntaScreen(preguntaMod = pregunta, userId = userId ?: "", navController = navController)
+                    EditarPreguntaScreen(preguntaMod = pregunta, navController = navController)
                 } else {
                     // Mientras la pregunta no esté cargada, podemos mostrar un indicador de carga o algo similar
                     CircularProgressIndicator()
@@ -176,6 +198,34 @@ fun QuizecApp() {
                     Log.e("Navigation", "No cuestionarioId provided")
                 }
             }
+            composable("editCuestionario/{cuestionarioId}") { backStackEntry ->
+                val cuestionarioId = backStackEntry.arguments?.getString("cuestionarioId") // Obtener el ID del cuestionario desde la ruta
+                var cuestionarioMod by remember { mutableStateOf<Cuestionario?>(null) } // Estado para almacenar el cuestionario cargado
+
+                // Usamos un LaunchedEffect para cargar el cuestionario cuando el Id esté disponible
+                LaunchedEffect(cuestionarioId) {
+                    cuestionarioId?.let {
+                        quizViewModel.obtenerCuestionario(cuestionarioId) { cuestionario ->
+                            cuestionarioMod = cuestionario // Guardamos el cuestionario en el estado
+                        }
+                    }
+                }
+
+                // Esperamos a que el cuestionario se haya cargado
+                if (cuestionarioMod != null) {
+                    if (cuestionarioId != null) {
+                        EditarCuestionarioScreen(
+                            navController = navController,
+                            cuestionarioId = cuestionarioId,
+                            quizViewModel = quizViewModel,
+                            cuestionarioMod = cuestionarioMod!!
+                        )
+                    }
+                } else {
+                    Text("Cargando...")
+                }
+            }
+
 
         }
     }
