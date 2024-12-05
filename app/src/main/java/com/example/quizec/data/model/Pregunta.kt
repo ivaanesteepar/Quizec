@@ -18,6 +18,9 @@ data class Pregunta(
     val opcionesCorrectasCompletarPalabras: List<String> = listOf(),
     val leftItems: List<String> = listOf(),
     val rightItems: List<String> = listOf(),
+    // Lista para almacenar las respuestas de los usuarios
+    val userAnswers: List<Map<String, Any>> = listOf()
+
 
 ) {
     // Constructor sin argumentos

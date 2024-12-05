@@ -92,7 +92,7 @@ fun WaitingScreen(navController: NavHostController, codigoQuiz: String?, usersVi
             Button(
                 onClick = {
                     if (userRole == Rol.CREADOR.toString()) {
-                        quizViewModel.actualizarEstadoQuiz(codigoQuiz){ exito ->
+                        quizViewModel.actualizarIsQuizIniciado(codigoQuiz){ exito ->
                             if (exito){
                                 println("El usuario es el creador. Navegando a creator_quiz.")
                                 navController.navigate("creator_quiz/$codigoQuiz")

@@ -743,6 +743,7 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                                 opcionesCorrectasCompletarPalabras = opcionesCorrectasCompletarPalabras,
                                 leftItems = leftItems,
                                 rightItems = rightItems
+                                //userAnswers = userAnswers
                             )
                             // Guardar la pregunta en Firestore
                             savePreguntaToFirestore(pregunta, db)
@@ -821,8 +822,7 @@ private fun savePreguntaToFirestore(pregunta: Pregunta, db: FirebaseFirestore) {
         "opcionCorrecta" to pregunta.opcionCorrecta,
         "conceptosYDefiniciones" to pregunta.conceptosYDefiniciones,
         "opcionesCorrectasCompletarPalabras" to pregunta.opcionesCorrectasCompletarPalabras,
-        "leftItems" to pregunta.leftItems,
-        "rightItems" to pregunta.rightItems
+        "userAnswers" to pregunta.userAnswers
     )
 
     db.collection("preguntas")
@@ -834,4 +834,13 @@ private fun savePreguntaToFirestore(pregunta: Pregunta, db: FirebaseFirestore) {
         .addOnFailureListener { e ->
             Log.w("Firestore", "Error al guardar la pregunta", e)
         }
+}
+
+
+
+@Preview (showBackground = true)
+@Composable
+fun CreateQuestionsScreenPreview() {
+    val navController = rememberNavController()
+    CreateQuestionsScreen(navController, quizViewModel = viewModel())
 }

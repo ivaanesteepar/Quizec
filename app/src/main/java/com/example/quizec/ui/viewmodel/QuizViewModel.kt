@@ -49,12 +49,13 @@ class QuizViewModel : ViewModel() {
     val errorMessage: StateFlow<String> = _errorMessage
 
     // Declara el tipo del Map explícitamente
-    val _respuestas = MutableStateFlow<Map<String, Any>>(emptyMap())
-    val respuestas: StateFlow<Map<String, Any>> get() = _respuestas
+    private val _userAnswers = MutableStateFlow<Map<String, Any>>(emptyMap())
+    val userAnswers: StateFlow<Map<String, Any>> get() = _userAnswers
 
+    //OJO Q LO CAMBIE Y NS SI AFECTA!!!!!!!!!!!
     // Mapa de respuestas de todos los usuarios (usamos StateFlow para ser reactivos)
-    private val _respuestasUsuario = MutableStateFlow<Map<String, Pair<String, Int>>>(emptyMap())
-    val respuestasUsuario: StateFlow<Map<String, Pair<String, Int>>> = _respuestasUsuario
+    private val _respuestas = MutableStateFlow<Map<String, Pair<String, Int>>>(emptyMap())
+    val respuestas: StateFlow<Map<String, Pair<String, Int>>> = _respuestas
 
     private val _totalTime = MutableStateFlow(600) // Tiempo total global inicial (10 minutos)
     val totalTime: StateFlow<Int> get() = _totalTime // Exponer el tiempo total como StateFlow
@@ -71,6 +72,7 @@ class QuizViewModel : ViewModel() {
 
     private val _isQuizIniciado = MutableStateFlow(false)
     val isQuizIniciado: StateFlow<Boolean> = _isQuizIniciado
+
 
 
     init {
@@ -281,7 +283,8 @@ class QuizViewModel : ViewModel() {
                                     conceptosYDefiniciones = (preguntaData["conceptosYDefiniciones"] as? List<Map<String, String>>) ?: listOf(),
                                     opcionesCorrectasCompletarPalabras = (preguntaData["opcionesCorrectasCompletarPalabras"] as? List<String>) ?: listOf(),
                                     leftItems = (preguntaData["leftItems"] as? List<String>) ?: listOf(),
-                                    rightItems = (preguntaData["rightItems"] as? List<String>) ?: listOf()
+                                    rightItems = (preguntaData["rightItems"] as? List<String>) ?: listOf(),
+                                    userAnswers = (preguntaData["userAnswers"] as? List<Map<String, Any>>) ?: listOf()
                                 )
                             }
 
@@ -369,7 +372,8 @@ class QuizViewModel : ViewModel() {
                                                     conceptosYDefiniciones = it["conceptosYDefiniciones"] as? List<Map<String, String>> ?: listOf(),
                                                     opcionesCorrectasCompletarPalabras = it["opcionesCorrectasCompletarPalabras"] as? List<String> ?: listOf(),
                                                     leftItems = it["leftItems"] as? List<String> ?: listOf(),
-                                                    rightItems = it["rightItems"] as? List<String> ?: listOf()
+                                                    rightItems = it["rightItems"] as? List<String> ?: listOf(),
+                                                    userAnswers = it["userAnswers"] as? List<Map<String, Any>> ?: listOf()
                                                 )
                                             }
                                         }
@@ -722,6 +726,8 @@ class QuizViewModel : ViewModel() {
                     val opcionesCorrectasCompletarPalabras = preguntaData["opcionesCorrectasCompletarPalabras"] as? List<String> ?: emptyList()
                     val leftItems = preguntaData["leftItems"] as? List<String> ?: emptyList()
                     val rightItems = preguntaData["rightItems"] as? List<String> ?: emptyList()
+                    val userAnswers = preguntaData["userAnswers"] as? List<Map<String, Any>> ?: emptyList()
+
 
                     // Crear el objeto Pregunta
                     val pregunta = Pregunta(
@@ -740,7 +746,9 @@ class QuizViewModel : ViewModel() {
                         isSelected = isSelected,
                         opcionesCorrectasCompletarPalabras = opcionesCorrectasCompletarPalabras,
                         leftItems = leftItems,
-                        rightItems = rightItems
+                        rightItems = rightItems,
+                        userAnswers = userAnswers
+
                     )
 
                     // Añadir la pregunta a la lista
@@ -841,7 +849,7 @@ class QuizViewModel : ViewModel() {
     }
 
 
-    fun actualizarEstadoQuiz(codigoQuiz: String?, onComplete: (Boolean) -> Unit) {
+    fun actualizarIsQuizIniciado(codigoQuiz: String?, onComplete: (Boolean) -> Unit) {
         _isQuizIniciado.value = true
         Log.d("QuizViewModel", "Estado de _isQuizIniciado actualizado a: ${_isQuizIniciado.value}")
 
@@ -875,6 +883,72 @@ class QuizViewModel : ViewModel() {
             .addOnFailureListener { e ->
                 Log.e("QuizViewModel", "Error al obtener el documento del cuestionario: ${e.message}")
                 onComplete(false) // Llama al callback indicando error
+            }
+    }
+
+    fun actualizarUserAnswers(
+        codigoQuiz: String,
+        indicePregunta: Int,   // Recibimos el índice de la pregunta
+        userId: String,
+        respuesta: Any
+    ) {
+        val db = FirebaseFirestore.getInstance()
+
+        // Paso 1: Obtener el cuestionario por el código del cuestionario (codigoQuiz)
+        db.collection("cuestionarios")
+            .whereEqualTo("id", codigoQuiz)
+            .get()
+            .addOnSuccessListener { snapshot ->
+                // Paso 2: Buscar el cuestionario que contiene las preguntas
+                for (document in snapshot) {
+                    val preguntasData = document.get("preguntas") as? List<Map<String, Any>>
+
+                    preguntasData?.let { preguntas ->
+                        // Paso 3: Verificamos que el índice es válido
+                        if (indicePregunta in preguntas.indices) {
+                            // Paso 4: Obtener la pregunta en el índice proporcionado
+                            val pregunta = preguntas[indicePregunta]
+
+                            // Obtener el campo userAnswers y crear el mapa de la nueva respuesta
+                            val userAnswerMap = mapOf(
+                                "userId" to userId,
+                                "respuesta" to respuesta
+                            )
+
+                            // Paso 5: Obtener la lista de respuestas actuales de la pregunta
+                            val currentUserAnswers = (pregunta["userAnswers"] as? List<Map<String, Any>>)?.toMutableList() ?: mutableListOf()
+
+                            // Paso 6: Agregar la nueva respuesta a la lista de respuestas
+                            currentUserAnswers.add(userAnswerMap)
+
+                            // Paso 7: Actualizar el campo userAnswers en el mapa de la pregunta
+                            val updatedPregunta = pregunta.toMutableMap().apply {
+                                this["userAnswers"] = currentUserAnswers
+                            }
+
+                            // Paso 8: Actualizar el array de preguntas con la pregunta modificada
+                            val updatedPreguntas = preguntas.toMutableList().apply {
+                                this[indicePregunta] = updatedPregunta
+                            }
+
+                            // Paso 9: Guardar la actualización en Firestore
+                            db.collection("cuestionarios")
+                                .document(document.id)
+                                .update("preguntas", updatedPreguntas)
+                                .addOnSuccessListener {
+                                    println("Respuesta del usuario actualizada correctamente")
+                                }
+                                .addOnFailureListener { e ->
+                                    println("Error al actualizar la respuesta: $e")
+                                }
+                        } else {
+                            println("Índice de pregunta inválido: $indicePregunta")
+                        }
+                    }
+                }
+            }
+            .addOnFailureListener { e ->
+                println("Error al obtener el cuestionario: $e")
             }
     }
 

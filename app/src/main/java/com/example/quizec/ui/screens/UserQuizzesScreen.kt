@@ -51,6 +51,8 @@ fun UserQuizzesScreen(
     var userOrderedItems by remember { mutableStateOf<List<String>>(emptyList()) } //ORDENAR
     val userSelections = remember { mutableStateMapOf<String, String>() }
 
+    var answer by remember { mutableStateOf<Any?>(null) }
+
     // Estado para controlar si el botón "Aceptar" fue presionado
     var isAcceptButtonClicked by remember { mutableStateOf(false) }
 
@@ -214,6 +216,7 @@ fun UserQuizzesScreen(
                        trueButtonColor = trueButtonColor,
                        isAcceptButtonClicked = isAcceptButtonClicked
                    )
+
                    if (selectedAnswer != null) enableAcept = true
 
                 } else if (currentQuestion.tipo == TipoPregunta.OPCION_MULTIPLE_UNA) {
@@ -345,6 +348,16 @@ fun UserQuizzesScreen(
                             "Respuesta incorrecta"
                         }
                         Log.d("RESULT", "resultMessage: ${resultMessage}")
+
+                        //VF poner q la respuesta es el valor de selectedAnswer
+                        selectedAnswer?.let {
+                            quizViewModel.actualizarUserAnswers(
+                                codigoQuiz.toString(),
+                                currentQuestionIndex,
+                                userId,
+                                it
+                            )
+                        }
                     },
                     enabled = enableAcept && !isAcceptButtonClicked// Habilitar el botón si hay una respuesta y desactivar una vez pulsado
                 ) {
@@ -352,7 +365,9 @@ fun UserQuizzesScreen(
                 }
 
 
+
                 Spacer(modifier = Modifier.height(10.dp))
+
                 Log.d("UserQuizzesScreen", "Resultado de la respuesta: ${resultMessage}")
                 // Mostrar si la respuesta es correcta o incorrecta
                 if (resultMessage.isNotEmpty()) {

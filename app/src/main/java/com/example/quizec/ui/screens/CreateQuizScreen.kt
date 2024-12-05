@@ -439,7 +439,8 @@ fun Cuestionario.toMap(): Map<String, Any> {
                 "isSelected" to pregunta.isSelected,
                 "opcionesCorrectasCompletarPalabras" to pregunta.opcionesCorrectasCompletarPalabras,
                 "leftItems" to pregunta.leftItems,
-                "rightItems" to pregunta.rightItems
+                "rightItems" to pregunta.rightItems,
+                "userAnswers" to pregunta.userAnswers
             )
         },
         "immediateAccess" to immediateAccess,

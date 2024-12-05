@@ -119,7 +119,9 @@ class QuestionsViewModel : ViewModel() {
                         opcionesCorrectasCompletarPalabras = preguntaMap["opcionesCorrectasCompletarPalabras"] as? List<String>
                             ?: listOf(),
                         leftItems = preguntaMap["leftItems"] as? List<String> ?: listOf(),
-                        rightItems = preguntaMap["rightItems"] as? List<String> ?: listOf()
+                        rightItems = preguntaMap["rightItems"] as? List<String> ?: listOf(),
+                        userAnswers = preguntaMap["userAnswers"] as? List<Map<String, Any>> ?: listOf()
+
                     )
 
                     preguntasList.add(pregunta)
