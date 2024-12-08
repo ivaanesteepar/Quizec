@@ -167,6 +167,19 @@ fun EditarCuestionarioScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // Boton para seleccionar preguntas
+        Button(
+            onClick = {
+                navController.navigate("delete_questions/$cuestionarioId")
+            },
+            modifier = Modifier.fillMaxWidth(0.8f)
+        ) {
+            Text("Eliminar Preguntas")
+        }
+
+
+        Spacer(modifier = Modifier.height(12.dp))
+
         // Switches para configuración adicional
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -232,6 +245,7 @@ fun EditarCuestionarioScreen(
         }
         Spacer(modifier = Modifier.height(16.dp))
 
+        // ARREGLAR CUANDO ACTUALIZO EL CUESTIONARIO SIN HABER HECHO CAMBIOS, SE DUPLICAN LAS PREGUNTAS INICIALES
         Button(
             onClick = {
                 var valid = true
