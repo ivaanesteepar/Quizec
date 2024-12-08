@@ -13,6 +13,7 @@ data class Cuestionario(
     val locationRestricted: Boolean,
     val immediateResults: Boolean,
     val isQuizIniciado : Boolean,
+    val isUsed : Boolean,
     val latitude: Double,
     val longitude: Double,
     val radio: Double           // Radio de ubicación
@@ -20,6 +21,6 @@ data class Cuestionario(
     // Constructor secundario para inicialización por defecto
     constructor() : this(
         "", "", "", "", null, emptyList(),
-        false, false, false, false, 0.0, 0.0, 0.0  // Valor por defecto para radio
+        false, false, false, false, false,  0.0, 0.0, 0.0
     )
 }

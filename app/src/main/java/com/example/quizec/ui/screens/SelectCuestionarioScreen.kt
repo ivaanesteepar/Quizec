@@ -51,7 +51,7 @@ import kotlinx.coroutines.launch
 fun SelectCuestionarioScreen(
     navController: NavHostController,
     quizViewModel: QuizViewModel,
-    questionsViewModel: QuestionsViewModel = viewModel()
+    questionsViewModel: QuestionsViewModel
 ) {
     val context = LocalContext.current
 
@@ -59,6 +59,7 @@ fun SelectCuestionarioScreen(
     val cuestionariosState = questionsViewModel.cuestionariosState.collectAsState()
     var showDeleteConfirmationDialog by remember { mutableStateOf(false) }
     var cuestionarioToDelete by remember { mutableStateOf<Cuestionario?>(null) }
+    val estadosIsUsed = remember { mutableStateOf<Map<String, Boolean>>(emptyMap()) }
 
     val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
     var latitudActual by remember { mutableStateOf<Double?>(null) }
@@ -100,13 +101,21 @@ fun SelectCuestionarioScreen(
                     Log.d("Location", "Latitud: $latitudActual, Longitud: $longitudActual")
                 }
             }
-
             // Start receiving location updates
             fusedLocationClient.requestLocationUpdates(
                 locationRequest,
                 locationCallback,
                 Looper.getMainLooper()
             )
+        }
+    }
+
+    LaunchedEffect(userId) {
+        userId?.let {
+            estadosIsUsed.value = quizViewModel.obtenerEstadosIsUsed(it) // Esto debería actualizar el estado reactivo
+            estadosIsUsed.value.forEach { (codigoQuiz, isUsed) ->
+                Log.d("Estado isUsed", "Cuestionario ID: $codigoQuiz, isUsed: $isUsed")
+            }
         }
     }
 
@@ -140,13 +149,18 @@ fun SelectCuestionarioScreen(
                         .height(380.dp)
                 ) {
                     items(cuestionariosState.value) { cuestionario ->
+                        println("Cuestionarios: $cuestionariosState")
+                        // Obtener el valor de isUsed para cada cuestionario
+                        val isUsed = estadosIsUsed.value[cuestionario.id] ?: false // id es codigoQuiz
+                        println("isUsed: $isUsed del cuestionario: ${cuestionario.id}")
+
                         val isSelected = questionsViewModel.selectedCuestionario == cuestionario.id
 
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.padding(vertical = 8.dp)
                         ) {
-                            Checkbox( //// Mostrar checkbox para seleccionar el cuestionario
+                            Checkbox(
                                 checked = isSelected,
                                 onCheckedChange = {
                                     questionsViewModel.toggleCuestionarioSelection(cuestionario.id)
@@ -154,7 +168,7 @@ fun SelectCuestionarioScreen(
                                 modifier = Modifier.size(20.dp)
                             )
 
-                            Column( // Mostrar título, ID y URL del cuestionario
+                            Column(
                                 modifier = Modifier
                                     .weight(1f)
                                     .padding(start = 8.dp)
@@ -167,31 +181,9 @@ fun SelectCuestionarioScreen(
                                     text = "ID: ${cuestionario.id}",
                                     style = MaterialTheme.typography.labelSmall
                                 )
-
-                                cuestionario.imagen?.let { imageUrl ->
-                                    Text(
-                                        text = "URL de la imagen: $imageUrl",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        modifier = Modifier.padding(top = 4.dp)
-                                    )
-
-                                    val imageBitmap by remember(imageUrl) { // Cargar y mostrar la imagen desde URI
-                                        mutableStateOf(loadImageFromUri(context, imageUrl))
-                                    }
-
-                                    imageBitmap?.let { bitmap ->
-                                        Image(
-                                            bitmap = bitmap.asImageBitmap(),
-                                            contentDescription = "Imagen del cuestionario",
-                                            modifier = Modifier
-                                                .padding(top = 8.dp)
-                                                .size(100.dp)
-                                        )
-                                    }
-                                }
                             }
 
-                            Button( // Botón de Edit
+                            Button(
                                 onClick = {
                                     navController.navigate("editCuestionario/${cuestionario.id}")
                                 },
@@ -200,15 +192,18 @@ fun SelectCuestionarioScreen(
                                 Text(text = "Editar")
                             }
 
-                            Button( // Botón de Eliminación
-                                onClick = {
-                                    showDeleteConfirmationDialog = true
-                                    cuestionarioToDelete = cuestionario
-                                },
-                                modifier = Modifier.padding(start = 8.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                            ) {
-                                Text(text = "Eliminar")
+                            // Mostrar el botón de eliminar solo si isUsed es false
+                            if (!isUsed) {
+                                Button(
+                                    onClick = {
+                                        showDeleteConfirmationDialog = true
+                                        cuestionarioToDelete = cuestionario
+                                    },
+                                    modifier = Modifier.padding(start = 8.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                                ) {
+                                    Text(text = "Eliminar")
+                                }
                             }
                         }
                     }
@@ -304,9 +299,6 @@ fun SelectCuestionarioScreen(
             ) {
                 Text(text = "Continuar")
             }
-
-
-
 
             Button(
                 onClick = { navController.navigate("home") }, // Navegar hacia atrás
