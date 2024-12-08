@@ -502,7 +502,6 @@ class QuizViewModel : ViewModel() {
 
 
 
-
     fun actualizarIsUsed(quizId: String, isUsed: Boolean, callback: (Boolean) -> Unit) {
         val db = FirebaseFirestore.getInstance()
         val collectionRef = db.collection("cuestionarios")

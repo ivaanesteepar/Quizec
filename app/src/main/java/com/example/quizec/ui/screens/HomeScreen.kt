@@ -3,7 +3,12 @@ package com.example.quizec.ui.screens
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -81,8 +86,10 @@ fun HomeScreenPortrait(navController: NavHostController, quizViewModel: QuizView
         // Contenido de la pantalla de inicio
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-            modifier = Modifier.padding(16.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp), // Asegura el espaciado
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)  // Añade el padding alrededor
         ) {
             // Imagen del título QUIZEC
             Image(
@@ -115,8 +122,7 @@ fun HomeScreenPortrait(navController: NavHostController, quizViewModel: QuizView
                     onClick = {
                         navController.navigate("joinQuiz")
                     },
-                    modifier = Modifier
-                        .fillMaxWidth(0.8f)
+                    modifier = Modifier.fillMaxWidth(0.8f)
                 ) {
                     Text(text = "Unirse a un Quiz")
                 }
@@ -163,9 +169,35 @@ fun HomeScreenPortrait(navController: NavHostController, quizViewModel: QuizView
                     Text(text = "Historial")
                 }
             }
+
+            Spacer(modifier = Modifier.weight(1f)) // Asegura que el botón se mueva al final de la pantalla
+
+            // Botón para cerrar sesión
+            Button(
+                onClick = {
+                    navController.navigate("login")
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp), // Opcional, para añadir algo de espacio alrededor
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Red) // Color de fondo rojo para resaltar
+            ) {
+                // Icono y texto dentro del botón
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ExitToApp,
+                    contentDescription = "Cerrar sesión",
+                    modifier = Modifier.padding(end = 8.dp), // Espacio entre icono y texto
+                    tint = Color.White // Color blanco para el icono
+                )
+                Text(
+                    text = "Cerrar Sesión",
+                    color = Color.White // Texto blanco para contrastar con el fondo rojo
+                )
+            }
         }
     }
 }
+
 
 @Composable
 fun HomeScreenLandscape(navController: NavHostController, quizViewModel: QuizViewModel) {
@@ -302,6 +334,7 @@ fun HomeScreenLandscape(navController: NavHostController, quizViewModel: QuizVie
                     ) {
                         Text(text = "Historial")
                     }
+
                 }
             }
         }
