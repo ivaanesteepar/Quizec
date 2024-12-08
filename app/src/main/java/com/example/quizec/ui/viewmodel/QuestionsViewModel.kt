@@ -36,6 +36,10 @@ class QuestionsViewModel : ViewModel() {
     private val _cuestionariosState = MutableStateFlow<List<Cuestionario>>(emptyList())
     val cuestionariosState: StateFlow<List<Cuestionario>> get() = _cuestionariosState
 
+    fun obtenerCuestionarioPorId(cuestionarioId: String): Cuestionario? {
+        return _cuestionariosState.value.find { it.id == cuestionarioId }
+    }
+
 
     // Función para cargar todas las preguntas del usuario desde Firestore
     fun cargarPreguntasUsuario(userId: String) {
@@ -341,41 +345,6 @@ class QuestionsViewModel : ViewModel() {
                 Log.e("QuestionsViewModel", "Error al buscar el cuestionario: ${e.message}")
             }
     }
-
-    fun eliminarDelHistorialDeTodosLosUsuarios(codigoQuiz: String) {
-        // Obtener todos los documentos de usuarios en la colección 'usuarioHistorial'
-        db.collection("usuarioHistorial")
-            .get()
-            .addOnSuccessListener { querySnapshot ->
-                // Iterar sobre todos los documentos de usuarios
-                for (document in querySnapshot.documents) {
-                    val usuarioNombre = document.id  // El ID del documento corresponde al nombre del usuario
-
-                    // Eliminar el cuestionario de la subcolección 'cuestionarios' para cada usuario
-                    eliminarCuestionarioDelHistorial(usuarioNombre, codigoQuiz)
-                }
-            }
-            .addOnFailureListener { e ->
-                Log.e("QuestionsViewModel", "Error al obtener los usuarios: ${e.message}")
-            }
-    }
-
-    private fun eliminarCuestionarioDelHistorial(usuarioNombre: String, codigoQuiz: String) {
-        db.collection("usuarioHistorial")
-            .document(usuarioNombre)  // Accedemos al documento correspondiente al usuario
-            .collection("cuestionarios")
-            .document(codigoQuiz)  // Accedemos al documento de la subcolección cuyo nombre es 'codigoQuiz'
-            .delete()
-            .addOnSuccessListener {
-                Log.d("QuestionsViewModel", "Cuestionario eliminado del historial de usuario: $codigoQuiz")
-            }
-            .addOnFailureListener { e ->
-                Log.e("QuestionsViewModel", "Error al eliminar el cuestionario del historial de usuario: ${e.message}")
-            }
-    }
-
-
-
 
     fun actualizarPregunta(pregunta: Pregunta) {
         // Obtener una instancia de Firebase Firestore

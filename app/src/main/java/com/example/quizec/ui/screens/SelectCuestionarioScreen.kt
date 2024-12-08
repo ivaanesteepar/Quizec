@@ -43,6 +43,9 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 @Composable
 fun SelectCuestionarioScreen(
@@ -221,32 +224,77 @@ fun SelectCuestionarioScreen(
             Button(
                 onClick = {
                     val selectedCuestionarioId = questionsViewModel.selectedCuestionario
-                    if (selectedCuestionarioId != null) {
-                        userId?.let { userId ->
-                            quizViewModel.actualizarRolUsuario(
-                                nuevoRol = Rol.CREADOR.toString()
-                            ) { errorMessage ->
-                                if (errorMessage == null && locationPermissionGranted) {
-                                    LocationUtils.fetchLocation(context, fusedLocationClient) { location ->
-                                        Log.d("Geolocalización", "Ubicación actual: $location")
+                    println("Cuestionario seleccionado: $selectedCuestionarioId")
 
-                                        quizViewModel.actualizarCoordenadasCuestionario(
-                                            selectedCuestionarioId,
-                                            latitudActual,
-                                            longitudActual
-                                        ) { updateError ->
-                                            if (updateError == null) {
-                                                Log.d("SelectCuestionario", "Coordenadas actualizadas con éxito.")
-                                                navController.navigate("waiting_screen/$selectedCuestionarioId")
+                    // Verificar si el cuestionario seleccionado es válido
+                    if (selectedCuestionarioId != null) {
+                        val cuestionarioSeleccionado = questionsViewModel.obtenerCuestionarioPorId(selectedCuestionarioId)
+                        val codigoQuiz = cuestionarioSeleccionado?.id // Obtener el código del cuestionario
+
+                        // Si el código del cuestionario existe
+                        if (codigoQuiz != null) {
+                            // Llamar a la función suspendida dentro de una corrutina
+                            userId?.let {
+                                // Lanzar una corrutina para obtener el valor de locationRestricted
+                                CoroutineScope(Dispatchers.Main).launch {
+                                    try {
+                                        val locationRestricted = quizViewModel.obtenerLocationRestricted(codigoQuiz)
+
+                                        // Continuar con el flujo de trabajo
+                                        quizViewModel.actualizarRolUsuario(
+                                            nuevoRol = Rol.CREADOR.toString()
+                                        ) { errorMessage ->
+                                            if (errorMessage == null) {
+                                                // Verificar si la ubicación está restringida
+                                                if (locationRestricted == true) {
+                                                    // Si locationRestricted es true, obtenemos la ubicación
+                                                    if (locationPermissionGranted) {
+                                                        LocationUtils.fetchLocation(context, fusedLocationClient) { location ->
+                                                            Log.d("Geolocalización", "Ubicación actual: $location")
+
+                                                            quizViewModel.actualizarCoordenadasCuestionario(
+                                                                selectedCuestionarioId,
+                                                                latitudActual,
+                                                                longitudActual
+                                                            ) { updateError ->
+                                                                if (updateError == null) {
+                                                                    Log.d("SelectCuestionario", "Coordenadas actualizadas con éxito.")
+                                                                    navController.navigate("waiting_screen/$selectedCuestionarioId")
+                                                                } else {
+                                                                    Log.e("SelectCuestionario", "Error al actualizar las coordenadas: $updateError")
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                } else {
+                                                    // Si locationRestricted es false, se asignan las coordenadas a 0
+                                                    val latitud = 0.0
+                                                    val longitud = 0.0
+
+                                                    quizViewModel.actualizarCoordenadasCuestionario(
+                                                        selectedCuestionarioId,
+                                                        latitud,
+                                                        longitud
+                                                    ) { updateError ->
+                                                        if (updateError == null) {
+                                                            Log.d("SelectCuestionario", "Coordenadas actualizadas con éxito.")
+                                                            navController.navigate("waiting_screen/$selectedCuestionarioId")
+                                                        } else {
+                                                            Log.e("SelectCuestionario", "Error al actualizar las coordenadas: $updateError")
+                                                        }
+                                                    }
+                                                }
                                             } else {
-                                                Log.e("SelectCuestionario", "Error al actualizar las coordenadas: $updateError")
+                                                Log.e("SelectCuestionario", "Error al actualizar el rol: $errorMessage")
                                             }
                                         }
+                                    } catch (e: Exception) {
+                                        Log.e("SelectCuestionario", "Error al obtener locationRestricted: ${e.message}")
                                     }
-                                } else {
-                                    Log.e("SelectCuestionario", "Error al actualizar el rol: $errorMessage")
                                 }
                             }
+                        } else {
+                            Log.e("SelectCuestionario", "No se pudo obtener el código del cuestionario")
                         }
                     }
                 },
@@ -256,6 +304,9 @@ fun SelectCuestionarioScreen(
             ) {
                 Text(text = "Continuar")
             }
+
+
+
 
             Button(
                 onClick = { navController.navigate("home") }, // Navegar hacia atrás
@@ -277,7 +328,6 @@ fun SelectCuestionarioScreen(
                     onClick = {
                         cuestionarioToDelete?.let {
                             questionsViewModel.eliminarCuestionario(it.id)
-                            questionsViewModel.eliminarDelHistorialDeTodosLosUsuarios(cuestionarioToDelete!!.id)
                         }
                         showDeleteConfirmationDialog = false
                     }

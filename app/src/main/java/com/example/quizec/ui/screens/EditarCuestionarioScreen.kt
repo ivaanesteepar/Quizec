@@ -60,7 +60,6 @@ fun EditarCuestionarioScreen(
         listaPreguntas = listaPreguntas + quizViewModel.preguntas  // Las preguntas seleccionadas se agregan a la lista inicial
     }
 
-
     println("Preguntas tiene el valor de: ${quizViewModel.preguntas}") // preguntas almacena solo las preguntas nuevas que quieres introducir
 
     // Launcher para elegir la imagen
