@@ -305,10 +305,10 @@ fun CreateQuizScreen(
                 }
 
                 val radioValue = radio.toDoubleOrNull()
-//                if (radioValue == null) { //HACER ESTO SOLO SI ESTÁ ACTIVADA LA OPCIÓN DE RADIO!!!!!!!
-//                    errorMessage = "Por favor, ingrese un valor válido para el radio."
-//                    valid = false
-//                }
+                if (locationRestricted && radioValue == null) { //HACER ESTO SOLO SI ESTÁ ACTIVADA LA OPCIÓN DE RADIO!!!
+                    errorMessage = "Por favor, ingrese un valor válido para el radio."
+                    valid = false
+                }
 
                 if (!valid) {
                     errorMessage = "Por favor, complete todos los campos requeridos."  // Mostrar el mensaje de error
@@ -402,6 +402,7 @@ private fun crearCuestionario(
             quizViewModel.guardarCuestionarioEnFirestore(cuestionario.toMap()) { error ->
                 if (error != null) {
                     onError("Error al crear el cuestionario: $error")
+                    Toast.makeText(navController.context, "Error al crear el cuestionario", Toast.LENGTH_SHORT).show()
                 } else {
                     if (userUid != null) {
                         quizViewModel.actualizarRolUsuario2(userUid, Rol.CREADOR)

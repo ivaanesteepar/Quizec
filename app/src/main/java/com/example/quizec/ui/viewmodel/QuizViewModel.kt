@@ -9,7 +9,6 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.example.quizec.data.model.Cuestionario
 import com.example.quizec.data.model.Pregunta
 import com.example.quizec.data.model.Rol
@@ -19,7 +18,6 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 class QuizViewModel : ViewModel() {
@@ -436,20 +434,20 @@ class QuizViewModel : ViewModel() {
 
                                         // Crear el cuestionario y agregarlo a la lista
                                         val cuestionario = Cuestionario(
-                                            id = cuestionarioData?.get("codigoQuiz") as? String ?: "",
-                                            titulo = cuestionarioData?.get("titulo") as? String ?: "Sin título",
-                                            descripcion = cuestionarioData?.get("descripcion") as? String ?: "",
-                                            creadorId = cuestionarioData?.get("creadorId") as? String ?: "",
-                                            imagen = cuestionarioData?.get("imagen") as? String, // Deja que sea nulo si no está presente
+                                            id = cuestionarioData["codigoQuiz"] as? String ?: "",
+                                            titulo = cuestionarioData["titulo"] as? String ?: "Sin título",
+                                            descripcion = cuestionarioData["descripcion"] as? String ?: "",
+                                            creadorId = cuestionarioData["creadorId"] as? String ?: "",
+                                            imagen = cuestionarioData["image"] as? String, // Deja que sea nulo si no está presente
                                             preguntas = preguntas, // Asignamos las preguntas recuperadas
-                                            immediateAccess = cuestionarioData?.get("immediateAccess") as? Boolean ?: false,
-                                            isQuizIniciado = cuestionarioData?.get("isQuizIniciado") as? Boolean ?: false,
-                                            locationRestricted = cuestionarioData?.get("locationRestricted") as? Boolean ?: false,
-                                            immediateResults = cuestionarioData?.get("immediateResults") as? Boolean ?: false,
-                                            latitude = (cuestionarioData?.get("latitude") as? String)?.toDoubleOrNull() ?: 0.0,
-                                            longitude = (cuestionarioData?.get("longitude") as? String)?.toDoubleOrNull() ?: 0.0,
+                                            immediateAccess = cuestionarioData["immediateAccess"] as? Boolean ?: false,
+                                            isQuizIniciado = cuestionarioData["isQuizIniciado"] as? Boolean ?: false,
+                                            locationRestricted = cuestionarioData["locationRestricted"] as? Boolean ?: false,
+                                            immediateResults = cuestionarioData["immediateResults"] as? Boolean ?: false,
+                                            latitude = (cuestionarioData["latitude"] as? String)?.toDoubleOrNull() ?: 0.0,
+                                            longitude = (cuestionarioData["longitude"] as? String)?.toDoubleOrNull() ?: 0.0,
                                             // Conversión de radio a Double (si es necesario)
-                                            radio = (cuestionarioData?.get("radio") as? String)?.toDoubleOrNull() ?: 0.0 // Valor por defecto en caso de error
+                                            radio = (cuestionarioData["radio"] as? String)?.toDoubleOrNull() ?: 0.0 // Valor por defecto en caso de error
                                         )
 
                                         // Añadir el cuestionario a la lista
@@ -728,7 +726,7 @@ class QuizViewModel : ViewModel() {
         if (!_preguntas.contains(pregunta)) {
             _preguntas.add(pregunta) // Agregar la pregunta solo si no está en la lista
             contadorPreguntas.value += 1 // Aumentar el contador solo si la pregunta es nueva
-            println("Pregunta agregada en la lista $preguntas")
+            println("Pregunta agregada en la lista de preguntas de quizViewModel: $preguntas")
         }
         else {
             println("La pregunta ya está en la lista")
@@ -933,7 +931,7 @@ class QuizViewModel : ViewModel() {
                             // Paso 4: Obtener la pregunta en el índice proporcionado
                             val pregunta = preguntas[indicePregunta]
 
-                            // Obtener el campo userAnswers y crear el mapa de la nueva respuesta
+                            // Obtener el campo userAnswers y crear el mapa de la nueva respuesta que es un Map(String, Any)
                             val userAnswerMap = mapOf(
                                 "userId" to userId,
                                 "respuesta" to respuesta

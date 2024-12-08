@@ -23,7 +23,6 @@ import com.example.quizec.data.model.Cuestionario
 import com.example.quizec.data.model.Pregunta
 import com.example.quizec.ui.viewmodel.QuestionsViewModel
 import com.example.quizec.ui.viewmodel.QuizViewModel
-import kotlinx.coroutines.launch
 
 @Composable
 fun EditarCuestionarioScreen(
@@ -32,9 +31,6 @@ fun EditarCuestionarioScreen(
     quizViewModel: QuizViewModel,
     cuestionarioMod: Cuestionario
 ) {
-    // Obtener el contexto de corutinas
-    val coroutineScope = rememberCoroutineScope()
-
     val questionsViewModel = QuestionsViewModel()
     var titulo by rememberSaveable { mutableStateOf(cuestionarioMod.titulo) }
     var descripcion by rememberSaveable { mutableStateOf(cuestionarioMod.descripcion) }
@@ -43,24 +39,42 @@ fun EditarCuestionarioScreen(
     var tituloError by rememberSaveable { mutableStateOf(false) }
     var descripcionError by rememberSaveable { mutableStateOf(false) }
     val creadorId = cuestionarioMod.creadorId
+    val listaPreguntasOriginal by rememberSaveable { mutableStateOf(cuestionarioMod.preguntas) }
     var listaPreguntas by remember { mutableStateOf(cuestionarioMod.preguntas) } // Lista mutable de preguntas
-    val listaPreguntasCopia by remember { mutableStateOf(cuestionarioMod.preguntas.toMutableList()) } // Copia de las preguntas
 
-    println("copia lista es: $listaPreguntasCopia")
-
-    // Variables para el estado de los switches
+   // Variables para el estado de los switches
     var immediateAccess by remember { mutableStateOf(cuestionarioMod.immediateAccess) }
     var locationRestricted by remember { mutableStateOf(cuestionarioMod.locationRestricted) }
     var immediateResults by remember { mutableStateOf(cuestionarioMod.immediateResults) }
     var radio by rememberSaveable { mutableStateOf(cuestionarioMod.radio.toString()) }
 
+    val preguntasSeleccionadas = quizViewModel.preguntas
+
+    //NEW
+    var preguntasInicialesQuiz by rememberSaveable { mutableStateOf(emptyList<Pregunta>()) }
+
+
+    println("preguntasSeleccionadas en editar cuestionario: $preguntasSeleccionadas") // bien
+
     LaunchedEffect(cuestionarioId) {
-        // Combinamos las preguntas iniciales con las preguntas seleccionadas
+        // Llamamos a la función suspendida para cargar las preguntas del nuevo cuestionario
         listaPreguntas = questionsViewModel.cargarPreguntasCuestionario(cuestionarioId)
-        listaPreguntas = listaPreguntas + quizViewModel.preguntas  // Las preguntas seleccionadas se agregan a la lista inicial
+        //quizViewModel.cargarPreguntasPorCodigo(cuestionarioId)
+
+        // Actualizar las preguntas con las seleccionadas si es necesario
+        listaPreguntas = listaPreguntas + quizViewModel.preguntas.filter { nuevaPregunta ->
+            // Verificamos si la pregunta ya existe en la lista, basándonos en el id
+            !listaPreguntas.any { preguntaExistente -> preguntaExistente.id == nuevaPregunta.id }
+        }
+
+        //NEW
+        preguntasInicialesQuiz = questionsViewModel.cargarPreguntasCuestionario(cuestionarioId)
+
+
+        println("tamaño de la lista de preguntas al cambiar de cuestionario: ${listaPreguntas.size}")
     }
 
-    println("Preguntas tiene el valor de: ${quizViewModel.preguntas}") // preguntas almacena solo las preguntas nuevas que quieres introducir
+    println("listaPreguntas: $listaPreguntas")
 
     // Launcher para elegir la imagen
     val pickImageLauncher = rememberLauncherForActivityResult(
@@ -139,7 +153,7 @@ fun EditarCuestionarioScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        //Text("Numero de preguntas: ${listaPreguntas.size}")
+        Text("Contador de preguntas: ${listaPreguntas.size}") //tiene las pregs nuevas y las iniciales
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -149,18 +163,6 @@ fun EditarCuestionarioScreen(
             modifier = Modifier.fillMaxWidth(0.8f)
         ) {
             Text("Seleccionar Preguntas")
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Boton para seleccionar preguntas
-        Button(
-            onClick = {
-                navController.navigate("delete_questions/$cuestionarioId")
-                      },
-            modifier = Modifier.fillMaxWidth(0.8f)
-        ) {
-            Text("Eliminar Preguntas")
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -230,7 +232,6 @@ fun EditarCuestionarioScreen(
         }
         Spacer(modifier = Modifier.height(16.dp))
 
-        // ARREGLAR CUANDO ACTUALIZO EL CUESTIONARIO SIN HABER HECHO CAMBIOS, SE DUPLICAN LAS PREGUNTAS INICIALES
         Button(
             onClick = {
                 var valid = true
@@ -253,47 +254,35 @@ fun EditarCuestionarioScreen(
                 if (!valid) {
                     errorMessage = "Por favor, complete todos los campos requeridos."  // Mostrar el mensaje de error
                 } else {
-                    // Aquí usamos LaunchedEffect para llamar a la función suspendida
-                    coroutineScope.launch {
-                        // Cargar las preguntas ya existentes asociadas al cuestionario
-                        val preguntasExistentes = questionsViewModel.cargarPreguntasCuestionario(cuestionarioId)
+                    // Actualizar el cuestionario con las preguntas seleccionadas
+                    quizViewModel.actualizarCuestionario(
+                        cuestionario = Cuestionario(
+                            id = cuestionarioId,
+                            titulo = titulo,
+                            descripcion = descripcion,
+                            creadorId = creadorId,
+                            imagen = imageUri?.toString(),
+                            preguntas = listaPreguntas, //CAMBIADO
+                            immediateAccess = immediateAccess,
+                            locationRestricted = locationRestricted,
+                            immediateResults = immediateResults,
+                            isQuizIniciado = false,
+                            latitude = 0.0,
+                            longitude = 0.0,
+                            radio = radioValue ?: 0.0
+                        ),
+                        codigoQuiz = cuestionarioId,
+                        onError = { errorMessage = it ?: "Unknown error" }
+                    )
 
-                        // Filtrar las preguntas seleccionadas para que no se agreguen las duplicadas
-                        val preguntasFinales = (listaPreguntasCopia + quizViewModel.preguntas)
-                            .distinctBy { it.id } // Usamos distinctBy para eliminar duplicados por ID
+                    // Guardar las preguntas en el ViewModel
+                    questionsViewModel.guardarPreguntasCuestionario(cuestionarioId, listaPreguntas - preguntasInicialesQuiz)
 
-                        // Verificamos si las preguntas seleccionadas ya están en la base de datos
-                        val preguntasNoDuplicadas = preguntasFinales.filter { nuevaPregunta ->
-                            !listaPreguntasCopia.any { it.id == nuevaPregunta.id }
-                        }
+                    // Vaciar las preguntas seleccionadas para evitar que se sumen a otro cuestionario
+                    quizViewModel.resetearPreguntas()
 
-                        // Actualizar el cuestionario con las preguntas filtradas (sin duplicados)
-                        quizViewModel.actualizarCuestionario(
-                            cuestionario = Cuestionario(
-                                id = cuestionarioId,
-                                titulo = titulo,
-                                descripcion = descripcion,
-                                creadorId = creadorId,
-                                imagen = imageUri?.toString(),
-                                preguntas = preguntasNoDuplicadas, // Usar las preguntas filtradas
-                                immediateAccess = immediateAccess,
-                                locationRestricted = locationRestricted,
-                                immediateResults = immediateResults,
-                                isQuizIniciado = false,
-                                latitude = 0.0,
-                                longitude = 0.0,
-                                radio = radioValue ?: 0.0
-                            ),
-                            codigoQuiz = cuestionarioId,
-                            onError = { errorMessage = it ?: "Unknown error" }
-                        )
-
-                        // Guardar las preguntas no duplicadas en el ViewModel
-                        questionsViewModel.guardarPreguntasCuestionario(cuestionarioId, preguntasNoDuplicadas)
-
-                        // Navegar de vuelta a la pantalla de cuestionarios
-                        navController.navigate("select_cuestionario")
-                    }
+                    // Navegar de vuelta a la pantalla de cuestionarios
+                    navController.navigate("select_cuestionario")
                 }
             },
             modifier = Modifier.fillMaxWidth(0.8f)
@@ -302,28 +291,20 @@ fun EditarCuestionarioScreen(
         }
 
 
-
         Spacer(modifier = Modifier.height(8.dp))
 
-        // AQUÍ ESTÁ EL PROBLEMA!!!!!!!!!!!!!!!!!
         Button(
             onClick = {
-                // Restablecer la lista de preguntas a su estado original
-                quizViewModel._preguntas.clear() // Vaciar las preguntas seleccionadas
-
-                // También restablecer el contador de preguntas
-                quizViewModel.contadorPreguntas.value = 0
-
-                // Restablecer la lista de preguntas visualizada (si lo deseas)
-                listaPreguntas = listaPreguntasCopia
-
-                // Navegar de vuelta a la pantalla de cuestionarios
+                // Restaurar las preguntas a su estado original
+                listaPreguntas = listaPreguntasOriginal
+                quizViewModel.resetearPreguntas()
                 navController.navigate("select_cuestionario")
             },
             modifier = Modifier.fillMaxWidth(0.8f)
         ) {
             Text("Volver", color = Color.White)
         }
+
 
 
         // Mostrar mensaje de error si es necesario

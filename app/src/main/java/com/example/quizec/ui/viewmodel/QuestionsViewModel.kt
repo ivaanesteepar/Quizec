@@ -83,6 +83,7 @@ class QuestionsViewModel : ViewModel() {
         }
     }
 
+
     suspend fun cargarPreguntasCuestionario(codigoQuiz: String): List<Pregunta> {
         println("Cargando preguntas del cuestionario con código: $codigoQuiz")
         val preguntasList = mutableListOf<Pregunta>()
@@ -138,6 +139,7 @@ class QuestionsViewModel : ViewModel() {
     }
 
 
+
     // Función para cargar los cuestionarios del usuario desde Firestore
     private suspend fun cargarCuestionarios(userId: String): List<Cuestionario> {
         val cuestionariosList = mutableListOf<Cuestionario>()
@@ -168,13 +170,14 @@ class QuestionsViewModel : ViewModel() {
         }
     }
 
-    // Función para guardar las preguntas seleccionadas en una lista (no en Firestore)
+    // Función para guardar las preguntas seleccionadas en quizViewModel, en las preg del cuestionario (no en Firestore)
     fun guardarPreguntasSeleccionadas(quizViewModel: QuizViewModel) {
         _preguntasSeleccionadas.value.forEach { pregunta ->
             quizViewModel.agregarPregunta(pregunta)
         }
         println("Preguntas seleccionadas guardadas en QuizViewModel: ${_preguntasSeleccionadas.value}")
     }
+
 
     // Función para manejar la selección/deselección de un cuestionario
     fun toggleCuestionarioSelection(cuestionarioId: String) {

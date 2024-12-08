@@ -5,6 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -22,10 +23,13 @@ fun SelectQuestionsEditScreen(
     quizViewModel: QuizViewModel
 ) {
     val questionsViewModel: QuestionsViewModel = viewModel()
-
+    //NEW
+    var preguntasInicialesQuiz by remember { mutableStateOf(emptyList<Pregunta>()) }
     // Cargar preguntas (esto ya está configurado)
     LaunchedEffect(userId) {
         questionsViewModel.cargarPreguntasUsuario(userId)
+        //NEW
+        preguntasInicialesQuiz = questionsViewModel.cargarPreguntasCuestionario(codigoQuiz)
     }
 
     // Aquí debes asegurarte de que se actualicen automáticamente cuando las preguntas cambien.
@@ -49,6 +53,7 @@ fun SelectQuestionsEditScreen(
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(16.dp)
             )
+            Text("Preguntas iniciales: ${preguntasInicialesQuiz.size}")
 
             LazyColumn(
                 modifier = Modifier
@@ -61,7 +66,9 @@ fun SelectQuestionsEditScreen(
                     PreguntaItemEdit(
                         pregunta = pregunta,
                         isSelected = preguntasSeleccionadas.contains(pregunta),
-                        isInQuiz = quizViewModel.preguntas.contains(pregunta),
+                        //está bug, porque aunq preguntasInicialesQuiz tenga la pregunta, no deshabilita el btn.
+                        //de todas formas, nunca se agregan las preguntas repetidas
+                        isInQuiz = quizViewModel.preguntas.contains(pregunta) || preguntasInicialesQuiz.contains(pregunta),
                         onSelectionChange = { questionsViewModel.togglePreguntaSeleccionada(pregunta) },
                         onEdit = { preguntaToEdit ->
                             // Navegar a una pantalla de edición, o mostrar un cuadro de diálogo
