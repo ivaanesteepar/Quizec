@@ -27,7 +27,7 @@ class QuizViewModel : ViewModel() {
     private val firestore = FirebaseFirestore.getInstance()
     private val _nombreUsuario = MutableStateFlow<String?>(null)
     val nombreUsuario: StateFlow<String?> = _nombreUsuario
-    private val _preguntas = mutableStateListOf<Pregunta>()
+    val _preguntas = mutableStateListOf<Pregunta>()
     var preguntas: List<Pregunta> = _preguntas // preguntas del quiz
     var contadorPreguntas = mutableStateOf(0)
     // StateFlow para almacenar el rol del usuario
@@ -73,11 +73,47 @@ class QuizViewModel : ViewModel() {
     private val _isQuizIniciado = MutableStateFlow(false)
     val isQuizIniciado: StateFlow<Boolean> = _isQuizIniciado
 
-
-
     init {
         obtenerRolUsuario()
     }
+
+    // Función para eliminar una pregunta
+    fun eliminarPreguntaCuestionario(cuestionarioId: String, preguntaId: String, onSuccess: () -> Unit) {
+        val db = FirebaseFirestore.getInstance()
+
+        db.collection("cuestionarios")
+            .whereEqualTo("id", cuestionarioId)
+            .get()
+            .addOnSuccessListener { querySnapshot ->
+                if (querySnapshot.documents.isNotEmpty()) {
+                    val documento = querySnapshot.documents[0]
+                    val cuestionarioRef = documento.reference
+                    val preguntas = documento.get("preguntas") as? MutableList<Map<String, Any>> ?: mutableListOf()
+
+                    // Filtra el array para eliminar la pregunta
+                    val preguntasActualizadas = preguntas.filter { it["id"] != preguntaId }
+
+                    // Actualiza Firestore
+                    cuestionarioRef.update("preguntas", preguntasActualizadas)
+                        .addOnSuccessListener {
+                            // Aquí también actualizamos la lista local de preguntas en el ViewModel
+                            _preguntas.removeIf { it.id == preguntaId }
+
+                            // Llama al callback de éxito
+                            onSuccess()
+                        }
+                        .addOnFailureListener { exception ->
+                            println("Error al eliminar la pregunta: ${exception.message}")
+                        }
+                }
+            }
+            .addOnFailureListener { exception ->
+                println("Error al obtener el cuestionario: ${exception.message}")
+            }
+    }
+
+
+
 
     fun obtenerCuestionario(cuestionarioId: String, onResult: (Cuestionario?) -> Unit) {
         val db = FirebaseFirestore.getInstance()
@@ -701,7 +737,6 @@ class QuizViewModel : ViewModel() {
             } else {
                 // Suponemos que solo hay un documento con ese 'id', por lo que obtenemos el primer documento
                 val documento = documentos.documents.first()
-
                 // Obtener las preguntas como una lista de mapas
                 val preguntasData = documento.get("preguntas") as? List<Map<String, Any>> ?: emptyList()
 
@@ -728,7 +763,6 @@ class QuizViewModel : ViewModel() {
                     val rightItems = preguntaData["rightItems"] as? List<String> ?: emptyList()
                     val userAnswers = preguntaData["userAnswers"] as? List<Map<String, Any>> ?: emptyList()
 
-
                     // Crear el objeto Pregunta
                     val pregunta = Pregunta(
                         id = id,
@@ -750,14 +784,11 @@ class QuizViewModel : ViewModel() {
                         userAnswers = userAnswers
 
                     )
-
                     // Añadir la pregunta a la lista
                     _preguntas.add(pregunta)
                 }
-
                 // Actualizar el contador de preguntas
                 contadorPreguntas.value = _preguntas.size
-                println("Preguntas cargadas: ${_preguntas.size}") // BIEN
             }
         } catch (e: Exception) {
             Log.e("QuizViewModel", "Error al obtener las preguntas de Firestore: ${e.message}")

@@ -32,6 +32,7 @@ import com.example.quizec.data.model.Pregunta
 import com.example.quizec.ui.screens.SelectQuestionsScreen
 import com.example.quizec.ui.screens.UserQuizzesScreen
 import com.example.quizec.ui.screens.CreatorQuizzesScreen
+import com.example.quizec.ui.screens.DeleteQuestionsScreen
 import com.example.quizec.ui.screens.DetalleCuestionarioScreen
 import com.example.quizec.ui.screens.EditarCuestionarioScreen
 import com.example.quizec.ui.screens.EditarPreguntaScreen
@@ -223,6 +224,13 @@ fun QuizecApp() {
                     }
                 } else {
                     Text("Cargando...")
+                }
+            }
+            composable("delete_questions/{cuestionarioId}") { backStackEntry ->
+                val cuestionarioId = backStackEntry.arguments?.getString("cuestionarioId")
+                if (cuestionarioId != null) {
+                    //quizViewModel.eliminarPreguntasCuestionario(cuestionarioId)
+                    DeleteQuestionsScreen(navController, cuestionarioId, quizViewModel)
                 }
             }
 

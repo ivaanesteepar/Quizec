@@ -11,6 +11,7 @@ import com.example.quizec.data.model.Cuestionario
 import com.example.quizec.data.model.Pregunta
 import com.example.quizec.data.model.TipoPregunta
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,6 +22,9 @@ import java.util.UUID
 class QuestionsViewModel : ViewModel() {
     private val db = FirebaseFirestore.getInstance()
     val quizViewModel = QuizViewModel()
+
+    private val _preguntas = mutableStateListOf<Pregunta>()
+    val preguntas: List<Pregunta> get() = _preguntas
 
     private val _preguntasSeleccionadas = mutableStateOf<List<Pregunta>>(emptyList())
     val preguntasSeleccionadas get() = _preguntasSeleccionadas
@@ -301,60 +305,6 @@ class QuestionsViewModel : ViewModel() {
             // Si ocurre algún error, logueamos y devolvemos null
             Log.e("QuestionsViewModel", "Error al obtener la pregunta: ${e.message}")
             null
-        }
-    }
-
-    fun modificarPregunta(preguntaModificada: Pregunta, userId: String) {
-        println("Pregunta a modificar cuyo titulo eees: $preguntaModificada.titulo")
-
-        // Asegurarse de que las preguntas estén cargadas antes de intentar modificar
-        if (_preguntasState.value.isEmpty()) {
-            cargarPreguntasUsuario(userId) // Cargar preguntas si aún no están cargadas
-        }
-
-        // Continuar con la modificación de la pregunta
-        viewModelScope.launch {
-            try {
-                // Buscar el documento de la pregunta en Firestore
-                val querySnapshot = db.collection("preguntas")
-                    .whereEqualTo("id", preguntaModificada.id) // Filtrar por el campo "id"
-                    .get()
-                    .await()
-
-                println("QuerySnapshot size: ${querySnapshot.size()}")
-                println("QuerySnapshot documents: ${querySnapshot.documents}")
-                println("QuerySnapshot isEmpty: ${querySnapshot.isEmpty}")
-
-                // Comprobar si se encontró el documento
-                if (querySnapshot.documents.isNotEmpty()) {
-                    // Suponemos que solo hay un documento con ese "id"
-                    val documentRef = querySnapshot.documents[0].reference
-
-                    // Actualizar los campos necesarios de la pregunta en Firestore
-                    documentRef.set(preguntaModificada)
-                        .await()
-
-                    // Actualizar la lista de preguntas localmente con la pregunta modificada
-                    _preguntasState.value = _preguntasState.value.map {
-                        if (it.id == preguntaModificada.id) preguntaModificada else it
-                    }
-
-                    // Verificar que la lista de preguntas se haya actualizado correctamente
-                    println("Lista de preguntas actualizada: ${_preguntasState.value}")
-
-                    Log.d(
-                        "QuestionsViewModel",
-                        "Pregunta modificada correctamente: ${preguntaModificada.id}"
-                    )
-                } else {
-                    Log.e(
-                        "QuestionsViewModel",
-                        "No se encontró el documento con id: ${preguntaModificada.id}"
-                    )
-                }
-            } catch (e: Exception) {
-                Log.e("QuestionsViewModel", "Error al modificar la pregunta: ${e.message}")
-            }
         }
     }
 

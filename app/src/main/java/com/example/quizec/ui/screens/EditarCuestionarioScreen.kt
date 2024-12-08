@@ -158,13 +158,15 @@ fun EditarCuestionarioScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-//        // Boton para seleccionar preguntas
-//        Button(
-//            onClick = { navController.navigate() },
-//            modifier = Modifier.fillMaxWidth(0.8f)
-//        ) {
-//            Text("Eliminar Preguntas")
-//        }
+        // Boton para seleccionar preguntas
+        Button(
+            onClick = {
+                navController.navigate("delete_questions/$cuestionarioId")
+                      },
+            modifier = Modifier.fillMaxWidth(0.8f)
+        ) {
+            Text("Eliminar Preguntas")
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
