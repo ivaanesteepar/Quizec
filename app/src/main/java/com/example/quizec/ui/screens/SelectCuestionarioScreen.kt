@@ -140,13 +140,14 @@ fun SelectCuestionarioScreen(
                 Text(
                     text = "SELECCIONE UN CUESTIONARIO",
                     style = MaterialTheme.typography.bodyMedium,
-                    fontSize = 20.sp
+                    fontSize = 20.sp,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
                 )
 
                 LazyColumn(
                     modifier = Modifier
                         .padding(top = 26.dp)
-                        .height(380.dp)
+                        .height(500.dp)
                 ) {
                     items(cuestionariosState.value) { cuestionario ->
                         println("Cuestionarios: $cuestionariosState")

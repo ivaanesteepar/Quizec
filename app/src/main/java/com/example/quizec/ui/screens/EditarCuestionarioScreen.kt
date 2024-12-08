@@ -163,7 +163,7 @@ fun EditarCuestionarioScreen(
             Text("Eliminar Preguntas")
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         // Switches para configuración adicional
         Row(
@@ -193,7 +193,7 @@ fun EditarCuestionarioScreen(
         }
 
         if (locationRestricted) {
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             Text("Radio del área permitida (km)", style = MaterialTheme.typography.bodyLarge)
             BasicTextField(
                 value = radio,
@@ -206,7 +206,7 @@ fun EditarCuestionarioScreen(
             )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
