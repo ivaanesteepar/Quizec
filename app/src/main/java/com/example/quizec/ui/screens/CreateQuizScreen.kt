@@ -337,7 +337,7 @@ fun CreateQuizScreen(
         ) {
             Text("Crear Cuestionario", color = Color.White)
         }
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
         Button(
             onClick = {
                 reset = true
@@ -394,7 +394,6 @@ private fun crearCuestionario(
                 longitude = longitude,
                 radio = radio
             )
-
 
             Log.d("CreateQuizScreen", "URL firebase : $imageUriString")
             Log.d("CreateQuizScreen", "URL quizView : ${quizViewModel.imageUri.toString()}")
