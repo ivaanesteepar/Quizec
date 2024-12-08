@@ -92,24 +92,32 @@ fun WaitingScreen(navController: NavHostController, codigoQuiz: String?, usersVi
             Button(
                 onClick = {
                     if (userRole == Rol.CREADOR.toString()) {
-                        quizViewModel.actualizarIsQuizIniciado(codigoQuiz){ exito ->
-                            if (exito){
-                                println("El usuario es el creador. Navegando a creator_quiz.")
-                                navController.navigate("creator_quiz/$codigoQuiz")
-                            }
-                            else{
+                        // Actualizar isUsed a true en Firebase
+                        quizViewModel.actualizarIsQuizIniciado(codigoQuiz) { exito ->
+                            if (exito) {
+                                codigoQuiz?.let { quizId ->
+                                    quizViewModel.actualizarIsUsed(quizId, true) { success ->
+                                        if (success) {
+                                            println("Campo isUsed actualizado a true.")
+                                            navController.navigate("creator_quiz/$codigoQuiz")
+                                        } else {
+                                            println("Error al actualizar el campo isUsed.")
+                                        }
+                                    }
+                                }
+                            } else {
                                 println("Error al actualizar el estado del quiz.")
                             }
-
                         }
                     } else {
                         println("Rol desconocido: $userRole")
                     }
                 },
-                enabled = userRole != null && (userRole == Rol.CREADOR.toString()) //|| userRole == Rol.PARTICIPANTE.toString())
+                enabled = userRole != null && userRole == Rol.CREADOR.toString()
             ) {
                 Text("Iniciar Quiz")
             }
+
 
             // Botón "Volver"
             Button(onClick = {

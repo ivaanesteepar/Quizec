@@ -389,6 +389,7 @@ private fun crearCuestionario(
                 locationRestricted = locationRestricted,
                 immediateResults = immediateResults,
                 isQuizIniciado = false,
+                isUsed = false,
                 latitude = latitude,
                 longitude = longitude,
                 radio = radio
@@ -447,6 +448,7 @@ fun Cuestionario.toMap(): Map<String, Any> {
         "locationRestricted" to locationRestricted,
         "immediateResults" to immediateResults,
         "isQuizIniciado" to isQuizIniciado,
+        "isUsed" to isUsed,
         "latitude" to latitude,
         "longitude" to longitude,
         "radio" to radio // Añadido el valor de radio

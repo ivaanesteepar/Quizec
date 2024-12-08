@@ -280,6 +280,7 @@ fun EditarCuestionarioScreen(
                                 locationRestricted = locationRestricted,
                                 immediateResults = immediateResults,
                                 isQuizIniciado = false,
+                                isUsed = false,
                                 latitude = 0.0,
                                 longitude = 0.0,
                                 radio = radioValue ?: 0.0
