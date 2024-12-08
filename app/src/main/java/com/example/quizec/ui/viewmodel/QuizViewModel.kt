@@ -79,6 +79,61 @@ class QuizViewModel : ViewModel() {
         obtenerRolUsuario()
     }
 
+    suspend fun obtenerEstadosIsUsed(creadorId: String): Map<String, Boolean> {
+        val estados = mutableMapOf<String, Boolean>()
+        try {
+            val cuestionariosSnapshot = FirebaseFirestore.getInstance()
+                .collection("cuestionarios")
+                .whereEqualTo("creadorId", creadorId) // Filtrar por creadorId
+                .get()
+                .await()
+
+            for (document in cuestionariosSnapshot.documents) {
+                // Obtener el valor de codigoQuiz y el estado de isUsed
+                val codigoQuiz = document.getString("id") ?: "" // Asegúrate de que "codigoQuiz" sea el campo correcto
+                val isUsed = document.getBoolean("isUsed") ?: false
+
+                // Usar codigoQuiz como la clave en el mapa
+                if (codigoQuiz.isNotEmpty()) {
+                    estados[codigoQuiz] = isUsed
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("Firestore", "Error al obtener los estados isUsed: ${e.message}")
+        }
+        return estados
+    }
+
+
+    fun actualizarIsUsed(quizId: String, isUsed: Boolean, callback: (Boolean) -> Unit) {
+        val db = FirebaseFirestore.getInstance()
+        val collectionRef = db.collection("cuestionarios")
+
+        // Buscar el documento donde el campo "id" es igual al quizId
+        collectionRef.whereEqualTo("id", quizId)
+            .get()
+            .addOnSuccessListener { querySnapshot ->
+                if (!querySnapshot.isEmpty) {
+                    val document = querySnapshot.documents[0] // Obtén el primer documento que coincida
+                    document.reference.update("isUsed", isUsed)
+                        .addOnSuccessListener {
+                            callback(true) // La actualización fue exitosa
+                        }
+                        .addOnFailureListener { exception ->
+                            println("Error al actualizar isUsed: ${exception.message}")
+                            callback(false) // La actualización falló
+                        }
+                } else {
+                    println("No se encontró un documento con id igual a $quizId")
+                    callback(false)
+                }
+            }
+            .addOnFailureListener { exception ->
+                println("Error al buscar documento: ${exception.message}")
+                callback(false)
+            }
+    }
+
     // Función para eliminar una pregunta
     fun eliminarPreguntaCuestionario(cuestionarioId: String, preguntaId: String, onSuccess: () -> Unit) {
         val db = FirebaseFirestore.getInstance()
@@ -444,7 +499,7 @@ class QuizViewModel : ViewModel() {
                                             preguntas = preguntas, // Asignamos las preguntas recuperadas
                                             immediateAccess = cuestionarioData?.get("immediateAccess") as? Boolean ?: false,
                                             isQuizIniciado = cuestionarioData?.get("isQuizIniciado") as? Boolean ?: false,
-                                            isUsed = cuestionarioData?.get("isUsed") as? Boolean ?: false,
+                                            isUsed = false,
                                             locationRestricted = cuestionarioData?.get("locationRestricted") as? Boolean ?: false,
                                             immediateResults = cuestionarioData?.get("immediateResults") as? Boolean ?: false,
                                             latitude = (cuestionarioData?.get("latitude") as? String)?.toDoubleOrNull() ?: 0.0,
@@ -473,63 +528,6 @@ class QuizViewModel : ViewModel() {
                 onFailure(Exception("No se pudo obtener el nombre del usuario"))
             }
         }
-    }
-
-    suspend fun obtenerEstadosIsUsed(creadorId: String): Map<String, Boolean> {
-        val estados = mutableMapOf<String, Boolean>()
-        try {
-            val cuestionariosSnapshot = FirebaseFirestore.getInstance()
-                .collection("cuestionarios")
-                .whereEqualTo("creadorId", creadorId) // Filtrar por creadorId
-                .get()
-                .await()
-
-            for (document in cuestionariosSnapshot.documents) {
-                // Obtener el valor de codigoQuiz y el estado de isUsed
-                val codigoQuiz = document.getString("id") ?: "" // Asegúrate de que "codigoQuiz" sea el campo correcto
-                val isUsed = document.getBoolean("isUsed") ?: false
-
-                // Usar codigoQuiz como la clave en el mapa
-                if (codigoQuiz.isNotEmpty()) {
-                    estados[codigoQuiz] = isUsed
-                }
-            }
-        } catch (e: Exception) {
-            Log.e("Firestore", "Error al obtener los estados isUsed: ${e.message}")
-        }
-        return estados
-    }
-
-
-
-
-    fun actualizarIsUsed(quizId: String, isUsed: Boolean, callback: (Boolean) -> Unit) {
-        val db = FirebaseFirestore.getInstance()
-        val collectionRef = db.collection("cuestionarios")
-
-        // Buscar el documento donde el campo "id" es igual al quizId
-        collectionRef.whereEqualTo("id", quizId)
-            .get()
-            .addOnSuccessListener { querySnapshot ->
-                if (!querySnapshot.isEmpty) {
-                    val document = querySnapshot.documents[0] // Obtén el primer documento que coincida
-                    document.reference.update("isUsed", isUsed)
-                        .addOnSuccessListener {
-                            callback(true) // La actualización fue exitosa
-                        }
-                        .addOnFailureListener { exception ->
-                            println("Error al actualizar isUsed: ${exception.message}")
-                            callback(false) // La actualización falló
-                        }
-                } else {
-                    println("No se encontró un documento con id igual a $quizId")
-                    callback(false)
-                }
-            }
-            .addOnFailureListener { exception ->
-                println("Error al buscar documento: ${exception.message}")
-                callback(false)
-            }
     }
 
     fun actualizarCoordenadasCuestionario(
