@@ -164,10 +164,10 @@ fun SelectQuestionsEditScreen(
         ) {
             Button(
                 onClick = {
-                    println("Preguntas seleccionadas actuales: ${questionsViewModel.preguntasSeleccionadas.value}")
+                    println("Guardando preguntas seleccionadas: ${questionsViewModel.preguntasSeleccionadas.value}")
                     // Guardar las preguntas seleccionadas en la lista de preguntas
                     questionsViewModel.guardarPreguntasSeleccionadas(quizViewModel)
-                    navController.popBackStack()
+                    navController.navigate("editCuestionario/$codigoQuiz")
                 },
                 modifier = Modifier.fillMaxWidth(0.4f)  // Menos ancho para que no ocupe toda la pantalla
             ) {

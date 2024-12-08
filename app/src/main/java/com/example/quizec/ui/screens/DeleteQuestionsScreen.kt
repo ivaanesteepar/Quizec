@@ -12,7 +12,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.quizec.data.model.Pregunta
-import com.example.quizec.ui.viewmodel.QuestionsViewModel
 import com.example.quizec.ui.viewmodel.QuizViewModel
 import com.google.firebase.auth.FirebaseAuth
 
@@ -22,8 +21,8 @@ fun DeleteQuestionsScreen(
     cuestionarioId: String,
     quizViewModel: QuizViewModel,
 ) {
-    // Usamos `preguntas` desde el ViewModel que está observando el estado de la lista
-    val preguntas by remember { derivedStateOf { quizViewModel.preguntas } }
+    // Observamos las preguntas en el ViewModel
+    val preguntas = remember { quizViewModel.preguntas }
 
     val userId = FirebaseAuth.getInstance().currentUser?.uid
     var preguntaSeleccionada by remember { mutableStateOf<Pregunta?>(null) }
@@ -32,6 +31,7 @@ fun DeleteQuestionsScreen(
     LaunchedEffect(cuestionarioId) {
         quizViewModel.cargarPreguntasPorCodigo(cuestionarioId)
     }
+    println("Preguntas cargadas: $preguntas")
 
     Column(modifier = Modifier.fillMaxSize()) {
         // LazyColumn con las preguntas
@@ -88,9 +88,6 @@ fun DeleteQuestionsScreen(
         )
     }
 }
-
-
-
 
 @Composable
 fun PreguntaCard(pregunta: Pregunta, onPreguntaClick: (Pregunta) -> Unit) {

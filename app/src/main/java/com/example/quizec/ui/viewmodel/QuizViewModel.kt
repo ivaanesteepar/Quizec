@@ -27,8 +27,10 @@ class QuizViewModel : ViewModel() {
     private val firestore = FirebaseFirestore.getInstance()
     private val _nombreUsuario = MutableStateFlow<String?>(null)
     val nombreUsuario: StateFlow<String?> = _nombreUsuario
-    val _preguntas = mutableStateListOf<Pregunta>()
-    var preguntas: List<Pregunta> = _preguntas // preguntas del quiz
+
+    var _preguntas = mutableStateListOf<Pregunta>()
+    var preguntas: List<Pregunta> = _preguntas
+
     var contadorPreguntas = mutableStateOf(0)
     // StateFlow para almacenar el rol del usuario
     private val _userRole = MutableStateFlow<String?>(null)
@@ -718,6 +720,9 @@ class QuizViewModel : ViewModel() {
             _preguntas.add(pregunta) // Agregar la pregunta solo si no está en la lista
             contadorPreguntas.value += 1 // Aumentar el contador solo si la pregunta es nueva
             println("Pregunta agregada en la lista $preguntas")
+        }
+        else {
+            println("La pregunta ya está en la lista")
         }
     }
 

@@ -277,6 +277,7 @@ fun SelectCuestionarioScreen(
                     onClick = {
                         cuestionarioToDelete?.let {
                             questionsViewModel.eliminarCuestionario(it.id)
+                            questionsViewModel.eliminarDelHistorialDeTodosLosUsuarios(cuestionarioToDelete!!.id)
                         }
                         showDeleteConfirmationDialog = false
                     }

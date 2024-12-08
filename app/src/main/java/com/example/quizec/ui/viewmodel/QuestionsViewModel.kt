@@ -1,7 +1,6 @@
 
 package com.example.quizec.ui.viewmodel
 
-import android.content.SharedPreferences
 import android.util.Log
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -10,8 +9,6 @@ import androidx.lifecycle.viewModelScope
 import com.example.quizec.data.model.Cuestionario
 import com.example.quizec.data.model.Pregunta
 import com.example.quizec.data.model.TipoPregunta
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,7 +20,7 @@ class QuestionsViewModel : ViewModel() {
     private val db = FirebaseFirestore.getInstance()
     val quizViewModel = QuizViewModel()
 
-    private val _preguntas = mutableStateListOf<Pregunta>()
+    val _preguntas = mutableStateListOf<Pregunta>()
     val preguntas: List<Pregunta> get() = _preguntas
 
     private val _preguntasSeleccionadas = mutableStateOf<List<Pregunta>>(emptyList())
@@ -127,7 +124,6 @@ class QuestionsViewModel : ViewModel() {
                         userAnswers = preguntaMap["userAnswers"] as? List<Map<String, Any>> ?: listOf()
 
                     )
-
                     preguntasList.add(pregunta)
                 }
             }
@@ -308,6 +304,11 @@ class QuestionsViewModel : ViewModel() {
         }
     }
 
+    fun vaciarPreguntasSeleccionadas() {
+        _preguntasSeleccionadas.value = emptyList()  // Vacía la lista de preguntas seleccionadas
+    }
+
+
     fun eliminarCuestionario(id: String) {
         // Buscar el documento por el campo 'id' en la colección 'cuestionarios'
         db.collection("cuestionarios")
@@ -324,17 +325,15 @@ class QuestionsViewModel : ViewModel() {
                 val documentRef = querySnapshot.documents[0].reference
                 documentRef.delete()
                     .addOnSuccessListener {
-                        // Si la eliminación fue exitosa, actualizar el estado local
+                        // Si la eliminación del cuestionario fue exitosa, actualizar el estado local
                         _cuestionariosState.value =
                             _cuestionariosState.value.filterNot { it.id == id }
                         Log.d("QuestionsViewModel", "Cuestionario eliminado correctamente: $id")
+
                     }
                     .addOnFailureListener { e ->
                         // Manejar el error si la eliminación falla
-                        Log.e(
-                            "QuestionsViewModel",
-                            "Error al eliminar el cuestionario: ${e.message}"
-                        )
+                        Log.e("QuestionsViewModel", "Error al eliminar el cuestionario: ${e.message}")
                     }
             }
             .addOnFailureListener { e ->
@@ -342,6 +341,40 @@ class QuestionsViewModel : ViewModel() {
                 Log.e("QuestionsViewModel", "Error al buscar el cuestionario: ${e.message}")
             }
     }
+
+    fun eliminarDelHistorialDeTodosLosUsuarios(codigoQuiz: String) {
+        // Obtener todos los documentos de usuarios en la colección 'usuarioHistorial'
+        db.collection("usuarioHistorial")
+            .get()
+            .addOnSuccessListener { querySnapshot ->
+                // Iterar sobre todos los documentos de usuarios
+                for (document in querySnapshot.documents) {
+                    val usuarioNombre = document.id  // El ID del documento corresponde al nombre del usuario
+
+                    // Eliminar el cuestionario de la subcolección 'cuestionarios' para cada usuario
+                    eliminarCuestionarioDelHistorial(usuarioNombre, codigoQuiz)
+                }
+            }
+            .addOnFailureListener { e ->
+                Log.e("QuestionsViewModel", "Error al obtener los usuarios: ${e.message}")
+            }
+    }
+
+    private fun eliminarCuestionarioDelHistorial(usuarioNombre: String, codigoQuiz: String) {
+        db.collection("usuarioHistorial")
+            .document(usuarioNombre)  // Accedemos al documento correspondiente al usuario
+            .collection("cuestionarios")
+            .document(codigoQuiz)  // Accedemos al documento de la subcolección cuyo nombre es 'codigoQuiz'
+            .delete()
+            .addOnSuccessListener {
+                Log.d("QuestionsViewModel", "Cuestionario eliminado del historial de usuario: $codigoQuiz")
+            }
+            .addOnFailureListener { e ->
+                Log.e("QuestionsViewModel", "Error al eliminar el cuestionario del historial de usuario: ${e.message}")
+            }
+    }
+
+
 
 
     fun actualizarPregunta(pregunta: Pregunta) {
