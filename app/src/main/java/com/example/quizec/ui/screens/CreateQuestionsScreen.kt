@@ -8,9 +8,11 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -20,6 +22,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -106,6 +109,37 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
     )
 
 
+    // Para agregar img como concepto
+    val pickPicture2 = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+        onResult = { uri ->
+            Log.d("CreateQuizScreen", "URI seleccionada: $uri")
+            if (uri != null) {
+                AMovServer.asyncUploadImage(
+                    inputStream = context.contentResolver.openInputStream(uri)!!,
+                    extension = "jpg",
+                    onResult = { result ->
+                        Log.d("CreateQuizScreen", "Resultado de subir imagen: $result")
+                        if (result != null) {
+                            conceptosYDefiniciones = conceptosYDefiniciones.toMutableList().apply {
+                                val indexToUpdate = conceptosYDefiniciones.indexOfFirst { it["concepto"] == "" }
+                                if (indexToUpdate >= 0) {
+                                    this[indexToUpdate] = mapOf(
+                                        "concepto" to result,
+                                        //"definicion" to this[indexToUpdate]["definicion"] ?: ""
+                                    )
+                                }
+                            }
+                        } else {
+                            Log.d("CreateQuizScreen", "Error al subir la imagen")
+                        }
+                    }
+                )
+            }
+        }
+    )
+
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -134,9 +168,15 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
         item {
             // Botón para elegir imagen
             Text("Subir Imagen (Opcional)", style = MaterialTheme.typography.bodyMedium)
-            pickPicture.launch(
-                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-            )
+            Button(
+                onClick = {
+                    pickPicture.launch(
+                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                    )
+                },
+            ) {
+                Text("Seleccionar Imagen")
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -194,12 +234,16 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
 
                     // Iterar sobre las opciones con índice para mostrar los campos de texto y el botón de eliminar
                     opciones.forEachIndexed { index, option ->
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
                             OutlinedTextField(
                                 value = option,
                                 onValueChange = { newOption ->
                                     // Actualizar la opción al cambiar el texto
-                                    opciones = opciones.toMutableList().apply { this[index] = newOption }
+                                    opciones =
+                                        opciones.toMutableList().apply { this[index] = newOption }
                                 },
                                 label = { Text("Opción ${index + 1}") },
                                 modifier = Modifier.weight(1f).padding(vertical = 4.dp)
@@ -210,7 +254,10 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                                 // Eliminar la opción de la lista
                                 opciones = opciones.toMutableList().apply { removeAt(index) }
                             }) {
-                                Icon(imageVector = Icons.Default.Delete, contentDescription = "Eliminar Opción")
+                                Icon(
+                                    imageVector = Icons.Default.Delete,
+                                    contentDescription = "Eliminar Opción"
+                                )
                             }
                         }
                     }
@@ -222,7 +269,10 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    Text("Seleccione la respuesta correcta:", style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        "Seleccione la respuesta correcta:",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
 
                     // Mostrar las opciones y permitir seleccionar la respuesta correcta
                     opciones.forEachIndexed { index, option ->
@@ -242,11 +292,15 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
 
                         // Mostrar las opciones de respuesta
                         opciones.forEachIndexed { index, option ->
-                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
                                 OutlinedTextField(
                                     value = option,
                                     onValueChange = { newOption ->
-                                        opciones = opciones.toMutableList().apply { this[index] = newOption }
+                                        opciones = opciones.toMutableList()
+                                            .apply { this[index] = newOption }
                                     },
                                     label = { Text("Opción ${index + 1}") },
                                     modifier = Modifier.weight(1f).padding(vertical = 4.dp)
@@ -256,9 +310,13 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                                 IconButton(onClick = {
                                     // Eliminar la opción de la lista y sincronizar las respuestas correctas
                                     opciones = opciones.toMutableList().apply { removeAt(index) }
-                                    respuestasCorrectasMultipleMultiples = respuestasCorrectasMultipleMultiples.filter { it in opciones }
+                                    respuestasCorrectasMultipleMultiples =
+                                        respuestasCorrectasMultipleMultiples.filter { it in opciones }
                                 }) {
-                                    Icon(imageVector = Icons.Default.Delete, contentDescription = "Eliminar Opción")
+                                    Icon(
+                                        imageVector = Icons.Default.Delete,
+                                        contentDescription = "Eliminar Opción"
+                                    )
                                 }
                             }
                         }
@@ -270,7 +328,10 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        Text("Seleccione las respuestas correctas:", style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            "Seleccione las respuestas correctas:",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
 
                         // Lista de opciones con múltiples respuestas correctas
                         opciones.forEachIndexed { index, option ->
@@ -292,7 +353,6 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                         }
                     }
                 }
-
 
 
                 TipoPregunta.EMPAREJAR -> {
@@ -508,8 +568,90 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                 }
 
 
-                //!! FALTA QUE SE PUEDE ELEGIR COMO CONCEPTO UNA IMAGEN
+//                //!! FALTA QUE SE PUEDE ELEGIR COMO CONCEPTO UNA IMAGEN
+//                TipoPregunta.ASOCIACION -> {
+//                    Text("Conceptos y definiciones:", style = MaterialTheme.typography.bodyMedium)
+//
+//                    conceptosYDefiniciones.forEachIndexed { index, mapConceptoDefinicion ->
+//                        val concepto = mapConceptoDefinicion["concepto"] ?: ""
+//                        val definicion = mapConceptoDefinicion["definicion"] ?: ""
+//
+//                        // Cada par concepto/definición estará en una columna
+//                        Column(
+//                            modifier = Modifier
+//                                .fillMaxWidth()
+//                                .padding(vertical = 8.dp)
+//                        ) {
+//                            // Campo de texto para el concepto
+//                            OutlinedTextField(
+//                                value = concepto,
+//                                onValueChange = { nuevaConcepto ->
+//                                    conceptosYDefiniciones =
+//                                        conceptosYDefiniciones.toMutableList().apply {
+//                                            this[index] = mapOf(
+//                                                "concepto" to nuevaConcepto,
+//                                                "definicion" to definicion
+//                                            )
+//                                        }
+//                                },
+//                                label = { Text("Concepto ${index + 1}") },
+//                                modifier = Modifier.fillMaxWidth()
+//                            )
+//
+//                            Spacer(modifier = Modifier.height(8.dp))
+//
+//                            // Campo de texto para la definición
+//                            OutlinedTextField(
+//                                value = definicion,
+//                                onValueChange = { nuevaDefinicion ->
+//                                    conceptosYDefiniciones =
+//                                        conceptosYDefiniciones.toMutableList().apply {
+//                                            this[index] = mapOf(
+//                                                "concepto" to concepto,
+//                                                "definicion" to nuevaDefinicion
+//                                            )
+//                                        }
+//                                },
+//                                label = { Text("Definición ${index + 1}") },
+//                                modifier = Modifier.fillMaxWidth()
+//                            )
+//
+//                            // Botón de eliminar par (concepto + definición)
+//                            IconButton(
+//                                onClick = {
+//                                    conceptosYDefiniciones =
+//                                        conceptosYDefiniciones.toMutableList().apply {
+//                                            removeAt(index)
+//                                        }
+//                                }
+//                            ) {
+//                                Icon(
+//                                    imageVector = Icons.Default.Delete,
+//                                    contentDescription = "Eliminar par concepto/definición"
+//                                )
+//                            }
+//                        }
+//                    }
+//
+//                    // Botón para agregar un nuevo par de concepto y definición
+//                    Button(
+//                        onClick = {
+//                            conceptosYDefiniciones = conceptosYDefiniciones.toMutableList().apply {
+//                                add(mapOf("concepto" to "", "definicion" to ""))
+//                            }
+//                        },
+//                        modifier = Modifier.fillMaxWidth(0.8f).padding(vertical = 8.dp)
+//                    ) {
+//                        Text("Agregar concepto y definición")
+//                    }
+//
+//                    Spacer(modifier = Modifier.height(16.dp))
+//                }
+
+
+
                 TipoPregunta.ASOCIACION -> {
+
                     Text("Conceptos y definiciones:", style = MaterialTheme.typography.bodyMedium)
 
                     conceptosYDefiniciones.forEachIndexed { index, mapConceptoDefinicion ->
@@ -522,21 +664,72 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                                 .fillMaxWidth()
                                 .padding(vertical = 8.dp)
                         ) {
-                            // Campo de texto para el concepto
-                            OutlinedTextField(
-                                value = concepto,
-                                onValueChange = { nuevaConcepto ->
-                                    conceptosYDefiniciones =
-                                        conceptosYDefiniciones.toMutableList().apply {
-                                            this[index] = mapOf(
-                                                "concepto" to nuevaConcepto,
-                                                "definicion" to definicion
-                                            )
-                                        }
-                                },
-                                label = { Text("Concepto ${index + 1}") },
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.fillMaxWidth()
-                            )
+                            ) {
+                                if (concepto.startsWith("http://")) {
+                                    // Mostrar imagen como concepto
+                                    AsyncImage(
+                                        model = concepto,
+                                        contentDescription = "Imagen del concepto",
+                                        modifier = Modifier
+                                            .size(50.dp)
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(Color.Gray)
+                                    )
+
+                                    Spacer(modifier = Modifier.width(8.dp))
+
+                                    // Botón para eliminar la imagen
+                                    Button(
+                                        onClick = {
+                                            conceptosYDefiniciones = conceptosYDefiniciones.toMutableList().apply {
+                                                this[index] = mapOf(
+                                                    "concepto" to "",
+                                                    "definicion" to definicion
+                                                )
+                                            }
+                                        }
+                                    ) {
+                                        Text("Eliminar imagen")
+                                    }
+                                } else {
+                                    // Campo de texto para el concepto, si no hay imagen
+                                    OutlinedTextField(
+                                        value = concepto,
+                                        onValueChange = { nuevoConcepto ->
+                                            if (!nuevoConcepto.startsWith("http://")) {
+                                                conceptosYDefiniciones = conceptosYDefiniciones.toMutableList().apply {
+                                                    this[index] = mapOf(
+                                                        "concepto" to nuevoConcepto,
+                                                        "definicion" to definicion
+                                                    )
+                                                }
+                                            }
+                                        },
+                                        label = { Text("Concepto ${index + 1}") },
+                                        modifier = Modifier.weight(1f),
+                                        enabled = !concepto.startsWith("content://")
+                                    )
+
+                                    Spacer(modifier = Modifier.width(8.dp))
+
+                                    // Botón para seleccionar una imagen
+                                    Button(
+                                        onClick = {
+                                            if (concepto.isEmpty()) {
+                                                pickPicture2.launch(
+                                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                                )
+                                            }
+                                        },
+                                        enabled = concepto.isEmpty()
+                                    ) {
+                                        Text("Subir imagen")
+                                    }
+                                }
+                            }
 
                             Spacer(modifier = Modifier.height(8.dp))
 
@@ -544,13 +737,12 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                             OutlinedTextField(
                                 value = definicion,
                                 onValueChange = { nuevaDefinicion ->
-                                    conceptosYDefiniciones =
-                                        conceptosYDefiniciones.toMutableList().apply {
-                                            this[index] = mapOf(
-                                                "concepto" to concepto,
-                                                "definicion" to nuevaDefinicion
-                                            )
-                                        }
+                                    conceptosYDefiniciones = conceptosYDefiniciones.toMutableList().apply {
+                                        this[index] = mapOf(
+                                            "concepto" to concepto,
+                                            "definicion" to nuevaDefinicion
+                                        )
+                                    }
                                 },
                                 label = { Text("Definición ${index + 1}") },
                                 modifier = Modifier.fillMaxWidth()
@@ -559,10 +751,9 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                             // Botón de eliminar par (concepto + definición)
                             IconButton(
                                 onClick = {
-                                    conceptosYDefiniciones =
-                                        conceptosYDefiniciones.toMutableList().apply {
-                                            removeAt(index)
-                                        }
+                                    conceptosYDefiniciones = conceptosYDefiniciones.toMutableList().apply {
+                                        removeAt(index)
+                                    }
                                 }
                             ) {
                                 Icon(
@@ -587,6 +778,10 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
 
                     Spacer(modifier = Modifier.height(16.dp))
                 }
+
+
+
+//////////////////////////////////////
 
                 TipoPregunta.COMPLETAR_PALABRAS -> {
                     // Paso 1: Campo para que el usuario introduzca la frase completa

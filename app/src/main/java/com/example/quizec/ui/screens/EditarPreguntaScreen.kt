@@ -4,41 +4,38 @@ import android.net.Uri
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.compose.rememberNavController
+import coil.compose.AsyncImage
 import com.example.quizec.data.model.Pregunta
 import com.example.quizec.data.model.TipoPregunta
 import com.example.quizec.ui.viewmodel.QuestionsViewModel
-import com.example.quizec.ui.viewmodel.QuizViewModel
+import com.example.quizec.utils.AMovServer
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
-import java.util.UUID
 
 
 @Composable
 fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController) {
-    val db = FirebaseFirestore.getInstance()
     val questionsViewModel = QuestionsViewModel()
-    val context = LocalContext.current
     val user_id = FirebaseAuth.getInstance().currentUser?.uid   // Obtener el ID del usuario autenticado
 
     println("id pregunta: ${preguntaMod.id}")
@@ -65,22 +62,72 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
     var fraseCompletar by remember { mutableStateOf(preguntaMod.fraseCompletar) }
     var opcionCorrecta by remember { mutableStateOf(preguntaMod.opcionCorrecta) } //la palabra que será el espacio en blanco
 
+    val imageUri by remember { mutableStateOf<Uri?>(null) }
     //ASOCIACION
-    // Listas para que el profesor ingrese conceptos y definiciones
-    var conceptos by remember { mutableStateOf(listOf("")) }
-    var definiciones by remember { mutableStateOf(listOf("")) }
     //tb usa itemPairs
-    var conceptosYDefiniciones by remember { mutableStateOf(listOf<Map<String, String>>())}
+    var conceptosYDefiniciones by remember { mutableStateOf(preguntaMod.conceptosYDefiniciones)}
 
     var opcionesCorrectasCompletarPalabras by remember { mutableStateOf(preguntaMod.opcionesCorrectasCompletarPalabras) }
 
 
-    //ARREGLAR LO DE LAS IMAGENES (hacer q se pueda poner una imagen)
-    var imageUri by rememberSaveable { mutableStateOf<Uri?>(null) }
-    val imagePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent(),
-        onResult = { uri: Uri? -> imageUri = uri }
+    val context = LocalContext.current
+    var error by remember { mutableStateOf<String?>(null) }
+    var imageUrl by remember { mutableStateOf<String?>(null) }
+
+    val pickPicture = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+        onResult = { uri ->
+            Log.d("CreateQuizScreen", "URI seleccionada: $uri")
+            if (uri != null) {
+                AMovServer.asyncUploadImage(
+                    inputStream = context.contentResolver.openInputStream(uri)!!,
+                    extension = "jpg",
+                    onResult = { result ->
+                        Log.d("CreateQuizScreen", "Resultado de subir imagen: $result")
+                        if (result != null) {
+                            imageUrl = result
+                            error = null
+                        } else {
+                            Log.d("CreateQuizScreen", "Error al subir la imagen")
+                            imageUrl = null
+                        }
+                    }
+                )
+            }
+        }
     )
+
+
+    // Para agregar como concepto una img
+    val pickPicture2 = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+        onResult = { uri ->
+            Log.d("CreateQuizScreen", "URI seleccionada: $uri")
+            if (uri != null) {
+                AMovServer.asyncUploadImage(
+                    inputStream = context.contentResolver.openInputStream(uri)!!,
+                    extension = "jpg",
+                    onResult = { result ->
+                        Log.d("CreateQuizScreen", "Resultado de subir imagen: $result")
+                        if (result != null) {
+                            conceptosYDefiniciones = conceptosYDefiniciones.toMutableList().apply {
+                                val indexToUpdate = conceptosYDefiniciones.indexOfFirst { it["concepto"] == "" }
+                                if (indexToUpdate >= 0) {
+                                    this[indexToUpdate] = mapOf(
+                                        "concepto" to result,
+                                        //"definicion" to this[indexToUpdate]["definicion"] ?: ""
+                                    )
+                                }
+                            }
+                        } else {
+                            Log.d("CreateQuizScreen", "Error al subir la imagen")
+                        }
+                    }
+                )
+            }
+        }
+    )
+
 
     LazyColumn(
         modifier = Modifier
@@ -106,6 +153,34 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                     .padding(12.dp)
             )
         }
+
+        item {
+            // Botón para elegir imagen
+            Text("Subir Imagen (Opcional)", style = MaterialTheme.typography.bodyMedium)
+            Button(
+                onClick = {
+                    pickPicture.launch(
+                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                    )
+                },
+            ) {
+                Text("Seleccionar Imagen")
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Show selected image if available
+            if (imageUrl != null) {
+                AsyncImage(
+                    model = imageUrl,
+                    contentDescription = "Imagen cargada del servidor",
+                    modifier = Modifier.size(200.dp)
+                )
+            } else {
+                Text(text = "No hay imagen para mostrar.")
+            }
+        }
+
 
         item {
             Text("Tipo de Pregunta", style = MaterialTheme.typography.bodyMedium)
@@ -463,8 +538,8 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                 }
 
 
-                //!! FALTA QUE SE PUEDE ELEGIR COMO CONCEPTO UNA IMAGEN
                 TipoPregunta.ASOCIACION -> {
+
                     Text("Conceptos y definiciones:", style = MaterialTheme.typography.bodyMedium)
 
                     conceptosYDefiniciones.forEachIndexed { index, mapConceptoDefinicion ->
@@ -477,21 +552,72 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                                 .fillMaxWidth()
                                 .padding(vertical = 8.dp)
                         ) {
-                            // Campo de texto para el concepto
-                            OutlinedTextField(
-                                value = concepto,
-                                onValueChange = { nuevaConcepto ->
-                                    conceptosYDefiniciones =
-                                        conceptosYDefiniciones.toMutableList().apply {
-                                            this[index] = mapOf(
-                                                "concepto" to nuevaConcepto,
-                                                "definicion" to definicion
-                                            )
-                                        }
-                                },
-                                label = { Text("Concepto ${index + 1}") },
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.fillMaxWidth()
-                            )
+                            ) {
+                                if (concepto.startsWith("http://")) {
+                                    // Mostrar imagen como concepto
+                                    AsyncImage(
+                                        model = concepto,
+                                        contentDescription = "Imagen del concepto",
+                                        modifier = Modifier
+                                            .size(50.dp)
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(Color.Gray)
+                                    )
+
+                                    Spacer(modifier = Modifier.width(8.dp))
+
+                                    // Botón para eliminar la imagen
+                                    Button(
+                                        onClick = {
+                                            conceptosYDefiniciones = conceptosYDefiniciones.toMutableList().apply {
+                                                this[index] = mapOf(
+                                                    "concepto" to "",
+                                                    "definicion" to definicion
+                                                )
+                                            }
+                                        }
+                                    ) {
+                                        Text("Eliminar imagen")
+                                    }
+                                } else {
+                                    // Campo de texto para el concepto, si no hay imagen
+                                    OutlinedTextField(
+                                        value = concepto,
+                                        onValueChange = { nuevoConcepto ->
+                                            if (!nuevoConcepto.startsWith("http://")) {
+                                                conceptosYDefiniciones = conceptosYDefiniciones.toMutableList().apply {
+                                                    this[index] = mapOf(
+                                                        "concepto" to nuevoConcepto,
+                                                        "definicion" to definicion
+                                                    )
+                                                }
+                                            }
+                                        },
+                                        label = { Text("Concepto ${index + 1}") },
+                                        modifier = Modifier.weight(1f),
+                                        enabled = !concepto.startsWith("content://")
+                                    )
+
+                                    Spacer(modifier = Modifier.width(8.dp))
+
+                                    // Botón para seleccionar una imagen
+                                    Button(
+                                        onClick = {
+                                            if (concepto.isEmpty()) {
+                                                pickPicture2.launch(
+                                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                                )
+                                            }
+                                        },
+                                        enabled = concepto.isEmpty()
+                                    ) {
+                                        Text("Subir imagen")
+                                    }
+                                }
+                            }
 
                             Spacer(modifier = Modifier.height(8.dp))
 
@@ -499,13 +625,12 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                             OutlinedTextField(
                                 value = definicion,
                                 onValueChange = { nuevaDefinicion ->
-                                    conceptosYDefiniciones =
-                                        conceptosYDefiniciones.toMutableList().apply {
-                                            this[index] = mapOf(
-                                                "concepto" to concepto,
-                                                "definicion" to nuevaDefinicion
-                                            )
-                                        }
+                                    conceptosYDefiniciones = conceptosYDefiniciones.toMutableList().apply {
+                                        this[index] = mapOf(
+                                            "concepto" to concepto,
+                                            "definicion" to nuevaDefinicion
+                                        )
+                                    }
                                 },
                                 label = { Text("Definición ${index + 1}") },
                                 modifier = Modifier.fillMaxWidth()
@@ -514,10 +639,9 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                             // Botón de eliminar par (concepto + definición)
                             IconButton(
                                 onClick = {
-                                    conceptosYDefiniciones =
-                                        conceptosYDefiniciones.toMutableList().apply {
-                                            removeAt(index)
-                                        }
+                                    conceptosYDefiniciones = conceptosYDefiniciones.toMutableList().apply {
+                                        removeAt(index)
+                                    }
                                 }
                             ) {
                                 Icon(
@@ -542,6 +666,7 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
 
                     Spacer(modifier = Modifier.height(16.dp))
                 }
+
 
                 TipoPregunta.COMPLETAR_PALABRAS -> {
                     // Paso 1: Campo para que el usuario introduzca la frase completa
@@ -669,7 +794,7 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                                     //NO COGE LA PALABRA SI VA SEGUIDA DE CARACTERES ESPECIALES (SYMBOLS) '¡?()
                                 }else if (!fraseCompletar.split(" ").contains(opcionCorrecta)) {  // Verificar si la palabra a completar está en la frase
                                     errorMessage = "La palabra no está en la frase."
-                                }else if (opciones.size < 1 ) {
+                                }else if (opciones.isEmpty()) {
                                     errorMessage = "Por favor, ingrese al menos una opción."
                                 }else if(opciones.any { it.isEmpty() }){
                                     errorMessage = "Por favor, no deje opciones en blanco."
