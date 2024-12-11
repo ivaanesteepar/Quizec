@@ -17,6 +17,7 @@ import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
 import com.example.quizec.data.model.Pregunta
 import com.example.quizec.data.model.TipoPregunta
+import com.example.quizec.ui.screens.UserQuestionTypes.AssociationQuestionScreen
 import com.example.quizec.ui.screens.UserQuestionTypes.FillBlankQuestionScreen
 import com.example.quizec.ui.screens.UserQuestionTypes.MatchingQuestionScreen
 import com.example.quizec.ui.screens.UserQuestionTypes.MissingWordsQuestion
@@ -51,7 +52,7 @@ fun UserQuizzesScreen(
     var enableAcept by remember { mutableStateOf(false) } //habilita el botoón de aceptar
     var selectedOption by remember { mutableStateOf<String?>(null) } //ESPACIOS
     var userOrderedItems by remember { mutableStateOf<List<String>>(emptyList()) } //ORDENAR
-    val userSelections = remember { mutableStateMapOf<String, String>() }
+    val userSelections = remember { mutableStateMapOf<String, String>() } //ASOCIAR Y MATCH
     var answer by remember { mutableStateOf<Any?>(null) }
     // Estado para controlar si el botón "Aceptar" fue presionado
     var isAcceptButtonClicked by remember { mutableStateOf(false) }
@@ -311,8 +312,19 @@ fun UserQuizzesScreen(
                         opcionesCorrectas = opcionesCorrectas,
                         userInputs = userInputs
                     )
-                    if (userInputs.all { it.isNotBlank() } && userInputs.size == currentQuestion.opcionesCorrectasCompletarPalabras.size) enableAcept =
-                        true
+                    if (userInputs.all { it.isNotBlank() } && userInputs.size == currentQuestion.opcionesCorrectasCompletarPalabras.size) {
+                        enableAcept = true
+                    }
+
+                } else if (currentQuestion.tipo == TipoPregunta.ASOCIACION) {
+                    AssociationQuestionScreen(
+                        currentQuestion = currentQuestion,
+                        userSelections = userSelections
+                    )
+
+                    if (userSelections.size == currentQuestion.conceptosYDefiniciones.size) {
+                        enableAcept = true
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(20.dp))
@@ -356,7 +368,19 @@ fun UserQuizzesScreen(
                                 if (userInputs.sorted() == currentQuestion.opcionesCorrectasCompletarPalabras.sorted()) localIsAnswerCorrect =
                                     true
                             }
-                            else -> false
+
+                            TipoPregunta.ASOCIACION -> {
+                                var isAllCorrect = true
+                                currentQuestion.conceptosYDefiniciones.forEach { correctPair ->
+                                    val (key, correctValue) = correctPair.entries.first()
+                                    if (userSelections[key] != correctValue) {
+                                        isAllCorrect = false
+                                        return@forEach
+                                    }
+                                }
+                                if (isAllCorrect) localIsAnswerCorrect = true
+                            }
+
                         }
                         // Asigna el mensaje de resultado dependiendo de si la respuesta es correcta o no
                         resultMessage = if (localIsAnswerCorrect) {

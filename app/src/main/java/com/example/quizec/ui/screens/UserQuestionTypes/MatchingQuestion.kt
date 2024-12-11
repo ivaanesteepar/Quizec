@@ -124,8 +124,7 @@ fun MatchingQuestionScreen(
                                 } else if (selectedLeftItem != null) {
                                     // Si hay un ítem de la izquierda seleccionado, lo emparejamos con el de la derecha
                                     userSelections[selectedLeftItem!!] = rightItem
-                                    selectedLeftItem =
-                                        null // Reseteamos la selección de la izquierda
+                                    selectedLeftItem = null // Reseteamos la selección de la izquierda
                                 }
                             }
                             .padding(16.dp), // Espaciado interno
