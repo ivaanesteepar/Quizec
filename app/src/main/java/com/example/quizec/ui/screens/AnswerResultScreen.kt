@@ -1,6 +1,7 @@
 package com.example.quizec.ui.screens
 
-import android.os.Bundle
+import android.net.Uri
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -15,73 +16,61 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
 import com.example.quizec.data.model.Pregunta
+import com.example.quizec.data.model.TipoPregunta
+import com.example.quizec.ui.screens.UserQuestionTypes.*
+import com.example.quizec.ui.theme.defaultButtonColor
 import com.example.quizec.ui.viewmodel.QuizViewModel
+import com.example.quizec.ui.viewmodel.UsersViewModel
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.delay
+import java.io.File
 
 @Composable
 fun AnswerResultScreen(
     navController: NavHostController,
     quizViewModel: QuizViewModel,
-    selectedAnswer: String?,
-    isAnswerCorrect: Boolean?,
     codigoQuiz: String?
 ) {
-    // Variables para manejar el índice de la pregunta y las respuestas
+    val usersViewModel = UsersViewModel()
+    var preguntas by remember { mutableStateOf(emptyList<Pregunta>()) }
     var currentQuestionIndex by remember { mutableStateOf(0) }
-    val userId = FirebaseAuth.getInstance().currentUser?.uid
-    var resultMessage by remember { mutableStateOf("") }
-    var buttonPressed by remember { mutableStateOf(selectedAnswer ?: "") }
+    val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
 
-    // Cargar preguntas desde el ViewModel cuando el código del cuestionario cambia
+    var immediateResults by remember { mutableStateOf(false) }
+
     LaunchedEffect(codigoQuiz) {
-        if (codigoQuiz != null && userId != null) {
+        if (codigoQuiz != null) {
             quizViewModel.iniciarQuiz(codigoQuiz, userId)
             quizViewModel.cargarPreguntasPorCodigo(codigoQuiz)
+            immediateResults = quizViewModel.obtenerImmediateResults(codigoQuiz)
         }
     }
 
-    // Obtener las preguntas cargadas desde el ViewModel
-    val preguntasState by rememberUpdatedState(quizViewModel.preguntas)
-
-    // Lógica para determinar si la respuesta es correcta o incorrecta
-    resultMessage = if (isAnswerCorrect == true) {
-        "¡Respuesta correcta!"
-    } else {
-        "Respuesta incorrecta"
-    }
-
-    // Obtenemos la pregunta actual
-    val currentQuestion = preguntasState.getOrNull(currentQuestionIndex)
+    preguntas = quizViewModel.preguntas
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        if (currentQuestion != null) {
+        if (preguntas.isEmpty()) {
+            Text(
+                text = "No hay preguntas disponibles",
+                style = MaterialTheme.typography.headlineMedium,
+                modifier = Modifier.align(Alignment.Center)
+            )
+        } else {
+            val currentQuestion = preguntas[currentQuestionIndex]
+
             Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
                 modifier = Modifier
                     .align(Alignment.Center)
-                    .fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .verticalScroll(rememberScrollState())
             ) {
-                // Mostrar el número de pregunta
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = "Pregunta ${currentQuestionIndex + 1} de ${preguntasState.size}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontSize = 16.sp
-                    )
-                }
-
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // Mostrar el título de la pregunta
                 Text(
                     text = currentQuestion.titulo,
                     style = MaterialTheme.typography.headlineMedium,
@@ -91,59 +80,116 @@ fun AnswerResultScreen(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // Mostrar la imagen de la pregunta si tiene una
                 currentQuestion.imagen?.let { imageUrl ->
-                    Image(
-                        painter = rememberAsyncImagePainter(model = imageUrl),
-                        contentDescription = "Imagen de la pregunta",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp) // Ajusta el tamaño de la imagen
-                            .padding(8.dp)
-                    )
+                    val file = File(Uri.parse(imageUrl).path ?: "")
+                    if (file.exists()) {
+                        Image(
+                            painter = rememberAsyncImagePainter(model = imageUrl),
+                            contentDescription = "Imagen de la pregunta",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp)
+                                .padding(8.dp)
+                        )
+                    } else {
+                        Text(text = "Archivo no encontrado")
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // Mostrar el botón pulsado por el usuario
-                Text(
-                    text = "Botón pulsado: $buttonPressed",
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontSize = 18.sp,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
+                println("Correct answer: ${currentQuestion.respuestasCorrectas}")
+
+                when (currentQuestion.tipo) {
+                    TipoPregunta.VERDADERO_FALSO -> {
+                        val respuestaCorrecta = currentQuestion.respuestasCorrectas.firstOrNull() ?: "" // Obtener la primera respuesta correcta
+
+                        TrueFalseQuestionScreen(
+                            onSelectedAnswerChange = {},
+                            falseButtonColor = if (respuestaCorrecta == "Falso") Color.Green else Color.Unspecified, // Si la respuesta correcta es "Falso", el botón "Falso" se pone verde
+                            trueButtonColor = if (respuestaCorrecta == "Verdadero") Color.Green else Color.Unspecified, // Si la respuesta correcta es "Verdadero", el botón "Verdadero" se pone verde
+                            isAcceptButtonClicked = false // Asegúrate de que los botones no se deshabiliten, solo cambien de color
+                        )
+                    }
+                    TipoPregunta.OPCION_MULTIPLE_UNA -> {
+                        val respuestaCorrecta = currentQuestion.respuestasCorrectas.firstOrNull() ?: "" // Obtener la primera respuesta correcta
+
+                        OneMultChoicesScreen(
+                            currentQuestion = currentQuestion,
+                            selectedAnswer = currentQuestion.respuestasCorrectas,
+                            onSelectedAnswerChange = {},
+                            isAcceptButtonClicked = false,
+                            // Aplicando color a los botones
+                            buttonColors = currentQuestion.respuestasCorrectas.map { respuesta ->
+                                if (respuesta == respuestaCorrecta) Color.Green else Color.Unspecified
+                            }
+                        )
+                    }
+
+                    TipoPregunta.OPCION_MULTIPLE_MULTIPLES -> {
+                        val respuestasCorrectas = currentQuestion.respuestasCorrectas.toSet() // Conjunto de respuestas correctas
+
+                        MultChoicesScreen(
+                            currentQuestion = currentQuestion,
+                            selectedAnswer = currentQuestion.respuestasCorrectas,
+                            onSelectedAnswerChange = {},
+                            isAcceptButtonClicked = false,
+                            // Aplicando color a los botones
+                            buttonColors = currentQuestion.respuestasCorrectas.map { respuesta ->
+                                if (respuestasCorrectas.contains(respuesta)) Color.Green else Color.Unspecified
+                            }
+                        )
+                    }
+
+                    TipoPregunta.COMPLETAR_ESPACIOS -> {
+                        FillBlankQuestionScreen(
+                            currentQuestion = currentQuestion,
+                            selectedOption = currentQuestion.opcionCorrecta,
+                            onOptionSelected = {},
+                            isAcceptButtonClicked = true
+                        )
+                    }
+                    TipoPregunta.ORDENAR -> {
+                        OrderingQuesitonScreen(
+                            currentQuestion = currentQuestion,
+                            userOrderedItems = {}
+                        )
+                    }
+                    TipoPregunta.EMPAREJAR -> {
+                        MatchingQuestionScreen(
+                            currentQuestion = currentQuestion,
+                            userSelections = currentQuestion.emparejamientos.associate { it.entries.first().toPair() }
+                                .toMutableMap()
+                        )
+                    }
+                    TipoPregunta.COMPLETAR_PALABRAS -> {
+                        MissingWordsQuestion(
+                            currentQuestion = currentQuestion,
+                            opcionesCorrectas = currentQuestion.opcionesCorrectasCompletarPalabras,
+                            userInputs = currentQuestion.opcionesCorrectasCompletarPalabras.toMutableStateList()
+                        )
+                    }
+                    TipoPregunta.ASOCIACION -> {
+                        // Añade aquí la lógica específica para manejar preguntas de tipo ASOCIACION
+                        Text(text = "Lógica para preguntas de asociación no implementada.")
+                    }
+                }
+
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // Mostrar si la respuesta es correcta o incorrecta
-                Text(
-                    text = resultMessage,
-                    color = if (isAnswerCorrect == true) Color.Green else Color.Red,
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                )
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                // Botón para continuar a la siguiente pregunta o ir a los resultados
                 Button(
                     onClick = {
-                        if (currentQuestionIndex < preguntasState.size - 1) {
-                            // Si no es la última pregunta, avanzar
+                        if (currentQuestionIndex < preguntas.size - 1) {
                             currentQuestionIndex++
                         } else {
-                            // Si es la última pregunta, navegar a los resultados
                             navController.navigate("results_screen/$codigoQuiz")
                         }
-                    },
-                    modifier = Modifier.padding(top = 16.dp)
+                    }
                 ) {
                     Text(text = "Siguiente pregunta")
                 }
             }
-        } else {
-            // Mientras se cargan las preguntas
-            Text("Cargando preguntas...", style = MaterialTheme.typography.bodyLarge)
         }
     }
 }

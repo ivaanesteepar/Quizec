@@ -22,28 +22,30 @@ fun OneMultChoicesScreen(
     selectedAnswer: List<String>?,
     onSelectedAnswerChange: (List<String>) -> Unit,
     isAcceptButtonClicked: Boolean,
-
-){
+    buttonColors: List<Color> // Este parámetro aceptará los colores de los botones
+) {
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp),
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
     ) {
-        currentQuestion.opciones.forEach { opcion ->
+        currentQuestion.opciones.forEachIndexed { index, opcion ->
             val isSelected = selectedAnswer?.contains(opcion) == true
             Button(
                 onClick = {
-                    if (!isSelected) {
-                        onSelectedAnswerChange(listOf(opcion)) // Solo seleccionamos una opción
+                    if (!isSelected && !isAcceptButtonClicked) {
+                        onSelectedAnswerChange(listOf(opcion)) // Solo seleccionamos una opción si no está seleccionada
                     }
                 },
-                colors = ButtonDefaults.buttonColors(containerColor = if (isSelected) selectedButtonColor
-                    else defaultButtonColor),
-                enabled = !isAcceptButtonClicked,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = buttonColors.getOrElse(index) { defaultButtonColor } // Asigna el color del botón
+                ),
+                enabled = !isAcceptButtonClicked, // Deshabilitar botones después de la selección
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(text = opcion, color = Color.White)
             }
         }
     }
-
 }

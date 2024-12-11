@@ -240,7 +240,7 @@ fun QuizecApp() {
             composable("answers/{codigoQuiz}") {
                 val codigoQuiz = it.arguments?.getString("codigoQuiz")
                 if (codigoQuiz != null) {
-                    AnswerResultScreen(navController, quizViewModel, null, null, codigoQuiz)
+                    AnswerResultScreen(navController, quizViewModel, codigoQuiz)
                 } else {
                     Text("Error: No se recibió el código del cuestionario")
                 }

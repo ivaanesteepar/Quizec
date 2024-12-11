@@ -82,18 +82,16 @@ class QuizViewModel : ViewModel() {
     // Modificamos la función para que devuelva un valor Boolean
     suspend fun obtenerImmediateResults(codigoQuiz: String): Boolean {
         return try {
-            // Accedemos a la colección "cuestionarios"
-            val documento = firestore.collection("cuestionarios")
-                .document(codigoQuiz)
+            val querySnapshot = firestore.collection("cuestionarios")
+                .whereEqualTo("id", codigoQuiz) // Filtramos por el campo 'id'
                 .get()
                 .await() // Espera la respuesta de Firestore
 
-            // Comprobamos si el documento existe
-            if (documento.exists()) {
-                documento.getBoolean("immediateResults") ?: false
-            } else {
-                false // Si no existe el documento, devolvemos false
-            }
+            // Comprobamos si hay documentos que coincidan con el filtro
+            val documento = querySnapshot.documents.firstOrNull()
+
+            // Si existe un documento, devolvemos el valor de "immediateResults"
+            documento?.getBoolean("immediateResults") ?: false
         } catch (e: Exception) {
             // En caso de error, devolvemos false
             false

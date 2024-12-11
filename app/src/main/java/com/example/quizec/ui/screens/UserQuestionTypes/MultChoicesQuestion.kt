@@ -21,7 +21,8 @@ fun MultChoicesScreen(
     currentQuestion: Pregunta,
     selectedAnswer: List<String>?,
     onSelectedAnswerChange: (List<String>?) -> Unit,
-    isAcceptButtonClicked: Boolean
+    isAcceptButtonClicked: Boolean,
+    buttonColors: List<Color> // Este parámetro aceptará los colores de los botones
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -29,13 +30,20 @@ fun MultChoicesScreen(
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
     ) {
+        // Crear una lista de colores para los botones
+        val correctAnswers = currentQuestion.respuestasCorrectas.toSet() // Conjunto de respuestas correctas
         currentQuestion.opciones.forEach { opcion ->
             val isSelected = selectedAnswer?.contains(opcion) == true
+            val isCorrect = correctAnswers.contains(opcion) // Comprobar si la opción es correcta
+            val buttonColor = when {
+                isCorrect -> Color.Green // Verde para la respuesta correcta
+                else -> Color.Gray // Gris para las respuestas incorrectas
+            }
 
             Button(
                 onClick = {
                     val updatedAnswer = if (isSelected) {
-                        // Si está seleccionada, la eliminamos
+                        // Si la opción ya está seleccionada, la eliminamos
                         selectedAnswer?.filter { it != opcion }
                     } else {
                         // Si no está seleccionada, la agregamos
@@ -45,10 +53,9 @@ fun MultChoicesScreen(
                     Log.d("MultChoicesScreen", "selectedAnswer: $updatedAnswer")
                 },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isSelected) selectedButtonColor
-                    else defaultButtonColor
+                    containerColor = buttonColor // Aplicamos el color del botón según la respuesta
                 ),
-                enabled = !isAcceptButtonClicked,
+                enabled = !isAcceptButtonClicked, // Deshabilitamos los botones si ya se aceptó la respuesta
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(text = opcion, color = Color.White)
