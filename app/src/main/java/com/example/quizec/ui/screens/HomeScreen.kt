@@ -86,11 +86,13 @@ fun HomeScreenPortrait(navController: NavHostController, quizViewModel: QuizView
         // Contenido de la pantalla de inicio
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp), // Asegura el espaciado
+            verticalArrangement = Arrangement.spacedBy(20.dp), // Espaciado entre botones
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp)  // Añade el padding alrededor
         ) {
+            Spacer(modifier = Modifier.height(32.dp)) // Asegura que el botón se mueva al inicio de la pantalla
+
             // Imagen del título QUIZEC
             Image(
                 painter = painterResource(id = R.drawable.quizec_title),
@@ -127,8 +129,6 @@ fun HomeScreenPortrait(navController: NavHostController, quizViewModel: QuizView
                     Text(text = "Unirse a un Quiz")
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
-
                 // Botón para crear un quiz
                 Button(
                     onClick = {
@@ -139,7 +139,6 @@ fun HomeScreenPortrait(navController: NavHostController, quizViewModel: QuizView
                     Text(text = "Crear un Quiz")
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
 
                 Button(
                     onClick = {
@@ -153,7 +152,6 @@ fun HomeScreenPortrait(navController: NavHostController, quizViewModel: QuizView
                     Text("Seleccionar Cuestionario")
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
 
                 // Botón para ir al historial, pasando el userId
                 Button(
@@ -335,10 +333,33 @@ fun HomeScreenLandscape(navController: NavHostController, quizViewModel: QuizVie
                         Text(text = "Historial")
                     }
 
+                    // Nuevo botón debajo de la imagen
+                    Button(
+                        onClick = {
+                            navController.navigate("login") // Cambia "newFeature" por el destino adecuado
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth(0.8f)  // Botón más ancho
+                            .padding(top = 4.dp), // Espaciado superior para separar del contenido anterior
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                    ) {
+                        // Icono y texto dentro del botón
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ExitToApp,
+                            contentDescription = "Cerrar sesión",
+                            modifier = Modifier.padding(end = 8.dp), // Espacio entre icono y texto
+                            tint = Color.White // Color blanco para el icono
+                        )
+                        Text(
+                            text = "Cerrar Sesión",
+                            color = Color.White // Texto blanco para contrastar con el fondo rojo
+                        )
+                    }
                 }
             }
         }
     }
 }
+
 
 

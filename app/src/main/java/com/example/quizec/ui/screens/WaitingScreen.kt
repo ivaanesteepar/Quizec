@@ -91,7 +91,7 @@ fun WaitingScreen(navController: NavHostController, codigoQuiz: String?, usersVi
             // Botón "Iniciar Quiz"
             Button(
                 onClick = {
-                    if (userRole == Rol.CREADOR.toString()) {
+                    if (userRole == Rol.CREADOR.toString() || userRole == Rol.PARTICIPANTE.toString()) {
                         // Actualizar isUsed a true en Firebase
                         quizViewModel.actualizarIsQuizIniciado(codigoQuiz) { exito ->
                             if (exito) {
@@ -113,7 +113,7 @@ fun WaitingScreen(navController: NavHostController, codigoQuiz: String?, usersVi
                         println("Rol desconocido: $userRole")
                     }
                 },
-                enabled = userRole != null && userRole == Rol.CREADOR.toString()
+                //enabled = userRole != null && userRole == Rol.CREADOR.toString()
             ) {
                 Text("Iniciar Quiz")
             }

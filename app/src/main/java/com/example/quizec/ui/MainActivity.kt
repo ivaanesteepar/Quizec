@@ -20,125 +20,122 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        // Permisos de localización
+        // Solicitar permisos necesarios
+        requestNecessaryPermissions()
+    }
+
+    /**
+     * Solicitar permisos necesarios para la aplicación.
+     */
+    private fun requestNecessaryPermissions() {
+        val permissionsToRequest = mutableListOf<String>()
+
+        // Permisos de ubicación
         if (ContextCompat.checkSelfPermission(
                 this,
-                android.Manifest.permission.ACCESS_FINE_LOCATION // Permiso para ubicación precisa
+                android.Manifest.permission.ACCESS_FINE_LOCATION
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            askSinglePermissions.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
+            permissionsToRequest.add(android.Manifest.permission.ACCESS_FINE_LOCATION)
         }
-
         if (ContextCompat.checkSelfPermission(
                 this,
-                android.Manifest.permission.ACCESS_COARSE_LOCATION // Permiso para ubicación aproximada
+                android.Manifest.permission.ACCESS_COARSE_LOCATION
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            askSinglePermissions.launch(android.Manifest.permission.ACCESS_COARSE_LOCATION)
+            permissionsToRequest.add(android.Manifest.permission.ACCESS_COARSE_LOCATION)
         }
 
-        // Verificar y solicitar otros permisos (cámara, almacenamiento) como ya tienes en tu código
+        // Permiso de cámara
         if (ContextCompat.checkSelfPermission(
                 this,
                 android.Manifest.permission.CAMERA
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            askSinglePermissions.launch(android.Manifest.permission.CAMERA)
+            permissionsToRequest.add(android.Manifest.permission.CAMERA)
         }
 
-        // Solicitar permisos para leer imágenes en Android 13+
+        // Permisos para medios (Android 13+) o almacenamiento (Android < 13)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(
                     this,
                     android.Manifest.permission.READ_MEDIA_IMAGES
                 ) != PackageManager.PERMISSION_GRANTED
             ) {
-                askSinglePermissions.launch(android.Manifest.permission.READ_MEDIA_IMAGES)
+                permissionsToRequest.add(android.Manifest.permission.READ_MEDIA_IMAGES)
+            }
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    android.Manifest.permission.READ_MEDIA_VIDEO
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                permissionsToRequest.add(android.Manifest.permission.READ_MEDIA_VIDEO)
+            }
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    android.Manifest.permission.READ_MEDIA_AUDIO
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                permissionsToRequest.add(android.Manifest.permission.READ_MEDIA_AUDIO)
             }
         } else {
-            // Solicitar permisos para acceder a almacenamiento en versiones posteriores a Android 10
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                if (ContextCompat.checkSelfPermission(
-                        this,
-                        android.Manifest.permission.READ_EXTERNAL_STORAGE
-                    ) != PackageManager.PERMISSION_GRANTED ||
-                    ContextCompat.checkSelfPermission(
-                        this,
-                        android.Manifest.permission.WRITE_EXTERNAL_STORAGE
-                    ) != PackageManager.PERMISSION_GRANTED
-                ) {
-                    askMultiplePermissions.launch(
-                        arrayOf(
-                            android.Manifest.permission.READ_EXTERNAL_STORAGE,
-                            android.Manifest.permission.WRITE_EXTERNAL_STORAGE
-                        )
-                    )
-                }
-            } else {
-                // Solicitar permisos para acceder a almacenamiento en versiones anteriores a Android 10
-                if (ContextCompat.checkSelfPermission(
-                        this,
-                        android.Manifest.permission.READ_EXTERNAL_STORAGE
-                    ) != PackageManager.PERMISSION_GRANTED ||
-                    ContextCompat.checkSelfPermission(
-                        this,
-                        android.Manifest.permission.WRITE_EXTERNAL_STORAGE
-                    ) != PackageManager.PERMISSION_GRANTED
-                ) {
-                    askMultiplePermissions.launch(
-                        arrayOf(
-                            android.Manifest.permission.READ_EXTERNAL_STORAGE,
-                            android.Manifest.permission.WRITE_EXTERNAL_STORAGE
-                        )
-                    )
-                }
+            // Para versiones anteriores
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    android.Manifest.permission.READ_EXTERNAL_STORAGE
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                permissionsToRequest.add(android.Manifest.permission.READ_EXTERNAL_STORAGE)
+            }
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                permissionsToRequest.add(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
             }
         }
 
-        // Obtener la lista de permisos solicitados
-        val requestedPermissions = packageManager.getPackageInfo(packageName, PackageManager.GET_PERMISSIONS).requestedPermissions
+        // Solicitar permisos si es necesario
+        if (permissionsToRequest.isNotEmpty()) {
+            askMultiplePermissions.launch(permissionsToRequest.toTypedArray())
+        }
 
-        // Verificar si los permisos están otorgados
-        if (requestedPermissions != null) {
-            for (permission in requestedPermissions) {
-                val isGranted = ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
-                Log.d("Permissions", "Permiso: $permission, Otorgado: $isGranted")
-            }
-        } else {
+        // Log de permisos solicitados y estado actual
+        logRequestedPermissions()
+    }
+
+    /**
+     * Registro de permisos declarados en el manifiesto y su estado actual.
+     */
+    private fun logRequestedPermissions() {
+        val requestedPermissions = packageManager.getPackageInfo(
+            packageName,
+            PackageManager.GET_PERMISSIONS
+        ).requestedPermissions
+        requestedPermissions?.forEach { permission ->
+            val isGranted = ContextCompat.checkSelfPermission(
+                this,
+                permission
+            ) == PackageManager.PERMISSION_GRANTED
+            Log.d("Permissions", "Permiso: $permission, Otorgado: $isGranted")
+        } ?: run {
             Log.d("Permissions", "No se encontraron permisos solicitados en el manifiesto.")
         }
     }
 
-    // Manejo de permisos múltiples
-    val askMultiplePermissions = registerForActivityResult(
+    /**
+     * Manejo del resultado de solicitudes de permisos múltiples.
+     */
+    private val askMultiplePermissions = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
-        permissions.forEach { permission, isGranted ->
+        permissions.forEach { (permission, isGranted) ->
             if (isGranted) {
-                // Imprimir un mensaje cuando se otorgue el permiso
-                if (permission == android.Manifest.permission.READ_EXTERNAL_STORAGE) {
-                    println("Permiso de lectura de almacenamiento otorgado.")
-                }
-                if (permission == android.Manifest.permission.WRITE_EXTERNAL_STORAGE) {
-                    println("Permiso de escritura de almacenamiento otorgado.")
-                }
+                Log.d("Permissions", "Permiso otorgado: $permission")
             } else {
-                // Imprimir un mensaje cuando se deniegue el permiso
-                println("Permiso de almacenamiento DENEGADO: $permission")
+                Log.e("Permissions", "Permiso denegado: $permission")
             }
-        }
-    }
-
-    // Manejo de permisos individuales
-    val askSinglePermissions = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        if (granted) {
-            // Imprimir un mensaje cuando se otorgue el permiso
-            println("Permiso otorgado.")
-        } else {
-            // Imprimir un mensaje cuando se deniegue el permiso
-            println("Permiso DENEGADO.")
         }
     }
 }

@@ -41,7 +41,7 @@ class QuizViewModel : ViewModel() {
     val cuestionario: State<Cuestionario?> get() = _cuestionario
 
     //var imageUri = mutableStateOf<Uri?>(null) NO SIRVE
-    var imageUri by mutableStateOf<Uri?>(null)
+    var imageUri by mutableStateOf<String?>(null)
 
     // State para almacenar las URLs de las imágenes
     var imagenesState = mutableStateOf<List<String>>(emptyList())
@@ -78,6 +78,28 @@ class QuizViewModel : ViewModel() {
     init {
         obtenerRolUsuario()
     }
+
+    // Modificamos la función para que devuelva un valor Boolean
+    suspend fun obtenerImmediateResults(codigoQuiz: String): Boolean {
+        return try {
+            // Accedemos a la colección "cuestionarios"
+            val documento = firestore.collection("cuestionarios")
+                .document(codigoQuiz)
+                .get()
+                .await() // Espera la respuesta de Firestore
+
+            // Comprobamos si el documento existe
+            if (documento.exists()) {
+                documento.getBoolean("immediateResults") ?: false
+            } else {
+                false // Si no existe el documento, devolvemos false
+            }
+        } catch (e: Exception) {
+            // En caso de error, devolvemos false
+            false
+        }
+    }
+
 
     suspend fun obtenerEstadosIsUsed(creadorId: String): Map<String, Boolean> {
         val estados = mutableMapOf<String, Boolean>()
@@ -734,6 +756,8 @@ class QuizViewModel : ViewModel() {
             val imagenesList = result.documents.mapNotNull { document ->
                 document.getString("imagen") // Suponiendo que el campo "imagen" contiene la URL
             }
+
+            println("Imagenes: $imagenesList")
 
             // Actualizamos el estado con las URLs de las imágenes
             imagenesState.value = imagenesList

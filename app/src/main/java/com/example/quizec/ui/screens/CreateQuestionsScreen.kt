@@ -2,9 +2,12 @@ package com.example.quizec.ui.screens
 
 import android.net.Uri
 import android.util.Log
+import android.webkit.MimeTypeMap
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -18,6 +21,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -25,9 +29,13 @@ import androidx.navigation.NavHostController
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
+import coil.compose.AsyncImage
+import coil.compose.rememberAsyncImagePainter
+import coil.compose.rememberImagePainter
 import com.example.quizec.data.model.Pregunta
 import com.example.quizec.data.model.TipoPregunta
 import com.example.quizec.ui.viewmodel.QuizViewModel
+import com.example.quizec.utils.AMovServer
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import java.util.UUID
@@ -37,7 +45,6 @@ import java.util.UUID
 fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizViewModel) {
     val db = FirebaseFirestore.getInstance()
 
-    val context = LocalContext.current
     val user_id = FirebaseAuth.getInstance().currentUser?.uid   // Obtener el ID del usuario autenticado
 
     var errorMessage by remember { mutableStateOf("") }
@@ -61,6 +68,7 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
     //COMPLETAR ESPACIOS
     var fraseCompletar by remember { mutableStateOf("") }
     var opcionCorrecta by remember { mutableStateOf("") } //la palabra que será el espacio en blanco
+    var imageUri by remember { mutableStateOf<Uri?>(null) }
 
     //ASOCIACION
     // Listas para que el profesor ingrese conceptos y definiciones
@@ -68,16 +76,35 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
     var definiciones by remember { mutableStateOf(listOf("")) }
     //tb usa itemPairs
     var conceptosYDefiniciones by remember { mutableStateOf(listOf<Map<String, String>>())}
-
     var opcionesCorrectasCompletarPalabras by remember { mutableStateOf(listOf<String>()) }
 
+    val context = LocalContext.current
+    var error by remember { mutableStateOf<String?>(null) }
+    var imageUrl by remember { mutableStateOf<String?>(null) }
 
-    //ARREGLAR LO DE LAS IMAGENES (hacer q se pueda poner una imagen)
-    var imageUri by rememberSaveable { mutableStateOf<Uri?>(null) }
-    val imagePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent(),
-        onResult = { uri: Uri? -> imageUri = uri }
+    val pickPicture = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+        onResult = { uri ->
+            Log.d("CreateQuizScreen", "URI seleccionada: $uri")
+            if (uri != null) {
+                AMovServer.asyncUploadImage(
+                    inputStream = context.contentResolver.openInputStream(uri)!!,
+                    extension = "jpg",
+                    onResult = { result ->
+                        Log.d("CreateQuizScreen", "Resultado de subir imagen: $result")
+                        if (result != null) {
+                            imageUrl = result
+                            error = null
+                        } else {
+                            Log.d("CreateQuizScreen", "Error al subir la imagen")
+                            imageUrl = null
+                        }
+                    }
+                )
+            }
+        }
     )
+
 
     LazyColumn(
         modifier = Modifier
@@ -102,6 +129,27 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                     .border(1.dp, Color.Gray)
                     .padding(12.dp)
             )
+        }
+
+        item {
+            // Botón para elegir imagen
+            Text("Subir Imagen (Opcional)", style = MaterialTheme.typography.bodyMedium)
+            pickPicture.launch(
+                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Show selected image if available
+            if (imageUrl != null) {
+                AsyncImage(
+                    model = imageUrl,
+                    contentDescription = "Imagen cargada del servidor",
+                    modifier = Modifier.size(200.dp)
+                )
+            } else {
+                Text(text = "No hay imagen para mostrar.")
+            }
         }
 
         item {
@@ -706,10 +754,6 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                                 }
                             }
 
-
-
-
-
                         }
 
                         // Si no hay errores, proceder a guardar la pregunta en Firebase y navegar
@@ -734,6 +778,7 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                                 titulo = titulo,
                                 tipo = tipoPregunta,
                                 opciones = opciones,
+                                imagen = imageUri?.toString(), // Convertir Uri a String
                                 respuestasCorrectas = respuestasCorrectas,
                                 emparejamientos = itemPairs,
                                 itemsOrdenados = itemsOrdenados,

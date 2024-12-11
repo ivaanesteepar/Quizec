@@ -2,6 +2,7 @@ package com.example.quizec.ui.screens
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.pm.PackageManager
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -27,17 +28,13 @@ import android.widget.Toast
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.core.content.ContextCompat
 import androidx.navigation.NavHostController
-import coil.compose.rememberAsyncImagePainter
+import coil.compose.AsyncImage
 import com.example.quizec.data.model.Cuestionario
 import com.example.quizec.data.model.Rol
 import com.example.quizec.ui.viewmodel.QuizViewModel
-import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.location.LocationServices
-import com.google.android.gms.tasks.CancellationTokenSource
+import com.example.quizec.utils.AMovServer
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
 
 @Composable
@@ -47,7 +44,7 @@ fun CreateQuizScreen(
 ) {
     var titulo by rememberSaveable { mutableStateOf("") }
     var descripcion by rememberSaveable { mutableStateOf("") }
-    var imageUri by rememberSaveable { mutableStateOf<Uri?>(null) }
+    var imageUri by rememberSaveable { mutableStateOf<String?>(null) }
     var errorMessage by rememberSaveable { mutableStateOf("") }
     var tituloError by rememberSaveable { mutableStateOf(false) }  // Control de error del título
     var descripcionError by rememberSaveable { mutableStateOf(false) }  // Control de error de la descripción
@@ -75,18 +72,32 @@ fun CreateQuizScreen(
         descripcionError = false
     }
 
-    // Launcher for picking an image
-    val pickImageLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia()
-    ) { uri ->
-        if (uri != null) {
-            imageUri = uri
-            quizViewModel.imageUri = uri
-            Log.d("CreateQuizScreen", "Imagen seleccionada: $uri")
-        } else {
-            Log.d("CreateQuizScreen", "No se seleccionó ninguna imagen.")
+
+    val context = LocalContext.current
+    var error by remember { mutableStateOf<String?>(null) }
+
+    val pickPicture = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+        onResult = { uri ->
+            Log.d("CreateQuizScreen", "URI seleccionada: $uri")
+            if (uri != null) {
+                AMovServer.asyncUploadImage(
+                    inputStream = context.contentResolver.openInputStream(uri)!!,
+                    extension = "jpg",
+                    onResult = { result ->
+                        Log.d("CreateQuizScreen", "Resultado de subir imagen: $result")
+                        if (result != null) {
+                            imageUri = result // Now you're setting a String?
+                            error = null
+                        } else {
+                            Log.d("CreateQuizScreen", "Error al subir la imagen")
+                            imageUri = null
+                        }
+                    }
+                )
+            }
         }
-    }
+    )
 
     Column(
         modifier = Modifier
@@ -149,7 +160,7 @@ fun CreateQuizScreen(
         Text("Subir Imagen (Opcional)", style = MaterialTheme.typography.bodyMedium)
         Button(
             onClick = {
-                pickImageLauncher.launch(
+                pickPicture.launch(
                     PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                 )
             },
@@ -159,17 +170,21 @@ fun CreateQuizScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Mostrar imagen seleccionada
-        imageUri?.let { uri ->
-            Image(
-                painter = rememberAsyncImagePainter(uri),
-                contentDescription = "Imagen seleccionada",
-                modifier = Modifier
-                    .size(150.dp)
-                    .border(1.dp, Color.Gray)
-                    .padding(8.dp)
+
+        if (imageUri != null) {
+            AsyncImage(
+                model = imageUri, // Now using a String (imageUrl) instead of Uri
+                contentDescription = "Imagen cargada del servidor",
+                modifier = Modifier.size(200.dp)
             )
+        } else {
+            Text(text = "No hay imagen para mostrar.")
         }
+
+        println("Url de la imagen: $imageUri")
+
+        // Asignamos el enlace a la variable en el quizviewmodel
+        quizViewModel.imageUri = imageUri
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -332,6 +347,8 @@ fun CreateQuizScreen(
                     )
 
                 }
+
+
             },
             modifier = Modifier.fillMaxWidth(0.8f)
         ) {
@@ -357,7 +374,7 @@ private fun crearCuestionario(
     nombreUsuario: String?,
     quizViewModel: QuizViewModel,
     onError: (String) -> Unit,
-    //NEW
+    // Parametros adicionales para el cuestionario
     immediateAccess: Boolean,
     locationRestricted: Boolean,
     immediateResults: Boolean,
@@ -373,8 +390,8 @@ private fun crearCuestionario(
     } else {
         quizViewModel.viewModelScope.launch {
             val quizCode = quizViewModel.generarClave()
-            val imageUriString = quizViewModel.imageUri.toString()
-            println("El url de la imagen es: $imageUriString")
+            val imageUri = quizViewModel.imageUri // Asegúrate de que este valor no sea null
+            Log.d("CreateQuizScreen", "El URL de la imagen es: $imageUri")
 
             val userUid = FirebaseAuth.getInstance().currentUser?.uid
 
@@ -383,8 +400,8 @@ private fun crearCuestionario(
                 titulo = titulo,
                 descripcion = descripcion,
                 creadorId = userUid ?: "",
-                imagen = imageUriString,
-                preguntas = quizViewModel.preguntas, // Incluye la lista completa de preguntas
+                imagen = imageUri, // Asignar la URL de la imagen correctamente
+                preguntas = quizViewModel.preguntas,
                 immediateAccess = immediateAccess,
                 locationRestricted = locationRestricted,
                 immediateResults = immediateResults,
@@ -395,10 +412,8 @@ private fun crearCuestionario(
                 radio = radio
             )
 
-            Log.d("CreateQuizScreen", "URL firebase : $imageUriString")
-            Log.d("CreateQuizScreen", "URL quizView : ${quizViewModel.imageUri.toString()}")
-
             // Guardar el cuestionario en Firestore
+            Log.d("CreateQuizScreen", "Guardando en Firestore: $cuestionario")
             quizViewModel.guardarCuestionarioEnFirestore(cuestionario.toMap()) { error ->
                 if (error != null) {
                     onError("Error al crear el cuestionario: $error")
@@ -414,6 +429,7 @@ private fun crearCuestionario(
         }
     }
 }
+
 
 // Extensión para convertir Cuestionario a Map<String, Any>
 fun Cuestionario.toMap(): Map<String, Any> {
@@ -454,4 +470,3 @@ fun Cuestionario.toMap(): Map<String, Any> {
         "radio" to radio // Añadido el valor de radio
     )
 }
-

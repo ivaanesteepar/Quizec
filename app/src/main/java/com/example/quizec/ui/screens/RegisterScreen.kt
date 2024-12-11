@@ -1,11 +1,15 @@
 package com.example.quizec.ui.screens
 
 import android.annotation.SuppressLint
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
@@ -18,9 +22,22 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
 
-@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun RegisterScreen(navController: NavHostController) {
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+
+    // Verificamos la orientación y ejecutamos la función adecuada
+    if (isLandscape) {
+        RegisterScreenLandscape(navController)  // Función para Landscape
+    } else {
+        RegisterScreenPortrait(navController)  // Función para Portrait
+    }
+}
+
+@Composable
+fun RegisterScreenPortrait(navController: NavHostController) {
+    // Aquí va la implementación para la orientación portrait
     val auth = if (LocalInspectionMode.current) null else FirebaseAuth.getInstance()
     val db = if (LocalInspectionMode.current) null else FirebaseFirestore.getInstance()
 
@@ -29,7 +46,7 @@ fun RegisterScreen(navController: NavHostController) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
-    var rol by remember { mutableStateOf(Rol.PARTICIPANTE) } // Valor inicial por defecto
+    var rol by remember { mutableStateOf(Rol.PARTICIPANTE) }
     var isEmailEmpty by remember { mutableStateOf(false) }
     var isPasswordEmpty by remember { mutableStateOf(false) }
     val scaffoldState = remember { SnackbarHostState() }
@@ -155,10 +172,185 @@ fun RegisterScreen(navController: NavHostController) {
                 ) {
                     Text("Registrar")
                 }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Button(
+                    onClick = {
+                        navController.navigate("login")
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ){
+                    Text("Volver")
+                }
             }
         }
     )
 }
+
+@Composable
+fun RegisterScreenLandscape(navController: NavHostController) {
+    // Implementación para la orientación landscape
+    val auth = if (LocalInspectionMode.current) null else FirebaseAuth.getInstance()
+    val db = if (LocalInspectionMode.current) null else FirebaseFirestore.getInstance()
+
+    // Estados para el formulario
+    var nombre by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
+    var rol by remember { mutableStateOf(Rol.PARTICIPANTE) }
+    var isEmailEmpty by remember { mutableStateOf(false) }
+    var isPasswordEmpty by remember { mutableStateOf(false) }
+    val scaffoldState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(scaffoldState) },
+        content = {
+            // En Landscape, se usa un Row para mostrar los elementos horizontalmente
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Column con los campos y botones
+                Column(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .padding(horizontal = 16.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text("Register", style = MaterialTheme.typography.titleLarge)
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    OutlinedTextField(
+                        value = nombre,
+                        onValueChange = { nombre = it },
+                        label = { Text("Nombre") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    OutlinedTextField(
+                        value = email,
+                        onValueChange = {
+                            email = it
+                            isEmailEmpty = email.isEmpty()
+                        },
+                        label = { Text("Email") },
+                        isError = isEmailEmpty,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    if (isEmailEmpty) {
+                        Text(
+                            text = "El campo de correo es obligatorio",
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = {
+                            password = it
+                            isPasswordEmpty = password.isEmpty()
+                        },
+                        label = { Text("Password") },
+                        isError = isPasswordEmpty,
+                        visualTransformation = PasswordVisualTransformation(),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    if (isPasswordEmpty) {
+                        Text(
+                            text = "El campo de contraseña es obligatorio",
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    OutlinedTextField(
+                        value = confirmPassword,
+                        onValueChange = { confirmPassword = it },
+                        label = { Text("Confirm Password") },
+                        visualTransformation = PasswordVisualTransformation(),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Button(
+                        onClick = {
+                            isEmailEmpty = email.isEmpty()
+                            isPasswordEmpty = password.isEmpty()
+                            if (!isEmailEmpty && !isPasswordEmpty && password == confirmPassword) {
+                                if (auth != null && db != null) {
+                                    registerUser(
+                                        auth = auth,
+                                        db = db,
+                                        nombre = nombre,
+                                        email = email,
+                                        password = password,
+                                        rol = rol,
+                                        onSuccess = {
+                                            scope.launch {
+                                                scaffoldState.showSnackbar("Registro exitoso")
+                                            }
+                                        },
+                                        onError = { errorMessage ->
+                                            scope.launch {
+                                                scaffoldState.showSnackbar(errorMessage)
+                                            }
+                                        },
+                                        navController = navController
+                                    )
+                                }
+                            } else if (isEmailEmpty) {
+                                scope.launch {
+                                    scaffoldState.showSnackbar("El campo de correo es obligatorio")
+                                }
+                            } else if (isPasswordEmpty) {
+                                scope.launch {
+                                    scaffoldState.showSnackbar("El campo de contraseña es obligatorio")
+                                }
+                            } else {
+                                scope.launch {
+                                    scaffoldState.showSnackbar("Las contraseñas no coinciden")
+                                }
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Registrar")
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Button(
+                        onClick = {
+                            navController.navigate("login")
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ){
+                        Text("Volver")
+                    }
+                }
+            }
+        }
+    )
+}
+
 
 private fun registerUser(
     auth: FirebaseAuth,

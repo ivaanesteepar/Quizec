@@ -1,6 +1,8 @@
 package com.example.quizec.ui.screens
 
+import android.net.Uri
 import android.util.Log
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -12,6 +14,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
+import coil.compose.AsyncImagePainter
+import coil.compose.rememberAsyncImagePainter
 import com.example.quizec.data.model.Pregunta
 import com.example.quizec.data.model.TipoPregunta
 import com.example.quizec.ui.screens.UserQuestionTypes.FillBlankQuestionScreen
@@ -28,6 +32,7 @@ import com.example.quizec.ui.viewmodel.UsersViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.delay
+import java.io.File
 
 @Composable
 fun UserQuizzesScreen(
@@ -38,43 +43,39 @@ fun UserQuizzesScreen(
     val usersViewModel = UsersViewModel()
     var preguntas by remember { mutableStateOf(emptyList<Pregunta>()) }
     var currentQuestionIndex by remember { mutableStateOf(0) }
-
     var selectedAnswer by remember { mutableStateOf<List<String>?>(null) }
     var isAnswerCorrect by remember { mutableStateOf<Boolean?>(null) }
     var isAnswerSelected by remember { mutableStateOf(false) }
     var trueButtonColor by remember { mutableStateOf(defaultButtonColor) }
     var falseButtonColor by remember { mutableStateOf(defaultButtonColor) }
-
     //JIMENA
     var enableAcept by remember { mutableStateOf(false) } //habilita el botoón de aceptar
     var selectedOption by remember { mutableStateOf<String?>(null) } //ESPACIOS
     var userOrderedItems by remember { mutableStateOf<List<String>>(emptyList()) } //ORDENAR
     val userSelections = remember { mutableStateMapOf<String, String>() }
-
     var answer by remember { mutableStateOf<Any?>(null) }
-
     // Estado para controlar si el botón "Aceptar" fue presionado
     var isAcceptButtonClicked by remember { mutableStateOf(false) }
-
     val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
     var userName by remember { mutableStateOf<String?>(null) }
-
     // Observamos el totalTime
     val totalTime by quizViewModel.totalTime.collectAsState()
     println("totalTime fuera del launch: $totalTime")
-
     var remainingTime by remember { mutableStateOf(30) } // Tiempo por pregunta
     var timerActive by remember { mutableStateOf(true) }
-
     // Estado global desde el ViewModel
     val _remainingTime = quizViewModel.remainingTime // Obtenido desde el ViewModel
     val remainingTimeState: State<Int> = _remainingTime
+
+    var immediateResults by remember { mutableStateOf(false) }
+
 
     LaunchedEffect(codigoQuiz) {
         if (codigoQuiz != null) {
             println("Usuario ha entrado con id: $userId al cuestionario: $codigoQuiz")
             quizViewModel.iniciarQuiz(codigoQuiz, userId)
             quizViewModel.cargarPreguntasPorCodigo(codigoQuiz)
+            immediateResults = quizViewModel.obtenerImmediateResults(codigoQuiz)
             userName = usersViewModel.obtenerNombreUsuario(userId, codigoQuiz)
             usersViewModel.agregarUsuarioAQuiz(codigoQuiz)
             quizViewModel.resetTimes()  // Restablece los tiempos a su valor inicial
@@ -108,8 +109,6 @@ fun UserQuizzesScreen(
         }
     }
 
-
-
     // Lógica del temporizador para la pregunta actual y el tiempo total
     LaunchedEffect(totalTime) {
         println("totalTime: $totalTime")
@@ -136,9 +135,7 @@ fun UserQuizzesScreen(
             }
         }
     }
-
     preguntas = quizViewModel.preguntas
-
     Box(
         modifier = Modifier
             .fillMaxSize() // Llena toda la pantalla
@@ -198,6 +195,30 @@ fun UserQuizzesScreen(
                 )
 
                 Spacer(modifier = Modifier.height(20.dp))
+
+                currentQuestion.imagen?.let { imageUrl ->
+                    if (imageUrl.startsWith("file://")) {
+                        // Asegúrate de que el archivo existe antes de intentar cargarlo
+                        val file = File(Uri.parse(imageUrl).path ?: "")
+                        if (file.exists()) {
+                            Image(
+                                painter = rememberAsyncImagePainter(model = imageUrl),
+                                contentDescription = "Imagen de la pregunta",
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(200.dp) // Ajusta el tamaño de la imagen
+                                    .padding(8.dp)
+                            )
+                        } else {
+                            // Si el archivo no existe, puedes mostrar un mensaje o una imagen predeterminada
+                            Text(
+                                text = "Archivo no encontrado"
+                            )
+                        }
+                    }
+                }
+
+
 
                 // Opciones de respuesta dependiendo del tipo de pregunta
                 if (currentQuestion.tipo == TipoPregunta.VERDADERO_FALSO) {
@@ -364,11 +385,9 @@ fun UserQuizzesScreen(
                     Text(text = "Aceptar")
                 }
 
-
-
                 Spacer(modifier = Modifier.height(10.dp))
 
-                Log.d("UserQuizzesScreen", "Resultado de la respuesta: ${resultMessage}")
+                Log.d("UserQuizzesScreen", "Resultado de la respuesta: $resultMessage")
                 // Mostrar si la respuesta es correcta o incorrecta
                 if (resultMessage.isNotEmpty()) {
                     Text(

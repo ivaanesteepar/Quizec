@@ -1,6 +1,7 @@
 package com.example.quizec.ui.screens
 
 import android.net.Uri
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -17,12 +18,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.activity.result.PickVisualMediaRequest
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
+import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
 import com.example.quizec.data.model.Cuestionario
 import com.example.quizec.data.model.Pregunta
 import com.example.quizec.ui.viewmodel.QuestionsViewModel
 import com.example.quizec.ui.viewmodel.QuizViewModel
+import com.example.quizec.utils.AMovServer
 
 @Composable
 fun EditarCuestionarioScreen(
@@ -34,7 +38,7 @@ fun EditarCuestionarioScreen(
     val questionsViewModel = QuestionsViewModel()
     var titulo by rememberSaveable { mutableStateOf(cuestionarioMod.titulo) }
     var descripcion by rememberSaveable { mutableStateOf(cuestionarioMod.descripcion) }
-    var imageUri by rememberSaveable { mutableStateOf<Uri?>(cuestionarioMod.imagen?.let { Uri.parse(it) }) }
+    var imageUri by rememberSaveable { mutableStateOf<String?>(cuestionarioMod.imagen) }
     var errorMessage by rememberSaveable { mutableStateOf("") }
     var tituloError by rememberSaveable { mutableStateOf(false) }
     var descripcionError by rememberSaveable { mutableStateOf(false) }
@@ -76,15 +80,31 @@ fun EditarCuestionarioScreen(
 
     println("listaPreguntas: $listaPreguntas")
 
-    // Launcher para elegir la imagen
-    val pickImageLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia()
-    ) { uri ->
-        if (uri != null) {
-            imageUri = uri
-            quizViewModel.imageUri = uri
+    val context = LocalContext.current
+    var error by remember { mutableStateOf<String?>(null) }
+
+    val pickPicture = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+        onResult = { uri ->
+            Log.d("CreateQuizScreen", "URI seleccionada: $uri")
+            if (uri != null) {
+                AMovServer.asyncUploadImage(
+                    inputStream = context.contentResolver.openInputStream(uri)!!,
+                    extension = "jpg",
+                    onResult = { result ->
+                        Log.d("CreateQuizScreen", "Resultado de subir imagen: $result")
+                        if (result != null) {
+                            imageUri = result // Now you're setting a String?
+                            error = null
+                        } else {
+                            Log.d("CreateQuizScreen", "Error al subir la imagen")
+                            imageUri = null
+                        }
+                    }
+                )
+            }
         }
-    }
+    )
 
     Column(
         modifier = Modifier
@@ -137,18 +157,22 @@ fun EditarCuestionarioScreen(
         Text("Subir Imagen (Opcional)", style = MaterialTheme.typography.bodyMedium)
         Button(
             onClick = {
-                pickImageLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                pickPicture.launch(
+                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                )
             }
         ) {
             Text("Seleccionar Imagen")
         }
 
-        imageUri?.let {
-            Image(
-                painter = rememberAsyncImagePainter(it),
-                contentDescription = "Imagen seleccionada",
-                modifier = Modifier.size(150.dp).border(1.dp, Color.Gray).padding(8.dp)
+        if (imageUri != null) {
+            AsyncImage(
+                model = imageUri, // Now using a String (imageUrl) instead of Uri
+                contentDescription = "Imagen cargada del servidor",
+                modifier = Modifier.size(200.dp)
             )
+        } else {
+            Text(text = "No hay imagen para mostrar.")
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -168,6 +192,7 @@ fun EditarCuestionarioScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         // Boton para seleccionar preguntas
+        // DESAPARECEN LAS PREGUNTAS SELECCIONADAS CUANDO SE VUELVE DE ESTA PANTALLA
         Button(
             onClick = {
                 navController.navigate("delete_questions/$cuestionarioId")

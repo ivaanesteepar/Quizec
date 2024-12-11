@@ -1,19 +1,15 @@
 package com.example.quizec.ui.screens
 
 import android.Manifest
-import android.annotation.SuppressLint
-import android.app.Activity
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.net.Uri
-import android.content.ContentResolver
 import android.content.Context
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Looper
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -21,31 +17,33 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavHostController
+import coil.compose.AsyncImage
+import coil.compose.rememberAsyncImagePainter
+import coil.request.ImageRequest
 import com.example.quizec.ui.viewmodel.QuizViewModel
 import com.example.quizec.ui.viewmodel.QuestionsViewModel
 import com.google.firebase.auth.FirebaseAuth
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.quizec.data.model.Cuestionario
 import com.example.quizec.data.model.Rol
 import com.example.quizec.utils.LocationUtils
-import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
-import com.google.android.gms.tasks.CancellationTokenSource
-import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.io.File
+import java.io.FileOutputStream
+
 
 @Composable
 fun SelectCuestionarioScreen(
@@ -54,7 +52,6 @@ fun SelectCuestionarioScreen(
     questionsViewModel: QuestionsViewModel
 ) {
     val context = LocalContext.current
-
     val userId = FirebaseAuth.getInstance().currentUser?.uid
     val cuestionariosState = questionsViewModel.cuestionariosState.collectAsState()
     var showDeleteConfirmationDialog by remember { mutableStateOf(false) }
@@ -72,6 +69,23 @@ fun SelectCuestionarioScreen(
         locationPermissionGranted = isGranted
     }
 
+    // Verificar si se tiene permiso para acceder a las imágenes
+    val hasPermission = ContextCompat.checkSelfPermission(
+        context,
+        Manifest.permission.READ_MEDIA_IMAGES
+    ) == PackageManager.PERMISSION_GRANTED
+
+    // Si no se tiene permiso, lanzamos la solicitud
+    if (!hasPermission) {
+        launcher.launch(Manifest.permission.READ_MEDIA_IMAGES)
+    }
+
+    // Mostrar mensaje si el permiso no se ha concedido
+    var permissionMessage by remember { mutableStateOf("") }
+    if (!hasPermission) {
+        permissionMessage = "No se ha concedido el permiso para acceder a las imágenes."
+    }
+
     LaunchedEffect(Unit) {
         val hasPermission = ContextCompat.checkSelfPermission(
             context,
@@ -83,9 +97,9 @@ fun SelectCuestionarioScreen(
         } else {
             locationPermissionGranted = true
 
-            // Aqui lo que se va a hacer es obtener la ubicacion actual del usuario cada 1 segundo
+            // Aquí lo que se va a hacer es obtener la ubicación actual del usuario cada 1 segundo
             val locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 1000)
-                .setMinUpdateIntervalMillis(1000)  // 1 second
+                .setMinUpdateIntervalMillis(1000)  // 1 segundo
                 .build()
 
             val locationCallback = object : LocationCallback() {
@@ -126,17 +140,11 @@ fun SelectCuestionarioScreen(
         }
     }
 
-    Box(
-        modifier = Modifier.fillMaxSize()
-    ) {
+    Box(modifier = Modifier.fillMaxSize()) {
         if (cuestionariosState.value.isEmpty()) {
             CircularProgressIndicator(modifier = Modifier.padding(16.dp))
         } else {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp)
-            ) {
+            Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
                 Text(
                     text = "SELECCIONE UN CUESTIONARIO",
                     style = MaterialTheme.typography.bodyMedium,
@@ -145,22 +153,14 @@ fun SelectCuestionarioScreen(
                 )
 
                 LazyColumn(
-                    modifier = Modifier
-                        .padding(top = 26.dp)
-                        .height(500.dp)
+                    modifier = Modifier.padding(top = 26.dp).height(500.dp)
                 ) {
                     items(cuestionariosState.value) { cuestionario ->
-                        println("Cuestionarios: $cuestionariosState")
                         // Obtener el valor de isUsed para cada cuestionario
-                        val isUsed = estadosIsUsed.value[cuestionario.id] ?: false // id es codigoQuiz
-                        println("isUsed: $isUsed del cuestionario: ${cuestionario.id}")
-
+                        val isUsed = estadosIsUsed.value[cuestionario.id] ?: false
                         val isSelected = questionsViewModel.selectedCuestionario == cuestionario.id
 
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(vertical = 8.dp)
-                        ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 8.dp)) {
                             Checkbox(
                                 checked = isSelected,
                                 onCheckedChange = {
@@ -169,11 +169,7 @@ fun SelectCuestionarioScreen(
                                 modifier = Modifier.size(20.dp)
                             )
 
-                            Column(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .padding(start = 8.dp)
-                            ) {
+                            Column(modifier = Modifier.weight(1f).padding(start = 8.dp)) {
                                 Text(
                                     text = cuestionario.titulo,
                                     style = MaterialTheme.typography.bodySmall
@@ -182,6 +178,23 @@ fun SelectCuestionarioScreen(
                                     text = "ID: ${cuestionario.id}",
                                     style = MaterialTheme.typography.labelSmall
                                 )
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                // Muestra la imagen usando la URI almacenada
+                                cuestionario.imagen?.let { imageUri ->
+                                    AsyncImage(
+                                        model = ImageRequest.Builder(context)
+                                            .data(Uri.parse(imageUri)) // Convierte la cadena en una URI válida
+                                            .crossfade(true)
+                                            .build(),
+                                        contentDescription = "Imagen del cuestionario",
+                                        modifier = Modifier
+                                            .size(150.dp)
+                                            .border(1.dp, Color.Gray)
+                                            .padding(8.dp),
+                                        contentScale = ContentScale.Crop // Ajusta el contenido para que no se deforme
+                                    )
+                                }
                             }
 
                             Button(
@@ -193,7 +206,6 @@ fun SelectCuestionarioScreen(
                                 Text(text = "Editar")
                             }
 
-                            // Mostrar el botón de eliminar solo si isUsed es false
                             if (!isUsed) {
                                 Button(
                                     onClick = {
@@ -212,7 +224,7 @@ fun SelectCuestionarioScreen(
             }
         }
 
-        Column( // Botones inferiores de "Continuar" y "Volver"
+        Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(16.dp)
@@ -227,34 +239,23 @@ fun SelectCuestionarioScreen(
                         val cuestionarioSeleccionado = questionsViewModel.obtenerCuestionarioPorId(selectedCuestionarioId)
                         val codigoQuiz = cuestionarioSeleccionado?.id // Obtener el código del cuestionario
 
-                        // Si el código del cuestionario existe
                         if (codigoQuiz != null) {
-                            // Llamar a la función suspendida dentro de una corrutina
                             userId?.let {
-                                // Lanzar una corrutina para obtener el valor de locationRestricted
                                 CoroutineScope(Dispatchers.Main).launch {
                                     try {
                                         val locationRestricted = quizViewModel.obtenerLocationRestricted(codigoQuiz)
 
-                                        // Continuar con el flujo de trabajo
-                                        quizViewModel.actualizarRolUsuario(
-                                            nuevoRol = Rol.CREADOR.toString()
-                                        ) { errorMessage ->
+                                        quizViewModel.actualizarRolUsuario(nuevoRol = Rol.CREADOR.toString()) { errorMessage ->
                                             if (errorMessage == null) {
-                                                // Verificar si la ubicación está restringida
                                                 if (locationRestricted == true) {
-                                                    // Si locationRestricted es true, obtenemos la ubicación
                                                     if (locationPermissionGranted) {
                                                         LocationUtils.fetchLocation(context, fusedLocationClient) { location ->
-                                                            Log.d("Geolocalización", "Ubicación actual: $location")
-
                                                             quizViewModel.actualizarCoordenadasCuestionario(
                                                                 selectedCuestionarioId,
                                                                 latitudActual,
                                                                 longitudActual
                                                             ) { updateError ->
                                                                 if (updateError == null) {
-                                                                    Log.d("SelectCuestionario", "Coordenadas actualizadas con éxito.")
                                                                     navController.navigate("waiting_screen/$selectedCuestionarioId")
                                                                 } else {
                                                                     Log.e("SelectCuestionario", "Error al actualizar las coordenadas: $updateError")
@@ -263,17 +264,14 @@ fun SelectCuestionarioScreen(
                                                         }
                                                     }
                                                 } else {
-                                                    // Si locationRestricted es false, se asignan las coordenadas a 0
                                                     val latitud = 0.0
                                                     val longitud = 0.0
-
                                                     quizViewModel.actualizarCoordenadasCuestionario(
                                                         selectedCuestionarioId,
                                                         latitud,
                                                         longitud
                                                     ) { updateError ->
                                                         if (updateError == null) {
-                                                            Log.d("SelectCuestionario", "Coordenadas actualizadas con éxito.")
                                                             navController.navigate("waiting_screen/$selectedCuestionarioId")
                                                         } else {
                                                             Log.e("SelectCuestionario", "Error al actualizar las coordenadas: $updateError")
@@ -302,7 +300,7 @@ fun SelectCuestionarioScreen(
             }
 
             Button(
-                onClick = { navController.navigate("home") }, // Navegar hacia atrás
+                onClick = { navController.navigate("home") },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(text = "Volver")
@@ -339,15 +337,3 @@ fun SelectCuestionarioScreen(
     }
 }
 
-// Función para cargar la imagen desde un URI usando ContentResolver
-fun loadImageFromUri(context: Context, imageUri: String): Bitmap? {
-    return try {
-        val uri = Uri.parse(imageUri)
-        val contentResolver: ContentResolver = context.contentResolver
-        val inputStream = contentResolver.openInputStream(uri)
-        BitmapFactory.decodeStream(inputStream)
-    } catch (e: Exception) {
-        e.printStackTrace()
-        null
-    }
-}

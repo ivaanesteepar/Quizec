@@ -29,6 +29,7 @@ import com.example.quizec.ui.viewmodel.QuizViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.quizec.data.model.Cuestionario
 import com.example.quizec.data.model.Pregunta
+import com.example.quizec.ui.screens.AnswerResultScreen
 import com.example.quizec.ui.screens.SelectQuestionsScreen
 import com.example.quizec.ui.screens.UserQuizzesScreen
 import com.example.quizec.ui.screens.CreatorQuizzesScreen
@@ -155,7 +156,8 @@ fun QuizecApp() {
 
                 // Usamos LaunchedEffect para cargar la pregunta de forma asíncrona cuando el preguntaId cambie
                 LaunchedEffect(preguntaId) {
-                    preguntaState.value = questionsViewModel.obtenerPregunta(preguntaId)  // Llamamos la función suspendida
+                    preguntaState.value =
+                        questionsViewModel.obtenerPregunta(preguntaId)  // Llamamos la función suspendida
                 }
 
                 // Mostramos la pantalla solo si la pregunta está cargada
@@ -178,7 +180,8 @@ fun QuizecApp() {
                 }
             }
             composable("detalleCuestionarios/{cuestionarioId}") { backStackEntry ->
-                val cuestionarioId = backStackEntry.arguments?.getString("cuestionarioId") // Obtener el ID del cuestionario desde la ruta
+                val cuestionarioId =
+                    backStackEntry.arguments?.getString("cuestionarioId") // Obtener el ID del cuestionario desde la ruta
                 if (cuestionarioId != null) {
                     // Obtener el userId del usuario autenticado
                     val userId = FirebaseAuth.getInstance().currentUser?.uid
@@ -200,7 +203,8 @@ fun QuizecApp() {
                 }
             }
             composable("editCuestionario/{cuestionarioId}") { backStackEntry ->
-                val cuestionarioId = backStackEntry.arguments?.getString("cuestionarioId") // Obtener el ID del cuestionario desde la ruta
+                val cuestionarioId =
+                    backStackEntry.arguments?.getString("cuestionarioId") // Obtener el ID del cuestionario desde la ruta
                 var cuestionarioMod by remember { mutableStateOf<Cuestionario?>(null) } // Estado para almacenar el cuestionario cargado
 
                 // Usamos un LaunchedEffect para cargar el cuestionario cuando el Id esté disponible
@@ -233,8 +237,14 @@ fun QuizecApp() {
                     DeleteQuestionsScreen(navController, cuestionarioId, quizViewModel)
                 }
             }
-
-
+            composable("answers/{codigoQuiz}") {
+                val codigoQuiz = it.arguments?.getString("codigoQuiz")
+                if (codigoQuiz != null) {
+                    AnswerResultScreen(navController, quizViewModel, null, null, codigoQuiz)
+                } else {
+                    Text("Error: No se recibió el código del cuestionario")
+                }
+            }
         }
     }
 }

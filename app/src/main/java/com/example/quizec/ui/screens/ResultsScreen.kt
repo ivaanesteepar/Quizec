@@ -29,8 +29,18 @@ fun ResultsScreen(
     // Nombre del usuario
     var userName by remember { mutableStateOf("Usuario Anónimo") }
 
+    // Estado para el valor de immediateResults
+    var immediateResults by remember { mutableStateOf(false) }
+
     // ViewModel para historial
     val quizViewModel = remember { QuizViewModel() }
+
+    // Obtener el valor de immediateResults
+    LaunchedEffect(codigoQuiz) {
+        if (codigoQuiz != null) {
+            quizViewModel.obtenerImmediateResults(codigoQuiz)
+        }
+    }
 
     // Una vez entrado en esta pantalla, debe guardarse el cuestionario en el historial del usuario
     LaunchedEffect(userId) {
@@ -52,12 +62,9 @@ fun ResultsScreen(
         if (codigoQuiz != null) {
             usersViewModel.escucharNombreYRespuestasCorrectas(codigoQuiz) { usuarios ->
                 setUsuariosConRespuestas(usuarios)
-
             }
         }
     }
-
-
 
     // Interfaz de usuario
     Column(
@@ -108,6 +115,21 @@ fun ResultsScreen(
             }
         }
 
+        // Condición para mostrar el botón "Ver resultados" si immediateResults es false
+        if (!immediateResults) {
+            Button(
+                onClick = {
+                    navController.navigate("answers/$codigoQuiz")
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp),
+                shape = MaterialTheme.shapes.medium
+            ) {
+                Text(text = "Ver resultados")
+            }
+        }
+
         // Botón para regresar
         Button(
             onClick = {
@@ -125,4 +147,5 @@ fun ResultsScreen(
         }
     }
 }
+
 
