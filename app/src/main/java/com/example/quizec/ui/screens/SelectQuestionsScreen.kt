@@ -26,10 +26,8 @@ fun SelectQuestionsScreen(
 
     // Cargar preguntas (esto ya está configurado)
     LaunchedEffect(userId) {
-        //questionsViewModel.cargarImagenesPreguntasUsuario(userId)
         questionsViewModel.cargarPreguntasUsuario(userId)
     }
-
 
     // Aquí debes asegurarte de que se actualicen automáticamente cuando las preguntas cambien.
     // Esto hará que se recarguen las preguntas cuando el estado de preguntas cambie.
@@ -42,7 +40,6 @@ fun SelectQuestionsScreen(
     var questionToDelete by remember { mutableStateOf<Pregunta?>(null) }
     var questionToDuplicate by remember { mutableStateOf<Pregunta?>(null) }
 
-    Log.d("SelectQuestionsScreen", "questions: ${preguntasState.value}")
 
     Box(modifier = Modifier.fillMaxSize()) {
         if (preguntasState.value.isEmpty()) {
@@ -97,9 +94,9 @@ fun SelectQuestionsScreen(
                     TextButton(
                         onClick = {
                             // Asegúrate de que questionToDelete no es nulo antes de llamar a eliminarPregunta
-                            questionToDelete?.let {
+                            questionToDelete?.let { pregunta ->
                                 // Extrae el nombre del archivo de la URL
-                                val imageUrl = questionToDelete!!.imagen.toString()
+                                val imageUrl = pregunta.imagen.toString()
                                 val trimmedUrl = imageUrl.trimEnd('/')
                                 val segments = trimmedUrl.split("/")
                                 val fileName = segments.lastOrNull() ?: ""
@@ -110,14 +107,15 @@ fun SelectQuestionsScreen(
                                     serverUrl = trimmedUrl,
                                     onResult = { result ->
                                         if (result) {
-                                            // Elimina también el cuestionario después de borrar la imagen
-                                            questionsViewModel.eliminarCuestionario(questionToDelete!!.id)
+                                            // Elimina tla pregunta después de borrar la imagen
+                                            questionsViewModel.eliminarPregunta(pregunta, userId)
                                         } else {
                                             // Manejo del error (por ejemplo, mostrando un mensaje al usuario)
                                             Log.e("DeleteError", "Error al eliminar la imagen: $imageUrl")
                                         }
                                     }
                                 )
+
                             }
 
                             // Cerrar el diálogo y restablecer el estado
