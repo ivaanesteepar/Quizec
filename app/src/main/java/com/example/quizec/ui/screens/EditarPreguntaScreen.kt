@@ -62,7 +62,8 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
     var fraseCompletar by remember { mutableStateOf(preguntaMod.fraseCompletar) }
     var opcionCorrecta by remember { mutableStateOf(preguntaMod.opcionCorrecta) } //la palabra que será el espacio en blanco
 
-    val imageUri by remember { mutableStateOf<Uri?>(null) }
+    var imageUri by remember { mutableStateOf(preguntaMod.imagen) }
+
     //ASOCIACION
     //tb usa itemPairs
     var conceptosYDefiniciones by remember { mutableStateOf(preguntaMod.conceptosYDefiniciones)}
@@ -72,24 +73,23 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
 
     val context = LocalContext.current
     var error by remember { mutableStateOf<String?>(null) }
-    var imageUrl by remember { mutableStateOf<String?>(null) }
 
     val pickPicture = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri ->
-            Log.d("CreateQuizScreen", "URI seleccionada: $uri")
+            Log.d("EditarPreguntaScreen", "URI seleccionada: $uri")
             if (uri != null) {
                 AMovServer.asyncUploadImage(
                     inputStream = context.contentResolver.openInputStream(uri)!!,
                     extension = "jpg",
                     onResult = { result ->
-                        Log.d("CreateQuizScreen", "Resultado de subir imagen: $result")
+                        Log.d("EditarPreguntaScreen", "Resultado de subir imagen: $result")
                         if (result != null) {
-                            imageUrl = result
+                            imageUri = result // Now you're setting a String?
                             error = null
                         } else {
-                            Log.d("CreateQuizScreen", "Error al subir la imagen")
-                            imageUrl = null
+                            Log.d("EditarPreguntaScreen", "Error al subir la imagen")
+                            imageUri = null
                         }
                     }
                 )
@@ -97,18 +97,17 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
         }
     )
 
-
     // Para agregar como concepto una img
     val pickPicture2 = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri ->
-            Log.d("CreateQuizScreen", "URI seleccionada: $uri")
+            Log.d("EditarPreguntaScreen", "URI seleccionada: $uri")
             if (uri != null) {
                 AMovServer.asyncUploadImage(
                     inputStream = context.contentResolver.openInputStream(uri)!!,
                     extension = "jpg",
                     onResult = { result ->
-                        Log.d("CreateQuizScreen", "Resultado de subir imagen: $result")
+                        Log.d("EditarPreguntaScreen", "Resultado de subir imagen: $result")
                         if (result != null) {
                             conceptosYDefiniciones = conceptosYDefiniciones.toMutableList().apply {
                                 val indexToUpdate = conceptosYDefiniciones.indexOfFirst { it["concepto"] == "" }
@@ -120,7 +119,7 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                                 }
                             }
                         } else {
-                            Log.d("CreateQuizScreen", "Error al subir la imagen")
+                            Log.d("EditarPreguntaScreen", "Error al subir la imagen")
                         }
                     }
                 )
@@ -169,16 +168,16 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Show selected image if available
-            if (imageUrl != null) {
+            if (imageUri != null) {
                 AsyncImage(
-                    model = imageUrl,
+                    model = imageUri, // Now using a String (imageUrl) instead of Uri
                     contentDescription = "Imagen cargada del servidor",
                     modifier = Modifier.size(200.dp)
                 )
             } else {
                 Text(text = "No hay imagen para mostrar.")
             }
+
         }
 
 

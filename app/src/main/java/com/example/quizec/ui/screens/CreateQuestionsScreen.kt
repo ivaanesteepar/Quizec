@@ -71,7 +71,7 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
     //COMPLETAR ESPACIOS
     var fraseCompletar by remember { mutableStateOf("") }
     var opcionCorrecta by remember { mutableStateOf("") } //la palabra que será el espacio en blanco
-    var imageUri by remember { mutableStateOf<Uri?>(null) }
+    var imageUri by remember { mutableStateOf<String?>(null) }
 
     //ASOCIACION
     // Listas para que el profesor ingrese conceptos y definiciones
@@ -83,7 +83,6 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
 
     val context = LocalContext.current
     var error by remember { mutableStateOf<String?>(null) }
-    var imageUrl by remember { mutableStateOf<String?>(null) }
 
     val pickPicture = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
@@ -96,11 +95,11 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                     onResult = { result ->
                         Log.d("CreateQuizScreen", "Resultado de subir imagen: $result")
                         if (result != null) {
-                            imageUrl = result
+                            imageUri = result
                             error = null
                         } else {
                             Log.d("CreateQuizScreen", "Error al subir la imagen")
-                            imageUrl = null
+                            imageUri = null
                         }
                     }
                 )
@@ -181,9 +180,9 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
             Spacer(modifier = Modifier.height(16.dp))
 
             // Show selected image if available
-            if (imageUrl != null) {
+            if (imageUri != null) {
                 AsyncImage(
-                    model = imageUrl,
+                    model = imageUri,
                     contentDescription = "Imagen cargada del servidor",
                     modifier = Modifier.size(200.dp)
                 )

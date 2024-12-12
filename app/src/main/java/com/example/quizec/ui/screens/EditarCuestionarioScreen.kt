@@ -38,7 +38,7 @@ fun EditarCuestionarioScreen(
     val questionsViewModel = QuestionsViewModel()
     var titulo by rememberSaveable { mutableStateOf(cuestionarioMod.titulo) }
     var descripcion by rememberSaveable { mutableStateOf(cuestionarioMod.descripcion) }
-    var imageUri by rememberSaveable { mutableStateOf<String?>(cuestionarioMod.imagen) }
+    var imageUri by rememberSaveable { mutableStateOf(cuestionarioMod.imagen) }
     var errorMessage by rememberSaveable { mutableStateOf("") }
     var tituloError by rememberSaveable { mutableStateOf(false) }
     var descripcionError by rememberSaveable { mutableStateOf(false) }
@@ -86,18 +86,18 @@ fun EditarCuestionarioScreen(
     val pickPicture = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri ->
-            Log.d("CreateQuizScreen", "URI seleccionada: $uri")
+            Log.d("EditarCuestionarioScreen", "URI seleccionada: $uri")
             if (uri != null) {
                 AMovServer.asyncUploadImage(
                     inputStream = context.contentResolver.openInputStream(uri)!!,
                     extension = "jpg",
                     onResult = { result ->
-                        Log.d("CreateQuizScreen", "Resultado de subir imagen: $result")
+                        Log.d("EditarCuestionarioScreen", "Resultado de subir imagen: $result")
                         if (result != null) {
                             imageUri = result // Now you're setting a String?
                             error = null
                         } else {
-                            Log.d("CreateQuizScreen", "Error al subir la imagen")
+                            Log.d("EditarCuestionarioScreen", "Error al subir la imagen")
                             imageUri = null
                         }
                     }

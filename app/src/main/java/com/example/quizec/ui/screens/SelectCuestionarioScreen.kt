@@ -32,6 +32,7 @@ import com.example.quizec.ui.viewmodel.QuestionsViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.example.quizec.data.model.Cuestionario
 import com.example.quizec.data.model.Rol
+import com.example.quizec.utils.AMovServer
 import com.example.quizec.utils.LocationUtils
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
@@ -317,8 +318,27 @@ fun SelectCuestionarioScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        cuestionarioToDelete?.let {
-                            questionsViewModel.eliminarCuestionario(it.id)
+                        cuestionarioToDelete?.let { cuestionario ->
+                            // Extrae el nombre del archivo de la URL
+                            val imageUrl = cuestionario.imagen.toString()
+                            val trimmedUrl = imageUrl.trimEnd('/')
+                            val segments = trimmedUrl.split("/")
+                            val fileName = segments.lastOrNull() ?: ""
+
+                            // Llama a la función para eliminar el archivo en el servidor
+                            AMovServer.asyncDeleteFileFromServer(
+                                fileName = fileName,
+                                serverUrl = trimmedUrl,
+                                onResult = { result ->
+                                    if (result) {
+                                        // Elimina también el cuestionario después de borrar la imagen
+                                        questionsViewModel.eliminarCuestionario(cuestionario.id)
+                                    } else {
+                                        // Manejo del error (por ejemplo, mostrando un mensaje al usuario)
+                                        Log.e("DeleteError", "Error al eliminar la imagen: $imageUrl")
+                                    }
+                                }
+                            )
                         }
                         showDeleteConfirmationDialog = false
                     }

@@ -1,5 +1,6 @@
 package com.example.quizec.ui.screens
 
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -13,6 +14,7 @@ import androidx.navigation.NavHostController
 import com.example.quizec.ui.viewmodel.QuestionsViewModel
 import com.example.quizec.data.model.Pregunta
 import com.example.quizec.ui.viewmodel.QuizViewModel
+import com.example.quizec.utils.AMovServer
 
 @Composable
 fun SelectQuestionsScreen(
@@ -24,8 +26,10 @@ fun SelectQuestionsScreen(
 
     // Cargar preguntas (esto ya está configurado)
     LaunchedEffect(userId) {
+        //questionsViewModel.cargarImagenesPreguntasUsuario(userId)
         questionsViewModel.cargarPreguntasUsuario(userId)
     }
+
 
     // Aquí debes asegurarte de que se actualicen automáticamente cuando las preguntas cambien.
     // Esto hará que se recarguen las preguntas cuando el estado de preguntas cambie.
@@ -38,6 +42,7 @@ fun SelectQuestionsScreen(
     var questionToDelete by remember { mutableStateOf<Pregunta?>(null) }
     var questionToDuplicate by remember { mutableStateOf<Pregunta?>(null) }
 
+    Log.d("SelectQuestionsScreen", "questions: ${preguntasState.value}")
 
     Box(modifier = Modifier.fillMaxSize()) {
         if (preguntasState.value.isEmpty()) {
@@ -93,8 +98,26 @@ fun SelectQuestionsScreen(
                         onClick = {
                             // Asegúrate de que questionToDelete no es nulo antes de llamar a eliminarPregunta
                             questionToDelete?.let {
-                                // Llamada desde el composable (cuando se confirma la eliminación)
-                                questionsViewModel.eliminarPregunta(questionToDelete!!, userId)
+                                // Extrae el nombre del archivo de la URL
+                                val imageUrl = questionToDelete!!.imagen.toString()
+                                val trimmedUrl = imageUrl.trimEnd('/')
+                                val segments = trimmedUrl.split("/")
+                                val fileName = segments.lastOrNull() ?: ""
+
+                                // Llama a la función para eliminar el archivo en el servidor
+                                AMovServer.asyncDeleteFileFromServer(
+                                    fileName = fileName,
+                                    serverUrl = trimmedUrl,
+                                    onResult = { result ->
+                                        if (result) {
+                                            // Elimina también el cuestionario después de borrar la imagen
+                                            questionsViewModel.eliminarCuestionario(questionToDelete!!.id)
+                                        } else {
+                                            // Manejo del error (por ejemplo, mostrando un mensaje al usuario)
+                                            Log.e("DeleteError", "Error al eliminar la imagen: $imageUrl")
+                                        }
+                                    }
+                                )
                             }
 
                             // Cerrar el diálogo y restablecer el estado
