@@ -980,6 +980,8 @@ private fun savePreguntaToFirestore(pregunta: Pregunta, db: FirebaseFirestore) {
         "opcionCorrecta" to pregunta.opcionCorrecta,
         "conceptosYDefiniciones" to pregunta.conceptosYDefiniciones,
         "opcionesCorrectasCompletarPalabras" to pregunta.opcionesCorrectasCompletarPalabras,
+        "leftItems" to pregunta.leftItems,
+        "rightItems" to pregunta.rightItems,
         "userAnswers" to pregunta.userAnswers
     )
 

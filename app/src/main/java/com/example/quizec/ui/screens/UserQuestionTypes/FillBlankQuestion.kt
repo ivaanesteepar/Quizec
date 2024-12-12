@@ -22,6 +22,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.example.quizec.data.model.Pregunta
 
@@ -35,9 +36,16 @@ fun FillBlankQuestionScreen(
     val fraseCompletar = currentQuestion.fraseCompletar // La frase completa
     val palabraCorrecta = currentQuestion.opcionCorrecta // La palabra correcta
 
-    val opciones = currentQuestion.opciones.toMutableList()
-    opciones.add(currentQuestion.opcionCorrecta)
-    opciones.shuffle()
+    // Usar remember para mantener el orden de las opciones desordenadas entre renders
+    val opciones = remember(currentQuestion.opciones) {
+        currentQuestion.opciones.toMutableList().apply {
+            if (!contains(palabraCorrecta)) {
+                add(palabraCorrecta) // Solo agrega la opción correcta si no está ya en la lista
+            }
+            shuffle() // Barajamos una vez al principio
+        }
+    }
+
 
     // Dividir la frase en partes antes y después de la palabra correcta
     val partesFrase = fraseCompletar.split(palabraCorrecta)
@@ -73,7 +81,10 @@ fun FillBlankQuestionScreen(
                     onClick = { expanded = !expanded },
                     enabled = !isAcceptButtonClicked
                 ) {
-                    Text(text = selectedOption ?: "Opción")
+                    Text(
+                        text = if (isAcceptButtonClicked) currentQuestion.opcionCorrecta else selectedOption ?: "Opción",
+                        color = if (isAcceptButtonClicked) Color.Green else MaterialTheme.colorScheme.onSurface
+                    )
                 }
 
                 DropdownMenu(

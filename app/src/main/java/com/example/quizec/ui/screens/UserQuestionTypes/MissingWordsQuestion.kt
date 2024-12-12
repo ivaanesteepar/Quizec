@@ -14,15 +14,18 @@ import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.quizec.data.model.Pregunta
 
 @Composable
-fun MissingWordsQuestion(
+fun MissingWordsQuestionScreen(
     currentQuestion: Pregunta,
     opcionesCorrectas: List<String>,
-    userInputs: MutableList<String>
+    userInputs: MutableList<String>,
+    isAcceptButtonClicked: Boolean
 ){
     val fraseCompletar = currentQuestion.fraseCompletar
 
@@ -66,14 +69,32 @@ fun MissingWordsQuestion(
                     modifier = Modifier.width(24.dp) // Espacio fijo para el número
                 )
 
-                // Cuadro de texto para que el usuario ingrese la respuesta
-                TextField(
-                    value = userInputs[index],
-                    onValueChange = { newValue -> userInputs[index] = newValue },
-                    label = { Text(text = "Ingresa la palabra correcta") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
+                if (isAcceptButtonClicked) {
+                    // Mostrar la respuesta correcta cuando el botón es presionado
+                    TextField(
+                        value = opcionesCorrectas[index], // Muestra la respuesta correcta
+                        onValueChange = { newValue ->
+                            // Este bloque no será ejecutado si 'enabled' está en 'false', pero lo mantengo por si lo necesitas más tarde
+                            userInputs[index] = newValue
+                        },
+                        label = { Text(text = "Ingresa la palabra correcta") },
+                        textStyle = TextStyle(color = Color.Green), // Cambia el color del texto
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        enabled = false // Deshabilita el campo de texto para que no pueda editarse
+                    )
+
+                } else {
+                    // Mostrar el campo de texto normal si el botón no ha sido presionado
+                    TextField(
+                        value = userInputs[index],
+                        onValueChange = { newValue -> userInputs[index] = newValue },
+                        label = { Text(text = "Ingresa la palabra correcta") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                }
+
             }
         }
     }
