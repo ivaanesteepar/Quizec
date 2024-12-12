@@ -26,7 +26,7 @@ import androidx.compose.ui.unit.dp
 import com.example.quizec.data.model.Pregunta
 
 @Composable
-fun MatchingQuestionScreen(
+fun MatchingQuestion(
     currentQuestion: Pregunta,
     userSelections: MutableMap<String, String>
 ){

@@ -3,6 +3,7 @@ package com.example.quizec.ui.screens
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.ExitToApp
@@ -13,6 +14,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
@@ -44,30 +46,28 @@ fun HomeScreen(navController: NavHostController, quizViewModel: QuizViewModel) {
 fun HomeScreenPortrait(navController: NavHostController, quizViewModel: QuizViewModel) {
     val auth = FirebaseAuth.getInstance()
     val db = FirebaseFirestore.getInstance()
-    var userName by remember { mutableStateOf("Usuario") }  // Nombre por defecto
+    var userName by remember { mutableStateOf("Usuario") }
     val userUid = FirebaseAuth.getInstance().currentUser?.uid
-    var isLoading by remember { mutableStateOf(true) }  // Estado para indicar si la carga está en proceso
+    var isLoading by remember { mutableStateOf(true) }
 
     // Obtener el nombre del usuario desde Firestore o FirebaseAuth
     LaunchedEffect(Unit) {
         val user = auth.currentUser
         user?.let {
-            // Si el usuario está autenticado, intentar obtener el nombre desde Firestore
             val userId = user.uid
             db.collection("users").document(userId).get()
                 .addOnSuccessListener { document ->
                     if (document.exists()) {
-                        // Suponiendo que el nombre está guardado en el campo "nombre"
                         userName = document.getString("nombre") ?: "Usuario"
                     }
-                    isLoading = false  // Indicamos que la carga ha finalizado
+                    isLoading = false
                 }
                 .addOnFailureListener { exception ->
                     Log.e("HomeScreen", "Error obteniendo el nombre del usuario", exception)
-                    isLoading = false  // Indicamos que la carga ha fallado
+                    isLoading = false
                 }
         } ?: run {
-            isLoading = false  // Si no hay usuario autenticado
+            isLoading = false
         }
     }
 
@@ -75,7 +75,6 @@ fun HomeScreenPortrait(navController: NavHostController, quizViewModel: QuizView
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        // Fondo de pantalla
         Image(
             painter = painterResource(id = R.drawable.fondo_login),
             contentDescription = "Home Background",
@@ -83,15 +82,14 @@ fun HomeScreenPortrait(navController: NavHostController, quizViewModel: QuizView
             contentScale = ContentScale.Crop
         )
 
-        // Contenido de la pantalla de inicio
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(20.dp), // Espaciado entre botones
+            verticalArrangement = Arrangement.spacedBy(10.dp),
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp)  // Añade el padding alrededor
+                .padding(0.dp)
         ) {
-            Spacer(modifier = Modifier.height(32.dp)) // Asegura que el botón se mueva al inicio de la pantalla
+            Spacer(modifier = Modifier.height(32.dp))
 
             // Imagen del título QUIZEC
             Image(
@@ -99,12 +97,12 @@ fun HomeScreenPortrait(navController: NavHostController, quizViewModel: QuizView
                 contentDescription = "QUIZEC Title",
                 modifier = Modifier
                     .fillMaxWidth(0.8f)
-                    .height(100.dp) // Puedes ajustar la altura según sea necesario
-                    .padding(bottom = 16.dp),
+                    .height(100.dp)
+                    .padding(bottom = 8.dp),
                 contentScale = ContentScale.Fit
             )
+
             if (isLoading) {
-                // Si aún estamos cargando, mostrar un mensaje de carga
                 Text(
                     text = "Cargando...",
                     style = androidx.compose.material3.MaterialTheme.typography.headlineMedium,
@@ -116,59 +114,80 @@ fun HomeScreenPortrait(navController: NavHostController, quizViewModel: QuizView
                     text = "¡Bienvenido, $userName!",
                     style = androidx.compose.material3.MaterialTheme.typography.headlineMedium,
                     color = Color.White,
-                    modifier = Modifier.padding(bottom = 32.dp)
+                    modifier = Modifier.padding(bottom = 16.dp)
                 )
 
-                // Botón para unirse a un quiz
-                Button(
-                    onClick = {
-                        navController.navigate("joinQuiz")
-                    },
-                    modifier = Modifier.fillMaxWidth(0.8f)
-                ) {
-                    Text(text = "Unirse a un Quiz")
-                }
-
-                // Botón para crear un quiz
-                Button(
-                    onClick = {
-                        navController.navigate("createQuiz")
-                    },
-                    modifier = Modifier.fillMaxWidth(0.8f)
-                ) {
-                    Text(text = "Crear un Quiz")
-                }
-
-
-                Button(
-                    onClick = {
-                        if (userUid != null) {
-                            quizViewModel.actualizarRolUsuario2(userUid, Rol.CREADOR)
+                // Cuadrícula de botones (2x2) con botones más grandes y bordes redondeados
+                Grid(
+                    rows = 2, columns = 2, modifier = Modifier.fillMaxWidth(0.8f)
+                ) { row, col ->
+                    when (row to col) {
+                        0 to 0 -> {
+                            Button(
+                                onClick = { navController.navigate("joinQuiz") },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .aspectRatio(1f) // Hace que el botón sea cuadrado
+                                    .clip(RoundedCornerShape(16.dp)) // Bordes redondeados más grandes
+                                    .padding(4.dp) // Espaciado adicional
+                            ) {
+                                Text(text = "UNIRSE")
+                            }
                         }
-                        navController.navigate("select_cuestionario")
-                    },
-                    modifier = Modifier.fillMaxWidth(0.8f)
-                ) {
-                    Text("Seleccionar Cuestionario")
-                }
-
-
-                // Botón para ir al historial, pasando el userId
-                Button(
-                    onClick = {
-                        val user = auth.currentUser
-                        val userId = user?.uid ?: ""
-                        navController.navigate("historial/$userId")
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth(0.8f)
-                        .padding(bottom = 16.dp)
-                ) {
-                    Text(text = "Historial")
+                        0 to 1 -> {
+                            Button(
+                                onClick = { navController.navigate("createQuiz") },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .aspectRatio(1f) // Hace que el botón sea cuadrado
+                                    .clip(RoundedCornerShape(16.dp)) // Bordes redondeados más grandes
+                                    .padding(4.dp) // Espaciado adicional
+                            ) {
+                                Text(text = "CREAR")
+                            }
+                        }
+                        1 to 0 -> {
+                            Button(
+                                onClick = {
+                                    if (userUid != null) {
+                                        quizViewModel.actualizarRolUsuario2(userUid, Rol.CREADOR)
+                                    }
+                                    navController.navigate("select_cuestionario")
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .aspectRatio(1f) // Hace que el botón sea cuadrado
+                                    .clip(RoundedCornerShape(16.dp)) // Bordes redondeados más grandes
+                                    .padding(4.dp) // Espaciado adicional
+                            ) {
+                                Text(
+                                    text = "SELECCIONAR CUESTIONARIO",
+                                    fontSize = 12.sp
+                                )
+                            }
+                        }
+                        1 to 1 -> {
+                            Button(
+                                onClick = {
+                                    val user = auth.currentUser
+                                    val userId = user?.uid ?: ""
+                                    navController.navigate("historial/$userId")
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .aspectRatio(1f) // Hace que el botón sea cuadrado
+                                    .clip(RoundedCornerShape(16.dp)) // Bordes redondeados más grandes
+                                    .padding(4.dp) // Espaciado adicional
+                            ) {
+                                Text(text = "HISTORIAL")
+                            }
+                        }
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.weight(1f)) // Asegura que el botón se mueva al final de la pantalla
+            // Espaciador para empujar el botón de cierre de sesión hacia abajo
+            Spacer(modifier = Modifier.weight(1f))
 
             // Botón para cerrar sesión
             Button(
@@ -177,24 +196,46 @@ fun HomeScreenPortrait(navController: NavHostController, quizViewModel: QuizView
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp), // Opcional, para añadir algo de espacio alrededor
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Red) // Color de fondo rojo para resaltar
+                    .padding(4.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
             ) {
-                // Icono y texto dentro del botón
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ExitToApp,
                     contentDescription = "Cerrar sesión",
-                    modifier = Modifier.padding(end = 8.dp), // Espacio entre icono y texto
-                    tint = Color.White // Color blanco para el icono
+                    modifier = Modifier.padding(end = 8.dp),
+                    tint = Color.White
                 )
                 Text(
                     text = "Cerrar Sesión",
-                    color = Color.White // Texto blanco para contrastar con el fondo rojo
+                    color = Color.White
                 )
             }
         }
     }
 }
+
+@Composable
+fun Grid(rows: Int, columns: Int, modifier: Modifier = Modifier, content: @Composable (Int, Int) -> Unit) {
+    Column(
+        modifier = modifier
+    ) {
+        for (row in 0 until rows) {
+            Row(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                for (col in 0 until columns) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f) // Se asegura de que los botones ocupen todo el espacio disponible
+                    ) {
+                        content(row, col)
+                    }
+                }
+            }
+        }
+    }
+}
+
 
 
 @Composable

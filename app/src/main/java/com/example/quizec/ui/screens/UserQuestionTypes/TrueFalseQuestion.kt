@@ -18,12 +18,14 @@ import androidx.compose.ui.unit.dp
 
 
 @Composable
-fun TrueFalseQuestionScreen(
+fun TrueFalseQuestion(
     onSelectedAnswerChange: (List<String>?) -> Unit, // Lambda para actualizar el estado
     falseButtonColor: Color,
     trueButtonColor: Color,
-    isAcceptButtonClicked: Boolean
-    ){
+    isAcceptButtonClicked: Boolean,
+    correctAnswer: String // La respuesta correcta ("Verdadero" o "Falso")
+) {
+    println("correcta: $correctAnswer")
 
     Row(
         horizontalArrangement = Arrangement.Center, // Centra los botones horizontalmente
@@ -36,24 +38,30 @@ fun TrueFalseQuestionScreen(
             onClick = {
                 onSelectedAnswerChange(listOf("Verdadero"))
             },
-            colors = ButtonDefaults.buttonColors(containerColor = trueButtonColor),
-            enabled = !isAcceptButtonClicked,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = if (isAcceptButtonClicked && correctAnswer == "Verdadero") Color.Green else trueButtonColor
+            ),
+            enabled = !(isAcceptButtonClicked && correctAnswer != "Verdadero"), // Deshabilitar si no es la respuesta correcta
             modifier = Modifier.weight(1f) // Ocupa el mismo espacio que el botón de Falso
         ) {
             Text(text = "Verdadero", color = Color.White)
         }
 
         Spacer(modifier = Modifier.width(16.dp)) // Espacio entre los botones
+        println("isacceptTrueFalse: $isAcceptButtonClicked correctAnswer: $correctAnswer")
 
         Button(
             onClick = {
                 onSelectedAnswerChange(listOf("Falso"))
             },
-            colors = ButtonDefaults.buttonColors(containerColor = falseButtonColor),
-            enabled = !isAcceptButtonClicked,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = if (isAcceptButtonClicked && correctAnswer == "Falso") Color.Green else falseButtonColor
+            ),
+            enabled = !(isAcceptButtonClicked && correctAnswer != "Falso"), // Deshabilitar si no es la respuesta correcta
             modifier = Modifier.weight(1f) // Ocupa el mismo espacio que el botón de Verdadero
         ) {
             Text(text = "Falso", color = Color.White)
         }
     }
 }
+

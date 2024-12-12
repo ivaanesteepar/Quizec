@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -27,11 +28,13 @@ import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
+import com.example.quizec.R
 import com.example.quizec.ui.viewmodel.QuizViewModel
 import com.example.quizec.ui.viewmodel.QuestionsViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.example.quizec.data.model.Cuestionario
 import com.example.quizec.data.model.Rol
+import com.example.quizec.utils.AMovServer
 import com.example.quizec.utils.LocationUtils
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
@@ -153,7 +156,7 @@ fun SelectCuestionarioScreen(
                 )
 
                 LazyColumn(
-                    modifier = Modifier.padding(top = 26.dp).height(500.dp)
+                    modifier = Modifier.padding(top = 26.dp).height(400.dp),
                 ) {
                     items(cuestionariosState.value) { cuestionario ->
                         // Obtener el valor de isUsed para cada cuestionario
@@ -180,19 +183,29 @@ fun SelectCuestionarioScreen(
                                 )
                                 Spacer(modifier = Modifier.height(16.dp))
 
-                                // Muestra la imagen usando la URI almacenada
-                                cuestionario.imagen?.let { imageUri ->
+                                // Mostrar imagen o imagen predeterminada
+                                if (cuestionario.imagen != "") {
                                     AsyncImage(
                                         model = ImageRequest.Builder(context)
-                                            .data(Uri.parse(imageUri)) // Convierte la cadena en una URI válida
+                                            .data(Uri.parse(cuestionario.imagen))
                                             .crossfade(true)
                                             .build(),
                                         contentDescription = "Imagen del cuestionario",
                                         modifier = Modifier
                                             .size(150.dp)
-                                            .border(1.dp, Color.Gray)
+                                            //.border(1.dp, Color.Gray)
                                             .padding(8.dp),
-                                        contentScale = ContentScale.Crop // Ajusta el contenido para que no se deforme
+                                        contentScale = ContentScale.Crop
+                                    )
+                                } else {
+                                    Image(
+                                        painter = painterResource(id = R.drawable.no_image_icon), // Asegúrate de usar el ID correcto
+                                        contentDescription = "Imagen predeterminada",
+                                        modifier = Modifier
+                                            .size(150.dp)
+                                            //.border(1.dp, Color.Gray)
+                                            .padding(8.dp),
+                                        contentScale = ContentScale.Crop
                                     )
                                 }
                             }
@@ -227,7 +240,7 @@ fun SelectCuestionarioScreen(
         Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(16.dp)
+                .padding(16.dp),
         ) {
             Button(
                 onClick = {
@@ -294,7 +307,6 @@ fun SelectCuestionarioScreen(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 8.dp)
             ) {
                 Text(text = "Continuar")
             }
@@ -319,6 +331,7 @@ fun SelectCuestionarioScreen(
                     onClick = {
                         cuestionarioToDelete?.let {
                             questionsViewModel.eliminarCuestionario(it.id)
+                            // BORRAR IMAGEN DEL SERVER
                         }
                         showDeleteConfirmationDialog = false
                     }

@@ -168,9 +168,6 @@ class UsersViewModel : ViewModel() {
     fun actualizarRespuestasCorrectas(userId: String, codigoQuiz: String, respuestasCorrectas: Int) {
         val quizRef = db.collection("usuariosEspera").document(codigoQuiz)
 
-        // Verificar antes de actualizar
-        println("Actualizando respuestasCorrectas para $userId con valor: $respuestasCorrectas")
-
         quizRef.get()
             .addOnSuccessListener { doc ->
                 if (doc.exists()) {

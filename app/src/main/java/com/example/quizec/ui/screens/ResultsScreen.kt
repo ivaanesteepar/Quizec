@@ -38,7 +38,7 @@ fun ResultsScreen(
     // Obtener el valor de immediateResults
     LaunchedEffect(codigoQuiz) {
         if (codigoQuiz != null) {
-            quizViewModel.obtenerImmediateResults(codigoQuiz)
+            immediateResults = quizViewModel.obtenerImmediateResults(codigoQuiz)
         }
     }
 
@@ -114,6 +114,7 @@ fun ResultsScreen(
                 }
             }
         }
+        println("immediateResults en results: $immediateResults")
 
         // Condición para mostrar el botón "Ver resultados" si immediateResults es false
         if (!immediateResults) {

@@ -19,9 +19,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
+import com.example.quizec.R
 import com.example.quizec.data.model.Cuestionario
 import com.example.quizec.data.model.Pregunta
 import com.example.quizec.ui.viewmodel.QuestionsViewModel
@@ -165,15 +167,21 @@ fun EditarCuestionarioScreen(
             Text("Seleccionar Imagen")
         }
 
-        if (imageUri != null) {
+        if (!imageUri.isNullOrEmpty()) {
             AsyncImage(
-                model = imageUri, // Now using a String (imageUrl) instead of Uri
+                model = imageUri, // Utiliza la URI de la imagen cargada
                 contentDescription = "Imagen cargada del servidor",
                 modifier = Modifier.size(200.dp)
             )
         } else {
-            Text(text = "No hay imagen para mostrar.")
+            // Mostrar una imagen predeterminada de los recursos de drawable
+            Image(
+                painter = painterResource(id = R.drawable.no_image_icon), // Reemplaza con tu recurso
+                contentDescription = "Imagen predeterminada",
+                modifier = Modifier.size(200.dp)
+            )
         }
+
 
         Spacer(modifier = Modifier.height(16.dp))
 

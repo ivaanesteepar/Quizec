@@ -13,16 +13,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.example.quizec.data.model.Pregunta
-import com.example.quizec.ui.theme.defaultButtonColor
-import com.example.quizec.ui.theme.selectedButtonColor
 
 @Composable
-fun MultChoicesScreen(
+fun MultChoicesQuestion(
     currentQuestion: Pregunta,
     selectedAnswer: List<String>?,
     onSelectedAnswerChange: (List<String>?) -> Unit,
     isAcceptButtonClicked: Boolean,
-    buttonColors: List<Color> // Este parámetro aceptará los colores de los botones
+    correctAnswers: List<String> // Parámetro para almacenar las respuestas correctas
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -30,14 +28,16 @@ fun MultChoicesScreen(
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
     ) {
-        // Crear una lista de colores para los botones
-        val correctAnswers = currentQuestion.respuestasCorrectas.toSet() // Conjunto de respuestas correctas
         currentQuestion.opciones.forEach { opcion ->
             val isSelected = selectedAnswer?.contains(opcion) == true
-            val isCorrect = correctAnswers.contains(opcion) // Comprobar si la opción es correcta
+            val isCorrect = correctAnswers.contains(opcion) // Verifica si la opción es correcta
+            val isDisabled = isAcceptButtonClicked && !isCorrect // Deshabilitar respuestas incorrectas
+
+            // El color del botón cambia solo si ya se hizo clic en el botón de aceptación
             val buttonColor = when {
-                isCorrect -> Color.Green // Verde para la respuesta correcta
-                else -> Color.Gray // Gris para las respuestas incorrectas
+                isAcceptButtonClicked && isCorrect -> Color.Green // Verde para respuestas correctas cuando se ha aceptado
+                isSelected -> Color(0xFFFF9800) // Naranja para respuestas seleccionadas pero incorrectas
+                else -> Color.Unspecified // Gris para respuestas no seleccionadas
             }
 
             Button(
@@ -55,7 +55,7 @@ fun MultChoicesScreen(
                 colors = ButtonDefaults.buttonColors(
                     containerColor = buttonColor // Aplicamos el color del botón según la respuesta
                 ),
-                enabled = !isAcceptButtonClicked, // Deshabilitamos los botones si ya se aceptó la respuesta
+                enabled = !isDisabled, // Deshabilitar el botón si es incorrecto y ya se aceptó la respuesta
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(text = opcion, color = Color.White)
@@ -63,3 +63,5 @@ fun MultChoicesScreen(
         }
     }
 }
+
+

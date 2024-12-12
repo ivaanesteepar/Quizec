@@ -1,7 +1,6 @@
 package com.example.quizec.ui.screens
 
 import android.net.Uri
-import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -17,12 +16,15 @@ import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
 import com.example.quizec.data.model.Pregunta
 import com.example.quizec.data.model.TipoPregunta
-import com.example.quizec.ui.screens.UserQuestionTypes.*
-import com.example.quizec.ui.theme.defaultButtonColor
+import com.example.quizec.ui.screens.UserQuestionTypes.FillBlankQuestion
+import com.example.quizec.ui.screens.UserQuestionTypes.MatchingQuestion
+import com.example.quizec.ui.screens.UserQuestionTypes.MissingWordsQuestion
+import com.example.quizec.ui.screens.UserQuestionTypes.MultChoicesQuestion
+import com.example.quizec.ui.screens.UserQuestionTypes.OneMultChoicesQuestion
+import com.example.quizec.ui.screens.UserQuestionTypes.OrderingQuestion
+import com.example.quizec.ui.screens.UserQuestionTypes.TrueFalseQuestion
 import com.example.quizec.ui.viewmodel.QuizViewModel
-import com.example.quizec.ui.viewmodel.UsersViewModel
 import com.google.firebase.auth.FirebaseAuth
-import kotlinx.coroutines.delay
 import java.io.File
 
 @Composable
@@ -31,7 +33,6 @@ fun AnswerResultScreen(
     quizViewModel: QuizViewModel,
     codigoQuiz: String?
 ) {
-    val usersViewModel = UsersViewModel()
     var preguntas by remember { mutableStateOf(emptyList<Pregunta>()) }
     var currentQuestionIndex by remember { mutableStateOf(0) }
     val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
@@ -104,59 +105,55 @@ fun AnswerResultScreen(
                     TipoPregunta.VERDADERO_FALSO -> {
                         val respuestaCorrecta = currentQuestion.respuestasCorrectas.firstOrNull() ?: "" // Obtener la primera respuesta correcta
 
-                        TrueFalseQuestionScreen(
+                        TrueFalseQuestion(
                             onSelectedAnswerChange = {},
                             falseButtonColor = if (respuestaCorrecta == "Falso") Color.Green else Color.Unspecified, // Si la respuesta correcta es "Falso", el botón "Falso" se pone verde
                             trueButtonColor = if (respuestaCorrecta == "Verdadero") Color.Green else Color.Unspecified, // Si la respuesta correcta es "Verdadero", el botón "Verdadero" se pone verde
-                            isAcceptButtonClicked = false // Asegúrate de que los botones no se deshabiliten, solo cambien de color
+                            isAcceptButtonClicked = false, // Asegúrate de que los botones no se deshabiliten, solo cambien de color
+                            correctAnswer = respuestaCorrecta // Pasamos la respuesta correcta como parámetro
                         )
                     }
                     TipoPregunta.OPCION_MULTIPLE_UNA -> {
                         val respuestaCorrecta = currentQuestion.respuestasCorrectas.firstOrNull() ?: "" // Obtener la primera respuesta correcta
 
-                        OneMultChoicesScreen(
+                        OneMultChoicesQuestion(
                             currentQuestion = currentQuestion,
                             selectedAnswer = currentQuestion.respuestasCorrectas,
                             onSelectedAnswerChange = {},
                             isAcceptButtonClicked = false,
-                            // Aplicando color a los botones
-                            buttonColors = currentQuestion.respuestasCorrectas.map { respuesta ->
-                                if (respuesta == respuestaCorrecta) Color.Green else Color.Unspecified
-                            }
+                            correctAnswer = respuestaCorrecta // Pasamos la respuesta correcta como parámetro
                         )
                     }
 
                     TipoPregunta.OPCION_MULTIPLE_MULTIPLES -> {
                         val respuestasCorrectas = currentQuestion.respuestasCorrectas.toSet() // Conjunto de respuestas correctas
 
-                        MultChoicesScreen(
+                        MultChoicesQuestion(
                             currentQuestion = currentQuestion,
                             selectedAnswer = currentQuestion.respuestasCorrectas,
                             onSelectedAnswerChange = {},
                             isAcceptButtonClicked = false,
-                            // Aplicando color a los botones
-                            buttonColors = currentQuestion.respuestasCorrectas.map { respuesta ->
-                                if (respuestasCorrectas.contains(respuesta)) Color.Green else Color.Unspecified
-                            }
+                            correctAnswers = respuestasCorrectas.toList() // Convertir el conjunto a una lista
                         )
                     }
 
                     TipoPregunta.COMPLETAR_ESPACIOS -> {
-                        FillBlankQuestionScreen(
+                        FillBlankQuestion(
                             currentQuestion = currentQuestion,
                             selectedOption = currentQuestion.opcionCorrecta,
                             onOptionSelected = {},
-                            isAcceptButtonClicked = true
+                            isAcceptButtonClicked = true,
                         )
                     }
                     TipoPregunta.ORDENAR -> {
-                        OrderingQuesitonScreen(
+                        OrderingQuestion(
                             currentQuestion = currentQuestion,
-                            userOrderedItems = {}
+                            userOrderedItems = {},
+                            isAcceptButtonClicked = true
                         )
                     }
                     TipoPregunta.EMPAREJAR -> {
-                        MatchingQuestionScreen(
+                        MatchingQuestion(
                             currentQuestion = currentQuestion,
                             userSelections = currentQuestion.emparejamientos.associate { it.entries.first().toPair() }
                                 .toMutableMap()
@@ -166,7 +163,8 @@ fun AnswerResultScreen(
                         MissingWordsQuestion(
                             currentQuestion = currentQuestion,
                             opcionesCorrectas = currentQuestion.opcionesCorrectasCompletarPalabras,
-                            userInputs = currentQuestion.opcionesCorrectasCompletarPalabras.toMutableStateList()
+                            userInputs = currentQuestion.opcionesCorrectasCompletarPalabras.toMutableStateList(),
+                            isAcceptButtonClicked = true
                         )
                     }
                     TipoPregunta.ASOCIACION -> {

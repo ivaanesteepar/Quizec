@@ -311,10 +311,6 @@ class QuestionsViewModel : ViewModel() {
         }
     }
 
-    fun vaciarPreguntasSeleccionadas() {
-        _preguntasSeleccionadas.value = emptyList()  // Vacía la lista de preguntas seleccionadas
-    }
-
 
     fun eliminarCuestionario(id: String) {
         // Buscar el documento por el campo 'id' en la colección 'cuestionarios'
