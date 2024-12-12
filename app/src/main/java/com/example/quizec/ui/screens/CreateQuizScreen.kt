@@ -184,6 +184,7 @@ fun CreateQuizScreen(
         println("Url de la imagen: $imageUri")
 
         // Asignamos el enlace a la variable en el quizviewmodel
+
         quizViewModel.imageUri = imageUri
 
         Spacer(modifier = Modifier.height(16.dp))

@@ -1,5 +1,6 @@
 package com.example.quizec.utils
 
+import android.util.Log
 import android.webkit.MimeTypeMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -87,6 +88,7 @@ class AMovServer {
             try {
                 // Create the full URL for the delete endpoint
                 val url = URL("$SERVER_DELETE$fileName")
+                Log.d("DeleteFile", "url: $SERVER_DELETE$fileName")
                 val connection = url.openConnection() as HttpURLConnection
 
                 // Set request method to DELETE

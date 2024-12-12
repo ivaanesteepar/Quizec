@@ -1,5 +1,6 @@
 package com.example.quizec.ui.screens
 
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -13,6 +14,7 @@ import androidx.navigation.NavHostController
 import com.example.quizec.ui.viewmodel.QuestionsViewModel
 import com.example.quizec.data.model.Pregunta
 import com.example.quizec.ui.viewmodel.QuizViewModel
+import com.example.quizec.utils.AMovServer
 
 @Composable
 fun SelectQuestionsScreen(
@@ -92,9 +94,28 @@ fun SelectQuestionsScreen(
                     TextButton(
                         onClick = {
                             // Asegúrate de que questionToDelete no es nulo antes de llamar a eliminarPregunta
-                            questionToDelete?.let {
-                                // Llamada desde el composable (cuando se confirma la eliminación)
-                                questionsViewModel.eliminarPregunta(questionToDelete!!, userId)
+                            questionToDelete?.let { pregunta ->
+                                // Extrae el nombre del archivo de la URL
+                                val imageUrl = pregunta.imagen.toString()
+                                val trimmedUrl = imageUrl.trimEnd('/')
+                                val segments = trimmedUrl.split("/")
+                                val fileName = segments.lastOrNull() ?: ""
+
+                                // Llama a la función para eliminar el archivo en el servidor
+                                AMovServer.asyncDeleteFileFromServer(
+                                    fileName = fileName,
+                                    serverUrl = trimmedUrl,
+                                    onResult = { result ->
+                                        if (result) {
+                                            // Elimina tla pregunta después de borrar la imagen
+                                            questionsViewModel.eliminarPregunta(pregunta, userId)
+                                        } else {
+                                            // Manejo del error (por ejemplo, mostrando un mensaje al usuario)
+                                            Log.e("DeleteError", "Error al eliminar la imagen: $imageUrl")
+                                        }
+                                    }
+                                )
+
                             }
 
                             // Cerrar el diálogo y restablecer el estado
