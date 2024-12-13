@@ -27,7 +27,7 @@ import androidx.compose.ui.unit.dp
 import com.example.quizec.data.model.Pregunta
 
 @Composable
-fun FillBlankQuestion(
+fun FillBlankQuestionScreen(
     currentQuestion: Pregunta,
     selectedOption: String?, // Esto será de solo lectura, se actualizará con la función
     onOptionSelected: (String) -> Unit, // Función para actualizar el estado

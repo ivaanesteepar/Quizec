@@ -18,7 +18,7 @@ import androidx.compose.ui.unit.dp
 
 
 @Composable
-fun TrueFalseQuestion(
+fun TrueFalseQuestionScreen(
     onSelectedAnswerChange: (List<String>?) -> Unit, // Lambda para actualizar el estado
     falseButtonColor: Color,
     trueButtonColor: Color,

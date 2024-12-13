@@ -20,10 +20,10 @@ import com.example.quizec.data.model.TipoPregunta
 import com.example.quizec.ui.screens.UserQuestionTypes.AssociationQuestionScreen
 import com.example.quizec.ui.screens.UserQuestionTypes.FillBlankQuestionScreen
 import com.example.quizec.ui.screens.UserQuestionTypes.MatchingQuestionScreen
-import com.example.quizec.ui.screens.UserQuestionTypes.MissingWordsQuestion
-import com.example.quizec.ui.screens.UserQuestionTypes.MultChoicesScreen
-import com.example.quizec.ui.screens.UserQuestionTypes.OneMultChoicesScreen
-import com.example.quizec.ui.screens.UserQuestionTypes.OrderingQuesitonScreen
+import com.example.quizec.ui.screens.UserQuestionTypes.MissingWordsQuestionScreen
+import com.example.quizec.ui.screens.UserQuestionTypes.MultChoicesQuestionScreen
+import com.example.quizec.ui.screens.UserQuestionTypes.OneMultChoicesQuestionScreen
+import com.example.quizec.ui.screens.UserQuestionTypes.OrderingQuestionScreen
 import com.example.quizec.ui.screens.UserQuestionTypes.TrueFalseQuestionScreen
 import com.example.quizec.ui.theme.defaultButtonColor
 import com.example.quizec.ui.theme.selectedButtonColor
@@ -228,6 +228,7 @@ fun UserQuizzesScreen(
 
                 // Opciones de respuesta dependiendo del tipo de pregunta
                 if (currentQuestion.tipo == TipoPregunta.VERDADERO_FALSO) {
+                    val correctAnswer = currentQuestion.respuestasCorrectas.firstOrNull() ?: ""
                     TrueFalseQuestionScreen(
                         onSelectedAnswerChange = { newAnswer ->
                             selectedAnswer = newAnswer
@@ -241,33 +242,37 @@ fun UserQuizzesScreen(
                         },
                         falseButtonColor = falseButtonColor,
                         trueButtonColor = trueButtonColor,
-                        isAcceptButtonClicked = isAcceptButtonClicked
+                        isAcceptButtonClicked = isAcceptButtonClicked,
+                        correctAnswer = correctAnswer
                     )
 
                     if (selectedAnswer != null) enableAcept = true
 
+
                 } else if (currentQuestion.tipo == TipoPregunta.OPCION_MULTIPLE_UNA) {
-                    OneMultChoicesScreen(
+                    val correctAnswer = currentQuestion.respuestasCorrectas.firstOrNull() ?: ""
+                    OneMultChoicesQuestionScreen(
                         currentQuestion = currentQuestion,
                         selectedAnswer = selectedAnswer,
                         onSelectedAnswerChange = { newAnswer ->
                             selectedAnswer = newAnswer
                         },
                         isAcceptButtonClicked = isAcceptButtonClicked,
-                        buttonColors = emptyList() // No es necesario proporcionar colores para esta pregunta
+                        correctAnswer = correctAnswer
                     )
                     if (selectedAnswer != null) enableAcept = true
 
 
+
                 } else if (currentQuestion.tipo == TipoPregunta.OPCION_MULTIPLE_MULTIPLES) {
-                    MultChoicesScreen(
+                    MultChoicesQuestionScreen(
                         currentQuestion = currentQuestion,
                         selectedAnswer = selectedAnswer,
                         onSelectedAnswerChange = { newAnswers ->
                             selectedAnswer = newAnswers
                         },
                         isAcceptButtonClicked = isAcceptButtonClicked,
-                        buttonColors = emptyList() // No es necesario proporcionar colores para esta pregunta
+                        correctAnswers = currentQuestion.respuestasCorrectas
                     )
                     if (selectedAnswer != null) enableAcept = true
 
@@ -286,11 +291,12 @@ fun UserQuizzesScreen(
 
 
                 } else if (currentQuestion.tipo == TipoPregunta.ORDENAR) {
-                    OrderingQuesitonScreen(
+                    OrderingQuestionScreen(
                         currentQuestion = currentQuestion,
                         userOrderedItems = { newOrderedItems ->
                             userOrderedItems = newOrderedItems // Actualiza la lista en el estado
-                        }
+                        },
+                        isAcceptButtonClicked = isAcceptButtonClicked
                     )
                     enableAcept = true
 
@@ -305,12 +311,13 @@ fun UserQuizzesScreen(
                     }
 
 
-                } else if (currentQuestion.tipo == TipoPregunta.COMPLETAR_PALABRAS) {
+                }else if (currentQuestion.tipo == TipoPregunta.COMPLETAR_PALABRAS) {
 
-                    MissingWordsQuestion(
+                    MissingWordsQuestionScreen(
                         currentQuestion = currentQuestion,
                         opcionesCorrectas = opcionesCorrectas,
-                        userInputs = userInputs
+                        userInputs = userInputs,
+                        isAcceptButtonClicked = isAcceptButtonClicked
                     )
                     if (userInputs.all { it.isNotBlank() } && userInputs.size == currentQuestion.opcionesCorrectasCompletarPalabras.size) {
                         enableAcept = true

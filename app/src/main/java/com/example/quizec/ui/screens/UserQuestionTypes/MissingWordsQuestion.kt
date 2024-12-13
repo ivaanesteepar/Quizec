@@ -21,7 +21,7 @@ import androidx.compose.ui.unit.sp
 import com.example.quizec.data.model.Pregunta
 
 @Composable
-fun MissingWordsQuestion(
+fun MissingWordsQuestionScreen(
     currentQuestion: Pregunta,
     opcionesCorrectas: List<String>,
     userInputs: MutableList<String>,

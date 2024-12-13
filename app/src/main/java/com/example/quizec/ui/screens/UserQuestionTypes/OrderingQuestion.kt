@@ -25,7 +25,7 @@ import androidx.compose.ui.unit.dp
 import com.example.quizec.data.model.Pregunta
 
 @Composable
-fun OrderingQuestion(
+fun OrderingQuestionScreen(
     currentQuestion: Pregunta,
     userOrderedItems: (List<String>) -> Unit,
     isAcceptButtonClicked: Boolean // Agregar el estado de si el botón de aceptar ha sido presionado

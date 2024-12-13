@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.dp
 import com.example.quizec.data.model.Pregunta
 
 @Composable
-fun OneMultChoicesQuestion(
+fun OneMultChoicesQuestionScreen(
     currentQuestion: Pregunta,
     selectedAnswer: List<String>?,
     onSelectedAnswerChange: (List<String>) -> Unit,
