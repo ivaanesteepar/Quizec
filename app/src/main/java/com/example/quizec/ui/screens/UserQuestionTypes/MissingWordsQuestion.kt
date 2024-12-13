@@ -55,7 +55,7 @@ fun MissingWordsQuestionScreen(
             .fillMaxWidth()
             .padding(horizontal = 16.dp) // Agregado padding horizontal
     ) {
-        opcionesCorrectas.forEachIndexed { index, palabraCorrecta ->
+        opcionesCorrectas.forEachIndexed { index, _ ->
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -69,6 +69,7 @@ fun MissingWordsQuestionScreen(
                     modifier = Modifier.width(24.dp) // Espacio fijo para el número
                 )
 
+                // Suponiendo que 'isAcceptButtonClicked' es una variable booleana que indica si el botón fue presionado
                 if (isAcceptButtonClicked) {
                     // Mostrar la respuesta correcta cuando el botón es presionado
                     TextField(

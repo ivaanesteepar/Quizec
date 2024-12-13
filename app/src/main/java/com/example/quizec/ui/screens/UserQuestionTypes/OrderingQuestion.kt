@@ -66,7 +66,7 @@ fun OrderingQuestionScreen(
                     // Botón para mover el ítem hacia arriba
                     IconButton(
                         onClick = {
-                            if (index > 0) { // Mover el ítem hacia arriba
+                            if (index > 0) {
                                 val newList = disorderedItems.toMutableList()
                                 val itemToMove = newList.removeAt(index)
                                 newList.add(index - 1, itemToMove)
@@ -82,7 +82,6 @@ fun OrderingQuestionScreen(
                     IconButton(
                         onClick = {
                             if (index < disorderedItems.size - 1) {
-                                // Mover el ítem hacia abajo
                                 val newList = disorderedItems.toMutableList()
                                 val itemToMove = newList.removeAt(index)
                                 newList.add(index + 1, itemToMove)
