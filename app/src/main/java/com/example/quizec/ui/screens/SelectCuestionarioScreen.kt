@@ -319,26 +319,32 @@ fun SelectCuestionarioScreen(
                 TextButton(
                     onClick = {
                         cuestionarioToDelete?.let { cuestionario ->
-                            // Extrae el nombre del archivo de la URL
-                            val imageUrl = cuestionario.imagen.toString()
-                            val trimmedUrl = imageUrl.trimEnd('/')
-                            val segments = trimmedUrl.split("/")
-                            val fileName = segments.lastOrNull() ?: ""
+                            // Verifica si el cuestionario tiene una imagen asociada
+                            if (!cuestionario.imagen.isNullOrEmpty()) {
+                                // Extrae el nombre del archivo de la URL
+                                val imageUrl = cuestionario.imagen.toString()
+                                val trimmedUrl = imageUrl.trimEnd('/')
+                                val segments = trimmedUrl.split("/")
+                                val fileName = segments.lastOrNull() ?: ""
 
-                            // Llama a la función para eliminar el archivo en el servidor
-                            AMovServer.asyncDeleteFileFromServer(
-                                fileName = fileName,
-                                serverUrl = trimmedUrl,
-                                onResult = { result ->
-                                    if (result) {
-                                        // Elimina también el cuestionario después de borrar la imagen
-                                        questionsViewModel.eliminarCuestionario(cuestionario.id)
-                                    } else {
-                                        // Manejo del error (por ejemplo, mostrando un mensaje al usuario)
-                                        Log.e("DeleteError", "Error al eliminar la imagen: $imageUrl")
+                                // Llama a la función para eliminar el archivo en el servidor
+                                AMovServer.asyncDeleteFileFromServer(
+                                    fileName = fileName,
+                                    serverUrl = trimmedUrl,
+                                    onResult = { result ->
+                                        if (result) {
+                                            // Elimina también el cuestionario después de borrar la imagen
+                                            questionsViewModel.eliminarCuestionario(cuestionario.id)
+                                        } else {
+                                            // Manejo del error (por ejemplo, mostrando un mensaje al usuario)
+                                            Log.e("DeleteError", "Error al eliminar la imagen: $imageUrl")
+                                        }
                                     }
-                                }
-                            )
+                                )
+                            } else {
+                                // Si no hay imagen, simplemente elimina el cuestionario
+                                questionsViewModel.eliminarCuestionario(cuestionario.id)
+                            }
                         }
                         showDeleteConfirmationDialog = false
                     }
