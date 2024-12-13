@@ -32,18 +32,20 @@ fun FillBlankQuestionScreen(
     selectedOption: String?, // Esto será de solo lectura, se actualizará con la función
     onOptionSelected: (String) -> Unit, // Función para actualizar el estado
     isAcceptButtonClicked: Boolean
-) {
+){
     val fraseCompletar = currentQuestion.fraseCompletar // La frase completa
     val palabraCorrecta = currentQuestion.opcionCorrecta // La palabra correcta
 
-    // Crear la lista de opciones asegurándose de que la palabra correcta solo aparezca una vez
+    // Usar remember para mantener el orden de las opciones desordenadas entre renders
     val opciones = remember(currentQuestion.opciones) {
         currentQuestion.opciones.toMutableList().apply {
             if (!contains(palabraCorrecta)) {
                 add(palabraCorrecta) // Solo agrega la opción correcta si no está ya en la lista
             }
+            shuffle() // Barajamos una vez al principio
         }
     }
+
 
     // Dividir la frase en partes antes y después de la palabra correcta
     val partesFrase = fraseCompletar.split(palabraCorrecta)
@@ -111,4 +113,5 @@ fun FillBlankQuestionScreen(
             )
         }
     }
+
 }

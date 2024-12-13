@@ -229,6 +229,7 @@ fun UserQuizzesScreen(
                 // Opciones de respuesta dependiendo del tipo de pregunta
                 if (currentQuestion.tipo == TipoPregunta.VERDADERO_FALSO) {
                     val correctAnswer = currentQuestion.respuestasCorrectas.firstOrNull() ?: ""
+
                     TrueFalseQuestionScreen(
                         onSelectedAnswerChange = { newAnswer ->
                             selectedAnswer = newAnswer
@@ -248,9 +249,9 @@ fun UserQuizzesScreen(
 
                     if (selectedAnswer != null) enableAcept = true
 
-
                 } else if (currentQuestion.tipo == TipoPregunta.OPCION_MULTIPLE_UNA) {
                     val correctAnswer = currentQuestion.respuestasCorrectas.firstOrNull() ?: ""
+
                     OneMultChoicesQuestionScreen(
                         currentQuestion = currentQuestion,
                         selectedAnswer = selectedAnswer,
@@ -259,9 +260,9 @@ fun UserQuizzesScreen(
                         },
                         isAcceptButtonClicked = isAcceptButtonClicked,
                         correctAnswer = correctAnswer
-                    )
-                    if (selectedAnswer != null) enableAcept = true
 
+                    )
+                    enableAcept = if (selectedAnswer != null) true else false
 
 
                 } else if (currentQuestion.tipo == TipoPregunta.OPCION_MULTIPLE_MULTIPLES) {
@@ -274,7 +275,7 @@ fun UserQuizzesScreen(
                         isAcceptButtonClicked = isAcceptButtonClicked,
                         correctAnswers = currentQuestion.respuestasCorrectas
                     )
-                    if (selectedAnswer != null) enableAcept = true
+                    enableAcept = if (selectedAnswer != null) true else false
 
 
                 } else if (currentQuestion.tipo == TipoPregunta.COMPLETAR_ESPACIOS) {
@@ -284,10 +285,16 @@ fun UserQuizzesScreen(
                         onOptionSelected = { newOption ->
                             selectedOption = newOption
                         },
-                        isAcceptButtonClicked = isAcceptButtonClicked
+                        isAcceptButtonClicked = isAcceptButtonClicked,
+
                     )
                     //habilitar o no el boton de aceptar
-                    if (selectedOption != null) enableAcept = true
+                    if (selectedOption != null){
+                        enableAcept = true
+                    }else{
+                        enableAcept = false
+                    }
+
 
 
                 } else if (currentQuestion.tipo == TipoPregunta.ORDENAR) {
@@ -306,12 +313,15 @@ fun UserQuizzesScreen(
                         currentQuestion = currentQuestion,
                         userSelections = userSelections
                     )
+                    println("userSelections: $userSelections")
                     if (userSelections.size == currentQuestion.emparejamientos.size) {
                         enableAcept = true
+                    }else{
+                        enableAcept = false
                     }
 
 
-                }else if (currentQuestion.tipo == TipoPregunta.COMPLETAR_PALABRAS) {
+                } else if (currentQuestion.tipo == TipoPregunta.COMPLETAR_PALABRAS) {
 
                     MissingWordsQuestionScreen(
                         currentQuestion = currentQuestion,
@@ -321,6 +331,8 @@ fun UserQuizzesScreen(
                     )
                     if (userInputs.all { it.isNotBlank() } && userInputs.size == currentQuestion.opcionesCorrectasCompletarPalabras.size) {
                         enableAcept = true
+                    }else{
+                        enableAcept = false
                     }
 
                 } else if (currentQuestion.tipo == TipoPregunta.ASOCIACION) {
@@ -331,6 +343,8 @@ fun UserQuizzesScreen(
 
                     if (userSelections.size == currentQuestion.conceptosYDefiniciones.size) {
                         enableAcept = true
+                    }else{
+                        enableAcept = false
                     }
                 }
 
