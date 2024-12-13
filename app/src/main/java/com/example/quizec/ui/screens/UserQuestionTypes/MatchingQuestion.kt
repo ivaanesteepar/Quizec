@@ -1,5 +1,6 @@
 package com.example.quizec.ui.screens.UserQuestionTypes
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -29,7 +30,7 @@ import com.example.quizec.data.model.Pregunta
 fun MatchingQuestionScreen(
     currentQuestion: Pregunta,
     userSelections: MutableMap<String, String>
-){
+) {
     var selectedLeftItem by remember { mutableStateOf<String?>(null) }
 
     // Elementos de la derecha desordenados

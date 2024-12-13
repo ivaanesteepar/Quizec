@@ -973,7 +973,7 @@ private fun savePreguntaToFirestore(pregunta: Pregunta, db: FirebaseFirestore) {
         "titulo" to pregunta.titulo,
         "tipo" to pregunta.tipo.name,
         "opciones" to pregunta.opciones,
-        "imageUri" to pregunta.imagen,
+        "imagen" to pregunta.imagen,
         "respuestasCorrectas" to pregunta.respuestasCorrectas,
         "emparejamientos" to pregunta.emparejamientos,
         "itemsOrdenados" to pregunta.itemsOrdenados,
@@ -983,7 +983,7 @@ private fun savePreguntaToFirestore(pregunta: Pregunta, db: FirebaseFirestore) {
         "opcionesCorrectasCompletarPalabras" to pregunta.opcionesCorrectasCompletarPalabras,
         "leftItems" to pregunta.leftItems,
         "rightItems" to pregunta.rightItems,
-        "userAnswers" to pregunta.userAnswers
+        //"userAnswers" to pregunta.userAnswers
     )
 
     db.collection("preguntas")
