@@ -117,6 +117,7 @@ fun JoinQuizScreen(
                         }
                     }
                     val immediateAccess = quizViewModel.obtenerImmediateAccess(codigoQuiz)
+                    Log.d("JoinQuizScreen", "Modo Inmediato: $immediateAccess")
 
                     // Obtener datos del quiz
                     val (quizLat, quizLng, quizRadius) = datosQuiz
