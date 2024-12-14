@@ -11,8 +11,8 @@ data class Cuestionario(
     val immediateAccess: Boolean,
     val locationRestricted: Boolean,
     val immediateResults: Boolean,
-    val isQuizIniciado : Boolean,
-    val isUsed : Boolean,
+    val quizIniciado : Boolean,
+    val quizUsed : Boolean,
     val latitude: Double,
     val longitude: Double,
     val radio: Double           // Radio de ubicación

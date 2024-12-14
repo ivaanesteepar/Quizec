@@ -257,12 +257,12 @@ class QuestionsViewModel : ViewModel() {
                         // Crear una nueva instancia modificada solo con los valores necesarios
                         val cuestionarioActualizado = cuestionarioDuplicado.copy(
                             id = quizViewModel.generarClave(), // Generar un nuevo ID único
-                            isUsed = false, // Marcar como no usado
+                            quizUsed = false, // Marcar como no usado
                             latitude = 0.0, // Poner la latitud a 0
                             longitude = 0.0, // Poner la longitud a 0
                             immediateAccess = false, // Acceso inmediato desactivado
                             immediateResults = false, // Resultados inmediatos desactivados
-                            isQuizIniciado = false, // Marcar como no iniciado
+                            quizIniciado = false, // Marcar como no iniciado
                             radio = 0.0, // Poner radio a 0
                             preguntas = cuestionario.preguntas?.map { pregunta ->
                                 // Iterar sobre las preguntas y vaciar el campo `userAnswers` de cada una

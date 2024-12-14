@@ -23,12 +23,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.boundsInParent
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.quizec.data.model.Pregunta
 
@@ -45,7 +41,7 @@ fun MatchingQuestionScreen(
     val colors = listOf(Color.Red, Color.Green, Color.Blue, Color.Yellow, Color.Cyan, Color.Magenta)
     var colorIndex by remember { mutableStateOf(0) }
 
-    // Mapa de colores de las parejas (derecha-izquierda)
+    // Mapa de colores de las parejas
     val colorMap = remember { mutableStateMapOf<String, Color>() }
 
     Box(
@@ -53,7 +49,6 @@ fun MatchingQuestionScreen(
             .fillMaxWidth()
             .padding(16.dp)
     ) {
-        // Contenedor para las columnas
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
@@ -76,7 +71,7 @@ fun MatchingQuestionScreen(
                                 RoundedCornerShape(8.dp)
                             )
                             .border(2.dp, Color.Black, RoundedCornerShape(8.dp))
-                            .clickable {
+                            .clickable(enabled = !isAcceptButtonClicked) { // Desactivar clics si se ha aceptado
                                 if (!isDisabled) {
                                     selectedLeftItem =
                                         if (selectedLeftItem == leftItem) null else leftItem
@@ -121,7 +116,7 @@ fun MatchingQuestionScreen(
                                 RoundedCornerShape(8.dp)
                             )
                             .border(2.dp, Color.Black, RoundedCornerShape(8.dp))
-                            .clickable {
+                            .clickable(enabled = !isAcceptButtonClicked) { // Desactivar clics si se ha aceptado
                                 if (isUsed) {
                                     val leftItem =
                                         userSelections.entries.find { it.value == rightItem }?.key
@@ -132,8 +127,9 @@ fun MatchingQuestionScreen(
                                 } else if (selectedLeftItem != null) {
                                     // Asignar el color solo cuando se seleccionan ambos
                                     userSelections[selectedLeftItem!!] = rightItem
-                                    colorMap[selectedLeftItem!!] = colors[colorIndex % colors.size]
-                                    colorMap[rightItem] = colors[colorIndex % colors.size]
+                                    val parejaColor = colors[colorIndex % colors.size]
+                                    colorMap[selectedLeftItem!!] = parejaColor
+                                    colorMap[rightItem] = parejaColor
                                     colorIndex++
                                     selectedLeftItem = null
                                 }
@@ -154,19 +150,25 @@ fun MatchingQuestionScreen(
         }
     }
 
-    // Cuando el botón es aceptado, se colorean las parejas correctas
+    // Cuando se presiona el botón de aceptar, limpiar colores previos y asignar nuevos
     if (isAcceptButtonClicked) {
-        // Recorrer las parejas correctas que están en currentQuestion.emparejamiento
-        currentQuestion.emparejamientos.forEach { pareja ->
-            val leftItem = pareja.keys.first() // El valor de la clave es el elemento izquierdo
-            val rightItem = pareja.values.first() // El valor de la clave es el elemento derecho
+        colorMap.clear() // Limpia todos los colores previos
+        colorIndex = 0 // Reinicia el índice de colores
 
-            // Asignar un color a cada pareja correcta
-            colorMap[leftItem] = colors[colorIndex % colors.size]
-            colorMap[rightItem] = colors[colorIndex % colors.size]
+        // Recorre las parejas correctas y asigna un color único a cada una
+        currentQuestion.emparejamientos.forEach { pareja ->
+            val leftItem = pareja.keys.first()
+            val rightItem = pareja.values.first()
+
+            // Asigna un nuevo color de la lista a la pareja
+            val parejaColor = colors[colorIndex % colors.size]
+            colorMap[leftItem] = parejaColor
+            colorMap[rightItem] = parejaColor
             colorIndex++
         }
     }
 }
+
+
 
 
