@@ -233,7 +233,77 @@ class QuestionsViewModel : ViewModel() {
         }
     }
 
-    // Función para duplicar una pregunta cambiando el userId al del usuario actual
+    // ERROR SE ELIMINA EL PREFIJO "IS" DE LOS CAMPOS DEL CUESTIONARIO DUPLICADO
+    fun duplicarCuestionario(codigoQuiz: String) {
+        // Obtener instancia de Firestore
+        val db = FirebaseFirestore.getInstance()
+
+        // Buscar el cuestionario en la colección "cuestionarios"
+        db.collection("cuestionarios")
+            .whereEqualTo("id", codigoQuiz)
+            .get()
+            .addOnSuccessListener { querySnapshot ->
+                if (!querySnapshot.isEmpty) {
+                    // Obtener el primer documento que coincide con el id (suponemos que solo hay uno)
+                    val documentSnapshot = querySnapshot.documents.first()
+
+                    // Obtener el cuestionario original
+                    val cuestionario = documentSnapshot.toObject(Cuestionario::class.java)
+
+                    if (cuestionario != null) {
+                        // Hacer una copia del cuestionario original
+                        val cuestionarioDuplicado = cuestionario.copy()
+
+                        // Crear una nueva instancia modificada solo con los valores necesarios
+                        val cuestionarioActualizado = cuestionarioDuplicado.copy(
+                            id = quizViewModel.generarClave(), // Generar un nuevo ID único
+                            isUsed = false, // Marcar como no usado
+                            latitude = 0.0, // Poner la latitud a 0
+                            longitude = 0.0, // Poner la longitud a 0
+                            immediateAccess = false, // Acceso inmediato desactivado
+                            immediateResults = false, // Resultados inmediatos desactivados
+                            isQuizIniciado = false, // Marcar como no iniciado
+                            radio = 0.0, // Poner radio a 0
+                            preguntas = cuestionario.preguntas?.map { pregunta ->
+                                // Iterar sobre las preguntas y vaciar el campo `userAnswers` de cada una
+                                pregunta.copy(userAnswers = emptyList()) // Limpiar el campo `userAnswers`
+                            } ?: emptyList() // Si no hay preguntas, se deja vacío
+                        )
+
+                        // Generar un nuevo documento con un ID único para el cuestionario duplicado
+                        val cuestionarioRef = db.collection("cuestionarios").document()
+
+                        // Subir el cuestionario duplicado a Firestore
+                        cuestionarioRef.set(cuestionarioActualizado)
+                            .addOnSuccessListener {
+                                // Si la operación fue exitosa, mostramos un mensaje
+                                Log.d("DuplicarCuestionario", "Cuestionario duplicado con éxito")
+                                _cuestionariosState.value = _cuestionariosState.value + cuestionarioActualizado
+                            }
+                            .addOnFailureListener { e ->
+                                // Si hubo un error, lo registramos
+                                Log.e("DuplicarCuestionario", "Error al duplicar el cuestionario: $e")
+                            }
+                    } else {
+                        // Si no se encontró el cuestionario, lo logueamos
+                        Log.e("DuplicarCuestionario", "Cuestionario no encontrado en Firestore")
+                    }
+                } else {
+                    // Si no se encontraron documentos que coincidan con el ID
+                    Log.e("DuplicarCuestionario", "No se encontró el cuestionario con el ID: $codigoQuiz")
+                }
+            }
+            .addOnFailureListener { e ->
+                // Si hubo un error al obtener el documento, lo logueamos
+                Log.e("DuplicarCuestionario", "Error al obtener el cuestionario: $e")
+            }
+    }
+
+
+
+
+
+    // Función para duplicar una pregunta cambiando el userId al del usuario actual (HISTORIAL)
     fun duplicarPreguntaConUsuarioActual(preguntaToDuplicate: Pregunta, userIdActual: String) {
         viewModelScope.launch {
             try {
@@ -259,7 +329,7 @@ class QuestionsViewModel : ViewModel() {
         }
     }
 
-    // Función para duplicar una pregunta
+    // Función para duplicar una pregunta (SELECCIONAR PREGUNTA)
     fun duplicarPregunta(preguntaToDuplicate: Pregunta, userId: String) {
         viewModelScope.launch {
             try {

@@ -8,7 +8,6 @@ data class Cuestionario(
     val creadorId: String,      // ID del creador del cuestionario
     val imagen: String? = null, // Imagen opcional del cuestionario
     val preguntas: List<Pregunta>, // Lista de preguntas completas asociadas al cuestionario
-    // Nuevos campos agregados
     val immediateAccess: Boolean,
     val locationRestricted: Boolean,
     val immediateResults: Boolean,

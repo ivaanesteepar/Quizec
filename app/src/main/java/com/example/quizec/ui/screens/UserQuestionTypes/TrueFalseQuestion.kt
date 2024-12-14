@@ -16,7 +16,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 
-
 @Composable
 fun TrueFalseQuestionScreen(
     onSelectedAnswerChange: (List<String>?) -> Unit, // Lambda para actualizar el estado
@@ -25,7 +24,6 @@ fun TrueFalseQuestionScreen(
     isAcceptButtonClicked: Boolean,
     correctAnswer: String // La respuesta correcta ("Verdadero" o "Falso")
 ) {
-    println("correcta: $correctAnswer")
 
     Row(
         horizontalArrangement = Arrangement.Center, // Centra los botones horizontalmente
@@ -48,7 +46,6 @@ fun TrueFalseQuestionScreen(
         }
 
         Spacer(modifier = Modifier.width(16.dp)) // Espacio entre los botones
-        println("isacceptTrueFalse: $isAcceptButtonClicked correctAnswer: $correctAnswer")
 
         Button(
             onClick = {
@@ -64,4 +61,3 @@ fun TrueFalseQuestionScreen(
         }
     }
 }
-

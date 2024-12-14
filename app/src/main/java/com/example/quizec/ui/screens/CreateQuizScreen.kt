@@ -375,7 +375,6 @@ private fun crearCuestionario(
     nombreUsuario: String?,
     quizViewModel: QuizViewModel,
     onError: (String) -> Unit,
-    // Parametros adicionales para el cuestionario
     immediateAccess: Boolean,
     locationRestricted: Boolean,
     immediateResults: Boolean,

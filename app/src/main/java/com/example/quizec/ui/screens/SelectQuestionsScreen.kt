@@ -95,27 +95,32 @@ fun SelectQuestionsScreen(
                         onClick = {
                             // Asegúrate de que questionToDelete no es nulo antes de llamar a eliminarPregunta
                             questionToDelete?.let { pregunta ->
-                                // Extrae el nombre del archivo de la URL
-                                val imageUrl = pregunta.imagen.toString()
-                                val trimmedUrl = imageUrl.trimEnd('/')
-                                val segments = trimmedUrl.split("/")
-                                val fileName = segments.lastOrNull() ?: ""
+                                // Verifica si la pregunta tiene una imagen asociada
+                                if (!pregunta.imagen.isNullOrEmpty()) {
+                                    // Extrae el nombre del archivo de la URL
+                                    val imageUrl = pregunta.imagen.toString()
+                                    val trimmedUrl = imageUrl.trimEnd('/')
+                                    val segments = trimmedUrl.split("/")
+                                    val fileName = segments.lastOrNull() ?: ""
 
-                                // Llama a la función para eliminar el archivo en el servidor
-                                AMovServer.asyncDeleteFileFromServer(
-                                    fileName = fileName,
-                                    serverUrl = trimmedUrl,
-                                    onResult = { result ->
-                                        if (result) {
-                                            // Elimina tla pregunta después de borrar la imagen
-                                            questionsViewModel.eliminarPregunta(pregunta, userId)
-                                        } else {
-                                            // Manejo del error (por ejemplo, mostrando un mensaje al usuario)
-                                            Log.e("DeleteError", "Error al eliminar la imagen: $imageUrl")
+                                    // Llama a la función para eliminar el archivo en el servidor
+                                    AMovServer.asyncDeleteFileFromServer(
+                                        fileName = fileName,
+                                        serverUrl = trimmedUrl,
+                                        onResult = { result ->
+                                            if (result) {
+                                                // Elimina también la pregunta después de borrar la imagen
+                                                questionsViewModel.eliminarPregunta(pregunta, userId)
+                                            } else {
+                                                // Manejo del error (por ejemplo, mostrando un mensaje al usuario)
+                                                Log.e("DeleteError", "Error al eliminar la imagen: $imageUrl")
+                                            }
                                         }
-                                    }
-                                )
-
+                                    )
+                                } else {
+                                    // Si no hay imagen, simplemente elimina la pregunta
+                                    questionsViewModel.eliminarPregunta(pregunta, userId)
+                                }
                             }
 
                             // Cerrar el diálogo y restablecer el estado
