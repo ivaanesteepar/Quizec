@@ -50,9 +50,6 @@ class QuizViewModel : ViewModel() {
     private val _errorMessage = MutableStateFlow("")
     val errorMessage: StateFlow<String> = _errorMessage
 
-    // Declara el tipo del Map explícitamente
-    private val _userAnswers = MutableStateFlow<Map<String, Any>>(emptyMap())
-    val userAnswers: StateFlow<Map<String, Any>> get() = _userAnswers
 
     //OJO Q LO CAMBIE Y NS SI AFECTA!!!!!!!!!!!
     // Mapa de respuestas de todos los usuarios (usamos StateFlow para ser reactivos)
@@ -1032,6 +1029,8 @@ class QuizViewModel : ViewModel() {
                             val updatedPreguntas = preguntas.toMutableList().apply {
                                 this[indicePregunta] = updatedPregunta
                             }
+
+                            print("Indice pregunta: $indicePregunta")
 
                             // Paso 9: Guardar la actualización en Firestore
                             db.collection("cuestionarios")

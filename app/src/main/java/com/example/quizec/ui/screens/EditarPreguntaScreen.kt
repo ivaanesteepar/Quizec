@@ -543,8 +543,8 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                     Text("Conceptos y definiciones:", style = MaterialTheme.typography.bodyMedium)
 
                     conceptosYDefiniciones.forEachIndexed { index, mapConceptoDefinicion ->
-                        val concepto = mapConceptoDefinicion["concepto"] ?: ""
-                        val definicion = mapConceptoDefinicion["definicion"] ?: ""
+                        val concepto = mapConceptoDefinicion.keys.firstOrNull() ?: ""
+                        val definicion = mapConceptoDefinicion.values.firstOrNull() ?: ""
 
                         // Cada par concepto/definición estará en una columna
                         Column(
@@ -574,8 +574,7 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                                         onClick = {
                                             conceptosYDefiniciones = conceptosYDefiniciones.toMutableList().apply {
                                                 this[index] = mapOf(
-                                                    "concepto" to "",
-                                                    "definicion" to definicion
+                                                    "" to definicion
                                                 )
                                             }
                                         }
@@ -590,8 +589,7 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                                             if (!nuevoConcepto.startsWith("http://")) {
                                                 conceptosYDefiniciones = conceptosYDefiniciones.toMutableList().apply {
                                                     this[index] = mapOf(
-                                                        "concepto" to nuevoConcepto,
-                                                        "definicion" to definicion
+                                                        nuevoConcepto to definicion
                                                     )
                                                 }
                                             }
@@ -627,8 +625,7 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                                 onValueChange = { nuevaDefinicion ->
                                     conceptosYDefiniciones = conceptosYDefiniciones.toMutableList().apply {
                                         this[index] = mapOf(
-                                            "concepto" to concepto,
-                                            "definicion" to nuevaDefinicion
+                                            concepto to nuevaDefinicion
                                         )
                                     }
                                 },
@@ -656,7 +653,7 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                     Button(
                         onClick = {
                             conceptosYDefiniciones = conceptosYDefiniciones.toMutableList().apply {
-                                add(mapOf("concepto" to "", "definicion" to ""))
+                                add(mapOf("" to ""))
                             }
                         },
                         modifier = Modifier.fillMaxWidth(0.8f).padding(vertical = 8.dp)

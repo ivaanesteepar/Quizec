@@ -46,8 +46,8 @@ fun UserQuizzesScreen(
     var selectedAnswer by remember { mutableStateOf<List<String>?>(null) }
     var isAnswerCorrect by remember { mutableStateOf<Boolean?>(null) }
     var isAnswerSelected by remember { mutableStateOf(false) }
-    var trueButtonColor by remember { mutableStateOf(defaultButtonColor) }
-    var falseButtonColor by remember { mutableStateOf(defaultButtonColor) }
+    var trueButtonColor by remember { mutableStateOf(Color.Unspecified) }
+    var falseButtonColor by remember { mutableStateOf(Color.Unspecified) }
     //JIMENA
     var enableAcept by remember { mutableStateOf(false) } //habilita el botoón de aceptar
     var selectedOption by remember { mutableStateOf<String?>(null) } //ESPACIOS
@@ -82,8 +82,6 @@ fun UserQuizzesScreen(
         }
     }
 
-    println("Immediateresults: $immediateResults")
-
     // Lógica para verificar si el quiz ha sido terminado
     LaunchedEffect(userId, codigoQuiz) {
         if (codigoQuiz != null) {
@@ -113,7 +111,6 @@ fun UserQuizzesScreen(
 
     // Lógica del temporizador para la pregunta actual y el tiempo total
     LaunchedEffect(totalTime) {
-        println("totalTime: $totalTime")
         if (totalTime == 0) {
             navController.navigate("results_screen/$codigoQuiz") // Navega al finalizar
         }
@@ -122,6 +119,7 @@ fun UserQuizzesScreen(
     LaunchedEffect(currentQuestionIndex) {
         remainingTime = 30 // Reinicia el tiempo de la pregunta al cambiar
         timerActive = true
+        isAcceptButtonClicked = false // Reinicia el estado del botón "Aceptar"
 
         while (timerActive && remainingTime > 0 && totalTime > 0) {
             delay(1000)
@@ -137,6 +135,7 @@ fun UserQuizzesScreen(
             }
         }
     }
+
     preguntas = quizViewModel.preguntas
     Box(
         modifier = Modifier
@@ -235,10 +234,10 @@ fun UserQuizzesScreen(
                             selectedAnswer = newAnswer
                             if (selectedAnswer?.contains("Verdadero") == true) {
                                 trueButtonColor = selectedButtonColor
-                                falseButtonColor = defaultButtonColor
+                                falseButtonColor = Color.Unspecified // alterna color naranja
                             } else {
                                 falseButtonColor = selectedButtonColor
-                                trueButtonColor = defaultButtonColor
+                                trueButtonColor = Color.Unspecified // alterna color naranja
                             }
                         },
                         falseButtonColor = falseButtonColor,
@@ -262,7 +261,7 @@ fun UserQuizzesScreen(
                         correctAnswer = correctAnswer
 
                     )
-                    enableAcept = if (selectedAnswer != null) true else false
+                    enableAcept = if (!selectedAnswer.isNullOrEmpty()) true else false
 
 
                 } else if (currentQuestion.tipo == TipoPregunta.OPCION_MULTIPLE_MULTIPLES) {
@@ -275,7 +274,8 @@ fun UserQuizzesScreen(
                         isAcceptButtonClicked = isAcceptButtonClicked,
                         correctAnswers = currentQuestion.respuestasCorrectas
                     )
-                    enableAcept = if (selectedAnswer != null) true else false
+                    println("selectedAnswer: $selectedAnswer")
+                    enableAcept = if (!selectedAnswer.isNullOrEmpty()) true else false
 
 
                 } else if (currentQuestion.tipo == TipoPregunta.COMPLETAR_ESPACIOS) {
@@ -287,7 +287,7 @@ fun UserQuizzesScreen(
                         },
                         isAcceptButtonClicked = isAcceptButtonClicked,
 
-                    )
+                        )
                     //habilitar o no el boton de aceptar
                     if (selectedOption != null){
                         enableAcept = true
@@ -311,7 +311,8 @@ fun UserQuizzesScreen(
                 } else if (currentQuestion.tipo == TipoPregunta.EMPAREJAR) {
                     MatchingQuestionScreen(
                         currentQuestion = currentQuestion,
-                        userSelections = userSelections
+                        userSelections = userSelections,
+                        isAcceptButtonClicked = isAcceptButtonClicked
                     )
                     println("userSelections: $userSelections")
                     if (userSelections.size == currentQuestion.emparejamientos.size) {
@@ -358,20 +359,71 @@ fun UserQuizzesScreen(
                         var localIsAnswerCorrect = false // Variable local para evitar smart cast issues
 
                         when (currentQuestion.tipo) {
-                            TipoPregunta.VERDADERO_FALSO -> if (selectedAnswer == correctAnswers) localIsAnswerCorrect =
-                                true
+                            TipoPregunta.VERDADERO_FALSO -> {
+                                if (selectedAnswer == correctAnswers) localIsAnswerCorrect =
+                                    true
+                                // Registrar la respuesta seleccionada
+                                selectedAnswer?.let {
+                                    quizViewModel.actualizarUserAnswers(
+                                        codigoQuiz.toString(),
+                                        currentQuestionIndex,
+                                        userId,
+                                        it
+                                    )
+                                }
+                            }
 
-                            TipoPregunta.OPCION_MULTIPLE_UNA -> if (selectedAnswer?.sorted() == correctAnswers.sorted()) localIsAnswerCorrect =
-                                true
+                            TipoPregunta.OPCION_MULTIPLE_UNA -> {
+                                if (selectedAnswer?.sorted() == correctAnswers.sorted()) localIsAnswerCorrect = true
 
-                            TipoPregunta.OPCION_MULTIPLE_MULTIPLES -> if (selectedAnswer?.sorted() == correctAnswers.sorted()) localIsAnswerCorrect =
-                                true
+                                // Registrar la respuesta seleccionada
+                                selectedAnswer?.let {
+                                    quizViewModel.actualizarUserAnswers(
+                                        codigoQuiz.toString(),
+                                        currentQuestionIndex,
+                                        userId,
+                                        it
+                                    )
+                                }
+                            }
 
-                            TipoPregunta.COMPLETAR_ESPACIOS -> if (selectedOption == currentQuestion.opcionCorrecta) localIsAnswerCorrect =
-                                true
+                            TipoPregunta.OPCION_MULTIPLE_MULTIPLES -> {
+                                if (selectedAnswer?.sorted() == correctAnswers.sorted()) localIsAnswerCorrect = true
+                                // Registrar la respuesta seleccionada
+                                selectedAnswer?.let {
+                                    quizViewModel.actualizarUserAnswers(
+                                        codigoQuiz.toString(),
+                                        currentQuestionIndex,
+                                        userId,
+                                        it
+                                    )
+                                }
+                            }
 
-                            TipoPregunta.ORDENAR -> if (userOrderedItems == currentQuestion.itemsOrdenados) localIsAnswerCorrect =
-                                true
+                            TipoPregunta.COMPLETAR_ESPACIOS -> {
+                                if (selectedOption == currentQuestion.opcionCorrecta) localIsAnswerCorrect = true
+                                selectedOption?.let {
+                                    quizViewModel.actualizarUserAnswers(
+                                        codigoQuiz.toString(),
+                                        currentQuestionIndex,
+                                        userId,
+                                        it
+                                    )
+                                }
+                            }
+
+                            TipoPregunta.ORDENAR -> {
+                                if (userOrderedItems == currentQuestion.itemsOrdenados) localIsAnswerCorrect =
+                                    true
+                                userOrderedItems.let {
+                                    quizViewModel.actualizarUserAnswers(
+                                        codigoQuiz.toString(),
+                                        currentQuestionIndex,
+                                        userId,
+                                        it
+                                    )
+                                }
+                            }
 
                             TipoPregunta.EMPAREJAR -> {
                                 var isAllCorrect = true
@@ -383,11 +435,29 @@ fun UserQuizzesScreen(
                                     }
                                 }
                                 if (isAllCorrect) localIsAnswerCorrect = true
+
+                                userSelections.let {
+                                    quizViewModel.actualizarUserAnswers(
+                                        codigoQuiz.toString(),
+                                        currentQuestionIndex,
+                                        userId,
+                                        it
+                                    )
+                                }
+
                             }
 
                             TipoPregunta.COMPLETAR_PALABRAS -> {
                                 if (userInputs.sorted() == currentQuestion.opcionesCorrectasCompletarPalabras.sorted()) localIsAnswerCorrect =
                                     true
+                                userInputs.let {
+                                    quizViewModel.actualizarUserAnswers(
+                                        codigoQuiz.toString(),
+                                        currentQuestionIndex,
+                                        userId,
+                                        it
+                                    )
+                                }
                             }
 
                             TipoPregunta.ASOCIACION -> {
@@ -399,9 +469,19 @@ fun UserQuizzesScreen(
                                         return@forEach
                                     }
                                 }
-                                if (isAllCorrect) localIsAnswerCorrect = true
-                            }
+                                Log.d("isAllCorrect asociar", "valor de is allcorrrct: $isAllCorrect")
 
+                                if (isAllCorrect) localIsAnswerCorrect = true
+
+                                userSelections.let {
+                                    quizViewModel.actualizarUserAnswers(
+                                        codigoQuiz.toString(),
+                                        currentQuestionIndex,
+                                        userId,
+                                        it
+                                    )
+                                }
+                            }
                         }
                         // Asigna el mensaje de resultado dependiendo de si la respuesta es correcta o no
                         resultMessage = if (localIsAnswerCorrect) {
@@ -412,16 +492,7 @@ fun UserQuizzesScreen(
                         isAnswerCorrect = localIsAnswerCorrect
                         isAcceptButtonClicked = true
 
-                        if (!immediateResults) {
-                            // Si immediateResults es false, avanzar automáticamente
-                            if (currentQuestionIndex < preguntas.size - 1) {
-                                currentQuestionIndex++
-                                isAcceptButtonClicked = false // Reset para la próxima pregunta
-                            } else {
-                                navController.navigate("results_screen/$codigoQuiz")
-                            }
-                        }
-                        else if (localIsAnswerCorrect) {
+                        if (localIsAnswerCorrect) {
                             // Actualizar respuestas correctas en Firestore
                             usersViewModel.obtenerRespuestasCorrectas(
                                 userId,
@@ -436,18 +507,26 @@ fun UserQuizzesScreen(
                                 println("Respuestas correctas actualizadas: $respuestasCorrectasActualizadas")
                             }
                         }
-
-                        // Registrar la respuesta seleccionada
-                        selectedAnswer?.let {
-                            quizViewModel.actualizarUserAnswers(
-                                codigoQuiz.toString(),
-                                currentQuestionIndex,
-                                userId,
-                                it
-                            )
+                        if (!immediateResults) {
+                            // Si immediateResults es false, avanzar automáticamente
+                            if (currentQuestionIndex < preguntas.size - 1) {
+                                currentQuestionIndex++
+                                isAcceptButtonClicked = false // Reset para la próxima pregunta
+                            } else {
+                                navController.navigate("results_screen/$codigoQuiz")
+                            }
                         }
+                        // Reinicia los estados para la próxima pregunta
+                        selectedAnswer = null
+                        isAnswerCorrect = null
+                        isAnswerSelected = false
+                        isAcceptButtonClicked = false
+                        enableAcept = false
+                        trueButtonColor = Color.Unspecified
+                        falseButtonColor = Color.Unspecified
+                        resultMessage = ""
                     },
-                    enabled = enableAcept && !isAcceptButtonClicked
+                    enabled = enableAcept
                 ) {
                     Text(text = "Aceptar")
                 }
@@ -456,7 +535,6 @@ fun UserQuizzesScreen(
 
                 // Mostrar si la respuesta es correcta o incorrecta si immediateResults es true
                 if (immediateResults && isAcceptButtonClicked) {
-                    println("llega aqui")
                     println("isAnswerCorrect: $isAnswerCorrect resultMessage: $resultMessage")
                     Text(
                         text = resultMessage,
@@ -468,8 +546,9 @@ fun UserQuizzesScreen(
 
                 Spacer(modifier = Modifier.height(20.dp))
                 println("isAcceptButtonClicked: $isAcceptButtonClicked")
+
                 // Botón "Siguiente pregunta" (solo visible si immediateResults es true)
-                if (immediateResults && isAcceptButtonClicked) {
+                if (isAcceptButtonClicked && immediateResults) {
                     Button(
                         onClick = {
                             // Reinicia los estados para la próxima pregunta
@@ -478,8 +557,8 @@ fun UserQuizzesScreen(
                             isAnswerSelected = false
                             isAcceptButtonClicked = false
                             enableAcept = false
-                            trueButtonColor = defaultButtonColor
-                            falseButtonColor = defaultButtonColor
+                            trueButtonColor = Color.Unspecified
+                            falseButtonColor = Color.Unspecified
                             resultMessage = ""
 
                             if (currentQuestionIndex < preguntas.size - 1) {
@@ -496,9 +575,7 @@ fun UserQuizzesScreen(
                         Text(text = "Siguiente pregunta")
                     }
                 }
-
             }
         }
     }
 }
-

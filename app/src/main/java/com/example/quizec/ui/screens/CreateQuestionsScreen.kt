@@ -87,18 +87,18 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
     val pickPicture = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri ->
-            Log.d("CreateQuizScreen", "URI seleccionada: $uri")
+            Log.d("CreateQuestionsScreen", "URI seleccionada: $uri")
             if (uri != null) {
                 AMovServer.asyncUploadImage(
                     inputStream = context.contentResolver.openInputStream(uri)!!,
                     extension = "jpg",
                     onResult = { result ->
-                        Log.d("CreateQuizScreen", "Resultado de subir imagen: $result")
+                        Log.d("CreateQuestionsScreen", "Resultado de subir imagen: $result")
                         if (result != null) {
                             imageUri = result
                             error = null
                         } else {
-                            Log.d("CreateQuizScreen", "Error al subir la imagen")
+                            Log.d("CreateQuestionsScreen", "Error al subir la imagen")
                             imageUri = null
                         }
                     }
@@ -112,25 +112,28 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
     val pickPicture2 = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri ->
-            Log.d("CreateQuizScreen", "URI seleccionada: $uri")
+            Log.d("CreateQuestionsScreen", "URI seleccionada: $uri")
             if (uri != null) {
                 AMovServer.asyncUploadImage(
                     inputStream = context.contentResolver.openInputStream(uri)!!,
                     extension = "jpg",
                     onResult = { result ->
-                        Log.d("CreateQuizScreen", "Resultado de subir imagen: $result")
+                        Log.d("CreateQuestionsScreen", "Resultado de subir imagen: $result")
                         if (result != null) {
+                            // Actualizar el concepto con la URL de la imagen
                             conceptosYDefiniciones = conceptosYDefiniciones.toMutableList().apply {
-                                val indexToUpdate = conceptosYDefiniciones.indexOfFirst { it["concepto"] == "" }
+                                val indexToUpdate = indexOfFirst { it.keys.firstOrNull()?.isEmpty() == true }
                                 if (indexToUpdate >= 0) {
+                                    val currentDefinicion = this[indexToUpdate].values.firstOrNull() ?: ""
                                     this[indexToUpdate] = mapOf(
-                                        "concepto" to result,
-                                        //"definicion" to this[indexToUpdate]["definicion"] ?: ""
+                                        result to currentDefinicion // Usar la URL de la imagen como concepto
                                     )
+                                } else {
+                                    Log.d("CreateQuestionsScreen", "No se encontró un concepto vacío para actualizar")
                                 }
                             }
                         } else {
-                            Log.d("CreateQuizScreen", "Error al subir la imagen")
+                            Log.d("CreateQuestionsScreen", "Error al subir la imagen")
                         }
                     }
                 )
@@ -574,8 +577,8 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                     Text("Conceptos y definiciones:", style = MaterialTheme.typography.bodyMedium)
 
                     conceptosYDefiniciones.forEachIndexed { index, mapConceptoDefinicion ->
-                        val concepto = mapConceptoDefinicion["concepto"] ?: ""
-                        val definicion = mapConceptoDefinicion["definicion"] ?: ""
+                        val concepto = mapConceptoDefinicion.keys.firstOrNull() ?: ""
+                        val definicion = mapConceptoDefinicion.values.firstOrNull() ?: ""
 
                         // Cada par concepto/definición estará en una columna
                         Column(
@@ -605,8 +608,7 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                                         onClick = {
                                             conceptosYDefiniciones = conceptosYDefiniciones.toMutableList().apply {
                                                 this[index] = mapOf(
-                                                    "concepto" to "",
-                                                    "definicion" to definicion
+                                                    "" to definicion
                                                 )
                                             }
                                         }
@@ -621,8 +623,7 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                                             if (!nuevoConcepto.startsWith("http://")) {
                                                 conceptosYDefiniciones = conceptosYDefiniciones.toMutableList().apply {
                                                     this[index] = mapOf(
-                                                        "concepto" to nuevoConcepto,
-                                                        "definicion" to definicion
+                                                        nuevoConcepto to definicion
                                                     )
                                                 }
                                             }
@@ -658,8 +659,7 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                                 onValueChange = { nuevaDefinicion ->
                                     conceptosYDefiniciones = conceptosYDefiniciones.toMutableList().apply {
                                         this[index] = mapOf(
-                                            "concepto" to concepto,
-                                            "definicion" to nuevaDefinicion
+                                            concepto to nuevaDefinicion
                                         )
                                     }
                                 },
@@ -687,7 +687,7 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                     Button(
                         onClick = {
                             conceptosYDefiniciones = conceptosYDefiniciones.toMutableList().apply {
-                                add(mapOf("concepto" to "", "definicion" to ""))
+                                add(mapOf("" to ""))
                             }
                         },
                         modifier = Modifier.fillMaxWidth(0.8f).padding(vertical = 8.dp)
@@ -697,7 +697,6 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
 
                     Spacer(modifier = Modifier.height(16.dp))
                 }
-
 
 
 //////////////////////////////////////
@@ -837,15 +836,20 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                             }
 
                             TipoPregunta.ASOCIACION -> {
+                                // Comprobar si hay al menos dos conceptos y definiciones
                                 if (conceptosYDefiniciones.size < 2) {
                                     errorMessage = "Por favor, ingrese al menos 2 conceptos y definiciones."
-                                } else if (conceptosYDefiniciones.any { it["concepto"].isNullOrBlank() || it["definicion"].isNullOrBlank() }) {
+                                } else if (conceptosYDefiniciones.any {
+                                        // Comprobar si hay algún concepto o definición vacío
+                                        it.keys.firstOrNull().isNullOrBlank() || it.values.firstOrNull().isNullOrBlank()
+                                }
+                                    ) {
                                     errorMessage = "Por favor, asegúrese de que todos los conceptos y definiciones no estén vacíos."
                                 } else {
-                                    errorMessage = ""
+                                    errorMessage = "" // No hay error si todo está lleno
                                 }
-
                             }
+
 
                             TipoPregunta.COMPLETAR_PALABRAS -> {
                                 if (fraseCompletar.isEmpty()) {

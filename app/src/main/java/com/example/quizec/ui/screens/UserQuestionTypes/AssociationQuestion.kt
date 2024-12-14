@@ -50,7 +50,7 @@ fun AssociationQuestionScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 shuffledConceptsAndDefinitions.forEach { pair ->
-                    val concept = pair["concepto"] ?: ""
+                    val concept = pair.keys.firstOrNull() ?: ""
                     val isDisabled = userSelections.containsKey(concept)
 
                     Box(
@@ -96,7 +96,7 @@ fun AssociationQuestionScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 shuffledConceptsAndDefinitions.forEach { pair ->
-                    val definition = pair["definicion"] ?: ""
+                    val definition = pair.values.firstOrNull() ?: ""
                     val isUsed = userSelections.containsValue(definition)
 
                     Box(
@@ -111,8 +111,8 @@ fun AssociationQuestionScreen(
                                     }
 
                                 } else if (selectedLeftItem != null){
-                                        userSelections[selectedLeftItem!!] = definition
-                                        selectedLeftItem = null
+                                    userSelections[selectedLeftItem!!] = definition
+                                    selectedLeftItem = null
                                 }
 
                             }

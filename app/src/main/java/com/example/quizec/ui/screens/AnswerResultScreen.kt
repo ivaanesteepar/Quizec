@@ -109,7 +109,7 @@ fun AnswerResultScreen(
                             onSelectedAnswerChange = {},
                             falseButtonColor = if (respuestaCorrecta == "Falso") Color.Green else Color.Unspecified, // Si la respuesta correcta es "Falso", el botón "Falso" se pone verde
                             trueButtonColor = if (respuestaCorrecta == "Verdadero") Color.Green else Color.Unspecified, // Si la respuesta correcta es "Verdadero", el botón "Verdadero" se pone verde
-                            isAcceptButtonClicked = false, // Asegúrate de que los botones no se deshabiliten, solo cambien de color
+                            isAcceptButtonClicked = true, // Asegúrate de que los botones no se deshabiliten, solo cambien de color
                             correctAnswer = respuestaCorrecta // Pasamos la respuesta correcta como parámetro
                         )
                     }
@@ -120,7 +120,7 @@ fun AnswerResultScreen(
                             currentQuestion = currentQuestion,
                             selectedAnswer = currentQuestion.respuestasCorrectas,
                             onSelectedAnswerChange = {},
-                            isAcceptButtonClicked = false,
+                            isAcceptButtonClicked = true,
                             correctAnswer = respuestaCorrecta // Pasamos la respuesta correcta como parámetro
                         )
                     }
@@ -132,7 +132,7 @@ fun AnswerResultScreen(
                             currentQuestion = currentQuestion,
                             selectedAnswer = currentQuestion.respuestasCorrectas,
                             onSelectedAnswerChange = {},
-                            isAcceptButtonClicked = false,
+                            isAcceptButtonClicked = true,
                             correctAnswers = respuestasCorrectas.toList() // Convertir el conjunto a una lista
                         )
                     }
@@ -156,7 +156,8 @@ fun AnswerResultScreen(
                         MatchingQuestionScreen(
                             currentQuestion = currentQuestion,
                             userSelections = currentQuestion.emparejamientos.associate { it.entries.first().toPair() }
-                                .toMutableMap()
+                                .toMutableMap(),
+                            isAcceptButtonClicked = true
                         )
                     }
                     TipoPregunta.COMPLETAR_PALABRAS -> {
