@@ -26,7 +26,7 @@ fun MissingWordsQuestionScreen(
     opcionesCorrectas: List<String>,
     userInputs: MutableList<String>,
     isAcceptButtonClicked: Boolean
-){
+) {
     val fraseCompletar = currentQuestion.fraseCompletar
 
     // Dividir la frase en palabras y reemplazar las correctas por un espacio (___)
@@ -37,6 +37,23 @@ fun MissingWordsQuestionScreen(
         } else {
             palabra // Mantiene las otras palabras
         }
+    }
+
+    // Asegurar que userInputs tiene el mismo tamaño que opcionesCorrectas
+    if (userInputs.size < opcionesCorrectas.size) {
+        for (i in userInputs.size until opcionesCorrectas.size) {
+            userInputs.add("") // Agrega entradas vacías para sincronizar el tamaño
+        }
+    }
+
+    // Manejar listas vacías
+    if (opcionesCorrectas.isEmpty()) {
+        Text(
+            text = "No hay opciones correctas disponibles.",
+            style = MaterialTheme.typography.bodyLarge,
+            fontSize = 16.sp
+        )
+        return
     }
 
     // Mostrar la frase modificada
@@ -56,6 +73,8 @@ fun MissingWordsQuestionScreen(
             .padding(horizontal = 16.dp) // Agregado padding horizontal
     ) {
         opcionesCorrectas.forEachIndexed { index, _ ->
+            if (index >= userInputs.size) return@forEachIndexed // Evita el acceso fuera de rango
+
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -69,24 +88,17 @@ fun MissingWordsQuestionScreen(
                     modifier = Modifier.width(24.dp) // Espacio fijo para el número
                 )
 
-                // Suponiendo que 'isAcceptButtonClicked' es una variable booleana que indica si el botón fue presionado
                 if (isAcceptButtonClicked) {
-                    // Mostrar la respuesta correcta cuando el botón es presionado
                     TextField(
                         value = opcionesCorrectas[index], // Muestra la respuesta correcta
-                        onValueChange = { newValue ->
-                            // Este bloque no será ejecutado si 'enabled' está en 'false', pero lo mantengo por si lo necesitas más tarde
-                            userInputs[index] = newValue
-                        },
-                        label = { Text(text = "Ingresa la palabra correcta") },
-                        textStyle = TextStyle(color = Color.Green), // Cambia el color del texto
+                        onValueChange = { newValue -> userInputs[index] = newValue },
+                        label = { Text(text = "Respuesta correcta") },
+                        textStyle = TextStyle(color = Color.Green),
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
-                        enabled = false // Deshabilita el campo de texto para que no pueda editarse
+                        enabled = false
                     )
-
                 } else {
-                    // Mostrar el campo de texto normal si el botón no ha sido presionado
                     TextField(
                         value = userInputs[index],
                         onValueChange = { newValue -> userInputs[index] = newValue },
@@ -95,9 +107,9 @@ fun MissingWordsQuestionScreen(
                         singleLine = true
                     )
                 }
-
             }
         }
     }
 }
+
 

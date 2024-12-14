@@ -108,7 +108,7 @@ class QuizViewModel : ViewModel() {
             for (document in cuestionariosSnapshot.documents) {
                 // Obtener el valor de codigoQuiz y el estado de isUsed
                 val codigoQuiz = document.getString("id") ?: "" // Asegúrate de que "codigoQuiz" sea el campo correcto
-                val isUsed = document.getBoolean("isUsed") ?: false
+                val isUsed = document.getBoolean("quizUsed") ?: false
 
                 // Usar codigoQuiz como la clave en el mapa
                 if (codigoQuiz.isNotEmpty()) {
@@ -132,7 +132,7 @@ class QuizViewModel : ViewModel() {
             .addOnSuccessListener { querySnapshot ->
                 if (!querySnapshot.isEmpty) {
                     val document = querySnapshot.documents[0] // Obtén el primer documento que coincida
-                    document.reference.update("isUsed", isUsed)
+                    document.reference.update("quizUsed", isUsed)
                         .addOnSuccessListener {
                             callback(true) // La actualización fue exitosa
                         }
@@ -236,7 +236,7 @@ class QuizViewModel : ViewModel() {
                         "immediateAccess" to cuestionario.immediateAccess,
                         "locationRestricted" to cuestionario.locationRestricted,
                         "immediateResults" to cuestionario.immediateResults,
-                        "isQuizIniciado" to cuestionario.isQuizIniciado,
+                        "quizIniciado" to cuestionario.quizIniciado,
                         "latitude" to cuestionario.latitude,
                         "longitude" to cuestionario.longitude,
                         "radio" to cuestionario.radio
@@ -427,7 +427,7 @@ class QuizViewModel : ViewModel() {
                                 "immediateAccess" to (cuestionarioData["immediateAccess"] as? Boolean ?: false),
                                 "locationRestricted" to (cuestionarioData["locationRestricted"] as? Boolean ?: false),
                                 "immediateResults" to (cuestionarioData["immediateResults"] as? Boolean ?: false),
-                                "isQuizIniciado" to (cuestionarioData["isQuizIniciado"] as? Boolean ?: false)
+                                "quizIniciado" to (cuestionarioData["quizIniciado"] as? Boolean ?: false)
 
                             )
 
@@ -515,8 +515,8 @@ class QuizViewModel : ViewModel() {
                                             imagen = cuestionarioData?.get("imagen") as? String, // Deja que sea nulo si no está presente
                                             preguntas = preguntas, // Asignamos las preguntas recuperadas
                                             immediateAccess = cuestionarioData?.get("immediateAccess") as? Boolean ?: false,
-                                            isQuizIniciado = cuestionarioData?.get("isQuizIniciado") as? Boolean ?: false,
-                                            isUsed = false,
+                                            quizIniciado = cuestionarioData?.get("quizIniciado") as? Boolean ?: false,
+                                            quizUsed = false,
                                             locationRestricted = cuestionarioData?.get("locationRestricted") as? Boolean ?: false,
                                             immediateResults = cuestionarioData?.get("immediateResults") as? Boolean ?: false,
                                             latitude = (cuestionarioData?.get("latitude") as? String)?.toDoubleOrNull() ?: 0.0,
@@ -938,7 +938,7 @@ class QuizViewModel : ViewModel() {
 
             if (querySnapshot != null && !querySnapshot.isEmpty) {
                 val document = querySnapshot.documents[0] // Obtiene el primer documento que coincide
-                val isQuizIniciado = document.getBoolean("isQuizIniciado") ?: false
+                val isQuizIniciado = document.getBoolean("quizIniciado") ?: false
                 _isQuizIniciado.value = isQuizIniciado // Actualiza el flujo con el estado del quiz
 
                 Log.d("QuizViewModel", "Estado de isQuizIniciado actualizado: $isQuizIniciado")
@@ -966,7 +966,7 @@ class QuizViewModel : ViewModel() {
                 if (!querySnapshot.isEmpty) {
                     val documentId = querySnapshot.documents[0].id // Obtiene el ID del primer documento que coincide
                     firestore.collection("cuestionarios").document(documentId)
-                        .update("isQuizIniciado", true)
+                        .update("quizIniciado", true)
                         .addOnSuccessListener {
                             Log.d("QuizViewModel", "Campo isQuizIniciado actualizado a true para el cuestionario con ID: $codigoQuiz")
                             onComplete(true) // Llama al callback indicando éxito
@@ -1003,8 +1003,10 @@ class QuizViewModel : ViewModel() {
                     val preguntasData = document.get("preguntas") as? List<Map<String, Any>>
 
                     preguntasData?.let { preguntas ->
+                        println("Número total de preguntas: ${preguntas.size}")
                         // Paso 3: Verificamos que el índice es válido
                         if (indicePregunta in preguntas.indices) {
+                            println("indice de pregunta: $indicePregunta")
                             // Paso 4: Obtener la pregunta en el índice proporcionado
                             val pregunta = preguntas[indicePregunta]
 

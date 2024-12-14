@@ -56,7 +56,9 @@ fun SelectCuestionarioScreen(
     val userId = FirebaseAuth.getInstance().currentUser?.uid
     val cuestionariosState = questionsViewModel.cuestionariosState.collectAsState()
     var showDeleteConfirmationDialog by remember { mutableStateOf(false) }
+    var showDuplicateConfirmationDialog by remember { mutableStateOf(false) }
     var cuestionarioToDelete by remember { mutableStateOf<Cuestionario?>(null) }
+    var cuestionarioToDuplicate by remember { mutableStateOf<Cuestionario?>(null) }
     val estadosIsUsed = remember { mutableStateOf<Map<String, Boolean>>(emptyMap()) }
 
     val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
@@ -181,43 +183,53 @@ fun SelectCuestionarioScreen(
                                 )
                                 Spacer(modifier = Modifier.height(16.dp))
 
-                                // Muestra la imagen usando la URI almacenada
-                                cuestionario.imagen?.let { imageUri ->
-                                    AsyncImage(
-                                        model = ImageRequest.Builder(context)
-                                            .data(Uri.parse(imageUri)) // Convierte la cadena en una URI válida
-                                            .crossfade(true)
-                                            .build(),
-                                        contentDescription = "Imagen del cuestionario",
-                                        modifier = Modifier
-                                            .size(150.dp)
-                                            .border(1.dp, Color.Gray)
-                                            .padding(8.dp),
-                                        contentScale = ContentScale.Crop // Ajusta el contenido para que no se deforme
-                                    )
+//                                // Muestra la imagen usando la URI almacenada
+//                                cuestionario.imagen?.let { imageUri ->
+//                                    AsyncImage(
+//                                        model = ImageRequest.Builder(context)
+//                                            .data(Uri.parse(imageUri)) // Convierte la cadena en una URI válida
+//                                            .crossfade(true)
+//                                            .build(),
+//                                        contentDescription = "Imagen del cuestionario",
+//                                        modifier = Modifier
+//                                            .size(150.dp)
+//                                            .border(1.dp, Color.Gray)
+//                                            .padding(8.dp),
+//                                        contentScale = ContentScale.Crop // Ajusta el contenido para que no se deforme
+//                                    )
+//                                }
+                            }
+                            if (!isUsed) {
+                                Row {
+                                    Button(
+                                        onClick = {
+                                            navController.navigate("editCuestionario/${cuestionario.id}")
+                                        },
+                                        modifier = Modifier.padding(start = 8.dp)
+                                    ) {
+                                        Text(text = "Editar")
+                                    }
+
+                                    Button(
+                                        onClick = {
+                                            showDeleteConfirmationDialog = true
+                                            cuestionarioToDelete = cuestionario
+                                        },
+                                        modifier = Modifier.padding(start = 8.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                                    ) {
+                                        Text(text = "Eliminar")
+                                    }
                                 }
                             }
-
                             Button(
                                 onClick = {
-                                    navController.navigate("editCuestionario/${cuestionario.id}")
+                                    showDuplicateConfirmationDialog = true
+                                    cuestionarioToDuplicate = cuestionario
                                 },
                                 modifier = Modifier.padding(start = 8.dp)
-                            ) {
-                                Text(text = "Editar")
-                            }
-
-                            if (!isUsed) {
-                                Button(
-                                    onClick = {
-                                        showDeleteConfirmationDialog = true
-                                        cuestionarioToDelete = cuestionario
-                                    },
-                                    modifier = Modifier.padding(start = 8.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                                ) {
-                                    Text(text = "Eliminar")
-                                }
+                            ){
+                                Text(text = "Duplicar")
                             }
                         }
                     }
@@ -307,6 +319,37 @@ fun SelectCuestionarioScreen(
                 Text(text = "Volver")
             }
         }
+    }
+
+    // Diálogo de confirmación de duplicado
+    if (showDuplicateConfirmationDialog && cuestionarioToDuplicate != null) {
+        AlertDialog(
+            onDismissRequest = { showDuplicateConfirmationDialog = false },
+            title = { Text("Confirmar Duplicado") },
+            text = { Text("¿Estás seguro de que quieres duplicar este cuestionario?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        cuestionarioToDuplicate?.let { cuestionario ->
+                            // Lógica para duplicar el cuestionario
+                            if (userId != null) {
+                                questionsViewModel.duplicarCuestionario(cuestionario.id)
+                            }
+                        }
+                        showDuplicateConfirmationDialog = false
+                    }
+                ) {
+                    Text("Sí")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showDuplicateConfirmationDialog = false }
+                ) {
+                    Text("No")
+                }
+            }
+        )
     }
 
     // Diálogo de confirmación de eliminación

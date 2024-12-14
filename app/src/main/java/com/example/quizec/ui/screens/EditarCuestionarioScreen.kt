@@ -313,8 +313,8 @@ fun EditarCuestionarioScreen(
                             immediateAccess = immediateAccess,
                             locationRestricted = locationRestricted,
                             immediateResults = immediateResults,
-                            isQuizIniciado = false,
-                            isUsed = false,
+                            quizIniciado = false,
+                            quizUsed = false,
                             latitude = 0.0,
                             longitude = 0.0,
                             radio = radioValue ?: 0.0
