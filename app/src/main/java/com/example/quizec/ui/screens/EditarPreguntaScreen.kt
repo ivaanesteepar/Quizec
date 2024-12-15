@@ -818,7 +818,7 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                                     }) {
                                     errorMessage = "Por favor, asegúrese de que todos los conceptos y definiciones no estén vacíos."
                                 } else {
-                                    errorMessage = "" // No hay error si todo está lleno
+                                    errorMessage = ""
                                 }
                             }
 
