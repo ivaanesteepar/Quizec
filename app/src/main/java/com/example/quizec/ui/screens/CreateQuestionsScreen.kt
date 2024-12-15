@@ -65,7 +65,7 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
     //EMPAREJAR
     var leftItems by remember { mutableStateOf(listOf("")) }
     var rightItems by remember { mutableStateOf(listOf("")) }
-    var itemPairs by remember { mutableStateOf(listOf<Map<String, String>>())}  // Lista de pares
+    var itemPairs by remember { mutableStateOf(mapOf<String, String>()) } // Mapa de item1 a item2
     //ORDENAR
     var itemsOrdenados by remember { mutableStateOf(listOf("")) } // Lista de ítems que deben ser ordenados
     //COMPLETAR ESPACIOS
@@ -78,7 +78,7 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
     var conceptos by remember { mutableStateOf(listOf("")) }
     var definiciones by remember { mutableStateOf(listOf("")) }
     //tb usa itemPairs
-    var conceptosYDefiniciones by remember { mutableStateOf(listOf<Map<String, String>>())}
+    var conceptosYDefiniciones by remember {mutableStateOf(mapOf<String, String>())}
     var opcionesCorrectasCompletarPalabras by remember { mutableStateOf(listOf<String>()) }
 
     val context = LocalContext.current
@@ -108,7 +108,6 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
     )
 
 
-    // Para agregar img como concepto
     val pickPicture2 = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri ->
@@ -121,13 +120,14 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                         Log.d("CreateQuestionsScreen", "Resultado de subir imagen: $result")
                         if (result != null) {
                             // Actualizar el concepto con la URL de la imagen
-                            conceptosYDefiniciones = conceptosYDefiniciones.toMutableList().apply {
-                                val indexToUpdate = indexOfFirst { it.keys.firstOrNull()?.isEmpty() == true }
-                                if (indexToUpdate >= 0) {
-                                    val currentDefinicion = this[indexToUpdate].values.firstOrNull() ?: ""
-                                    this[indexToUpdate] = mapOf(
-                                        result to currentDefinicion // Usar la URL de la imagen como concepto
-                                    )
+                            conceptosYDefiniciones = conceptosYDefiniciones.toMutableMap().apply {
+                                // Encontrar un concepto vacío (con la clave vacía)
+                                val conceptoVacio = this.keys.firstOrNull { it.isEmpty() }
+                                if (conceptoVacio != null) {
+                                    val definicion = this[conceptoVacio] ?: ""
+                                    // Reemplazar el concepto vacío por la URL de la imagen
+                                    this[result] = definicion
+                                    this.remove(conceptoVacio) // Eliminar la entrada vacía
                                 } else {
                                     Log.d("CreateQuestionsScreen", "No se encontró un concepto vacío para actualizar")
                                 }
@@ -249,7 +249,9 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                                         opciones.toMutableList().apply { this[index] = newOption }
                                 },
                                 label = { Text("Opción ${index + 1}") },
-                                modifier = Modifier.weight(1f).padding(vertical = 4.dp)
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(vertical = 4.dp)
                             )
 
                             // Botón para eliminar la opción
@@ -290,7 +292,9 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                 }
 
                 TipoPregunta.OPCION_MULTIPLE_MULTIPLES -> {
-                    Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+                    Column(modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)) {
                         Text("Opciones de Respuesta", style = MaterialTheme.typography.bodyMedium)
 
                         // Mostrar las opciones de respuesta
@@ -306,7 +310,9 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                                             .apply { this[index] = newOption }
                                     },
                                     label = { Text("Opción ${index + 1}") },
-                                    modifier = Modifier.weight(1f).padding(vertical = 4.dp)
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .padding(vertical = 4.dp)
                                 )
 
                                 // Botón de eliminar opción
@@ -366,7 +372,9 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                     )
                     leftItems.forEachIndexed { index, item ->
                         Row(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             OutlinedTextField(
@@ -393,7 +401,9 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                     }
                     Button(
                         onClick = { leftItems = leftItems + "" },
-                        modifier = Modifier.fillMaxWidth(0.8f).padding(vertical = 8.dp)
+                        modifier = Modifier
+                            .fillMaxWidth(0.8f)
+                            .padding(vertical = 8.dp)
                     ) {
                         Text("Agregar Ítem a la Columna Izquierda")
                     }
@@ -407,7 +417,9 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                     )
                     rightItems.forEachIndexed { index, item ->
                         Row(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             OutlinedTextField(
@@ -435,7 +447,9 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                     }
                     Button(
                         onClick = { rightItems = rightItems + "" },
-                        modifier = Modifier.fillMaxWidth(0.8f).padding(vertical = 8.dp)
+                        modifier = Modifier
+                            .fillMaxWidth(0.8f)
+                            .padding(vertical = 8.dp)
                     ) {
                         Text("Agregar Ítem a la Columna Derecha")
                     }
@@ -481,7 +495,9 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                     // Botón para agregar más ítems
                     Button(
                         onClick = { itemsOrdenados = itemsOrdenados + "" },
-                        modifier = Modifier.fillMaxWidth(0.8f).padding(vertical = 8.dp)
+                        modifier = Modifier
+                            .fillMaxWidth(0.8f)
+                            .padding(vertical = 8.dp)
                     ) {
                         Text("Agregar ítem")
                     }
@@ -562,7 +578,9 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                     // Botón para agregar más opciones
                     Button(
                         onClick = { opciones = opciones + "" },
-                        modifier = Modifier.fillMaxWidth(0.8f).padding(vertical = 8.dp)
+                        modifier = Modifier
+                            .fillMaxWidth(0.8f)
+                            .padding(vertical = 8.dp)
                     ) {
                         Text("Agregar opción")
                     }
@@ -576,9 +594,7 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
 
                     Text("Conceptos y definiciones:", style = MaterialTheme.typography.bodyMedium)
 
-                    conceptosYDefiniciones.forEachIndexed { index, mapConceptoDefinicion ->
-                        val concepto = mapConceptoDefinicion.keys.firstOrNull() ?: ""
-                        val definicion = mapConceptoDefinicion.values.firstOrNull() ?: ""
+                    conceptosYDefiniciones.forEach { (concepto, definicion) ->
 
                         // Cada par concepto/definición estará en una columna
                         Column(
@@ -606,10 +622,8 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                                     // Botón para eliminar la imagen
                                     Button(
                                         onClick = {
-                                            conceptosYDefiniciones = conceptosYDefiniciones.toMutableList().apply {
-                                                this[index] = mapOf(
-                                                    "" to definicion
-                                                )
+                                            conceptosYDefiniciones = conceptosYDefiniciones.toMutableMap().apply {
+                                                this[concepto] = "" // Eliminar el valor de la imagen
                                             }
                                         }
                                     ) {
@@ -621,14 +635,14 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                                         value = concepto,
                                         onValueChange = { nuevoConcepto ->
                                             if (!nuevoConcepto.startsWith("http://")) {
-                                                conceptosYDefiniciones = conceptosYDefiniciones.toMutableList().apply {
-                                                    this[index] = mapOf(
-                                                        nuevoConcepto to definicion
-                                                    )
+                                                conceptosYDefiniciones = conceptosYDefiniciones.toMutableMap().apply {
+                                                    // Actualizar el concepto en el Map, manteniendo la misma definición
+                                                    this.remove(concepto)  // Eliminamos el antiguo concepto
+                                                    this[nuevoConcepto] = definicion // Añadimos el nuevo concepto
                                                 }
                                             }
                                         },
-                                        label = { Text("Concepto ${index + 1}") },
+                                        label = { Text("Concepto") },
                                         modifier = Modifier.weight(1f),
                                         enabled = !concepto.startsWith("content://")
                                     )
@@ -657,21 +671,19 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                             OutlinedTextField(
                                 value = definicion,
                                 onValueChange = { nuevaDefinicion ->
-                                    conceptosYDefiniciones = conceptosYDefiniciones.toMutableList().apply {
-                                        this[index] = mapOf(
-                                            concepto to nuevaDefinicion
-                                        )
+                                    conceptosYDefiniciones = conceptosYDefiniciones.toMutableMap().apply {
+                                        this[concepto] = nuevaDefinicion // Actualizamos la definición correspondiente
                                     }
                                 },
-                                label = { Text("Definición ${index + 1}") },
+                                label = { Text("Definición") },
                                 modifier = Modifier.fillMaxWidth()
                             )
 
                             // Botón de eliminar par (concepto + definición)
                             IconButton(
                                 onClick = {
-                                    conceptosYDefiniciones = conceptosYDefiniciones.toMutableList().apply {
-                                        removeAt(index)
+                                    conceptosYDefiniciones = conceptosYDefiniciones.toMutableMap().apply {
+                                        remove(concepto) // Eliminamos el concepto y su definición
                                     }
                                 }
                             ) {
@@ -686,17 +698,20 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                     // Botón para agregar un nuevo par de concepto y definición
                     Button(
                         onClick = {
-                            conceptosYDefiniciones = conceptosYDefiniciones.toMutableList().apply {
-                                add(mapOf("" to ""))
+                            conceptosYDefiniciones = conceptosYDefiniciones.toMutableMap().apply {
+                                this[""] = "" // Agregar un nuevo par vacío
                             }
                         },
-                        modifier = Modifier.fillMaxWidth(0.8f).padding(vertical = 8.dp)
+                        modifier = Modifier
+                            .fillMaxWidth(0.8f)
+                            .padding(vertical = 8.dp)
                     ) {
                         Text("Agregar concepto y definición")
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
                 }
+
 
 
 //////////////////////////////////////
@@ -797,20 +812,21 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                                     errorMessage = ""
                                 }
                             }
-                            //ME FALTA QUE LOS ITEMS SEAN != "". YA Q SI NO PONES NADA, T DEJA CREAR LA PREG
+
                             TipoPregunta.EMPAREJAR -> {
                                 if (leftItems.size !in 2..6 || rightItems.size !in 2..6) {
                                     errorMessage = "Por favor, ingrese entre 2 y 6 ítems en ambas columnas."
                                 } else if (leftItems.size != rightItems.size) {
                                     errorMessage = "Por favor, complete ambas columnas con el mismo número de ítems."
+                                } else if (leftItems.any { it.isBlank() } || rightItems.any { it.isBlank() }) {
+                                    errorMessage = "Por favor, asegúrese de que todos los ítems contengan texto válido."
                                 } else {
-                                    errorMessage = "" //ya esta bien
+                                    errorMessage = ""
                                     // Emparejar los ítems si las validaciones son correctas
-                                    itemPairs = leftItems.zip(rightItems) { leftItem, rightItem ->
-                                        mapOf(leftItem to rightItem)
-                                    }
+                                    itemPairs = leftItems.zip(rightItems).toMap() // Crear el mapa directamente
                                 }
                             }
+
 
                             TipoPregunta.ORDENAR -> {
                                 if (itemsOrdenados.size !in 2..6 ) {
@@ -839,16 +855,16 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                                 // Comprobar si hay al menos dos conceptos y definiciones
                                 if (conceptosYDefiniciones.size < 2) {
                                     errorMessage = "Por favor, ingrese al menos 2 conceptos y definiciones."
-                                } else if (conceptosYDefiniciones.any {
-                                        // Comprobar si hay algún concepto o definición vacío
-                                        it.keys.firstOrNull().isNullOrBlank() || it.values.firstOrNull().isNullOrBlank()
-                                }
-                                    ) {
+                                } else if (conceptosYDefiniciones.any { (concepto, definicion) ->
+                                        // Comprobar si algún concepto o definición está vacío o nulo
+                                        concepto.isNullOrBlank() || definicion.isNullOrBlank()
+                                    }) {
                                     errorMessage = "Por favor, asegúrese de que todos los conceptos y definiciones no estén vacíos."
                                 } else {
                                     errorMessage = "" // No hay error si todo está lleno
                                 }
                             }
+
 
 
                             TipoPregunta.COMPLETAR_PALABRAS -> {

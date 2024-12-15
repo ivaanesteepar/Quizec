@@ -1,6 +1,5 @@
 package com.example.quizec.ui.screens.UserQuestionTypes
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -71,7 +70,7 @@ fun MatchingQuestionScreen(
                                 RoundedCornerShape(8.dp)
                             )
                             .border(2.dp, Color.Black, RoundedCornerShape(8.dp))
-                            .clickable(enabled = !isAcceptButtonClicked) { // Desactivar clics si se ha aceptado
+                            .clickable(enabled = !isAcceptButtonClicked) {
                                 if (!isDisabled) {
                                     selectedLeftItem =
                                         if (selectedLeftItem == leftItem) null else leftItem
@@ -99,24 +98,18 @@ fun MatchingQuestionScreen(
             ) {
                 shuffledRightItems.forEach { rightItem ->
                     val isUsed = userSelections.containsValue(rightItem)
-                    var itemColor = Color.Transparent
-
-                    if (isUsed) {
-                        val leftItem = userSelections.entries.find { it.value == rightItem }?.key
-                        leftItem?.let {
-                            itemColor = colorMap[it] ?: Color.Transparent
-                        }
-                    }
+                    val itemColor = userSelections.entries
+                        .find { it.value == rightItem }
+                        ?.key
+                        ?.let { colorMap[it] }
+                        ?: Color.Transparent
 
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(
-                                if (isUsed) itemColor else Color.Transparent,
-                                RoundedCornerShape(8.dp)
-                            )
+                            .background(itemColor, RoundedCornerShape(8.dp))
                             .border(2.dp, Color.Black, RoundedCornerShape(8.dp))
-                            .clickable(enabled = !isAcceptButtonClicked) { // Desactivar clics si se ha aceptado
+                            .clickable(enabled = !isAcceptButtonClicked) {
                                 if (isUsed) {
                                     val leftItem =
                                         userSelections.entries.find { it.value == rightItem }?.key
@@ -125,11 +118,9 @@ fun MatchingQuestionScreen(
                                         colorMap.remove(it)
                                     }
                                 } else if (selectedLeftItem != null) {
-                                    // Asignar el color solo cuando se seleccionan ambos
                                     userSelections[selectedLeftItem!!] = rightItem
                                     val parejaColor = colors[colorIndex % colors.size]
                                     colorMap[selectedLeftItem!!] = parejaColor
-                                    colorMap[rightItem] = parejaColor
                                     colorIndex++
                                     selectedLeftItem = null
                                 }
@@ -150,17 +141,12 @@ fun MatchingQuestionScreen(
         }
     }
 
-    // Cuando se presiona el botón de aceptar, limpiar colores previos y asignar nuevos
+    // Manejo del botón de aceptar
     if (isAcceptButtonClicked) {
-        colorMap.clear() // Limpia todos los colores previos
-        colorIndex = 0 // Reinicia el índice de colores
+        colorMap.clear()
+        colorIndex = 0
 
-        // Recorre las parejas correctas y asigna un color único a cada una
-        currentQuestion.emparejamientos.forEach { pareja ->
-            val leftItem = pareja.keys.first()
-            val rightItem = pareja.values.first()
-
-            // Asigna un nuevo color de la lista a la pareja
+        currentQuestion.emparejamientos.forEach { (leftItem, rightItem) ->
             val parejaColor = colors[colorIndex % colors.size]
             colorMap[leftItem] = parejaColor
             colorMap[rightItem] = parejaColor
@@ -168,7 +154,3 @@ fun MatchingQuestionScreen(
         }
     }
 }
-
-
-
-

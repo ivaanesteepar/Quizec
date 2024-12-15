@@ -257,6 +257,7 @@ fun SelectCuestionarioScreen(
                                 CoroutineScope(Dispatchers.Main).launch {
                                     try {
                                         val locationRestricted = quizViewModel.obtenerLocationRestricted(codigoQuiz)
+                                        val immediateAccess = quizViewModel.obtenerImmediateAccess(codigoQuiz)
 
                                         quizViewModel.actualizarRolUsuario(nuevoRol = Rol.CREADOR.toString()) { errorMessage ->
                                             if (errorMessage == null) {
@@ -285,7 +286,12 @@ fun SelectCuestionarioScreen(
                                                         longitud
                                                     ) { updateError ->
                                                         if (updateError == null) {
-                                                            navController.navigate("waiting_screen/$selectedCuestionarioId")
+                                                            if (immediateAccess == true){
+                                                                navController.navigate("creator_quiz/$selectedCuestionarioId")
+                                                            }else{
+                                                                navController.navigate("waiting_screen/$selectedCuestionarioId")
+                                                            }
+
                                                         } else {
                                                             Log.e("SelectCuestionario", "Error al actualizar las coordenadas: $updateError")
                                                         }

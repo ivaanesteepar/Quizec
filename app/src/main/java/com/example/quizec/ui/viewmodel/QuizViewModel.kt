@@ -72,6 +72,9 @@ class QuizViewModel : ViewModel() {
     private val _isQuizIniciado = MutableStateFlow(false)
     val isQuizIniciado: StateFlow<Boolean> = _isQuizIniciado
 
+    private val _respuestasUsuario = mutableStateOf<List<List<Map<String, Any>>>>(listOf())
+    val respuestasUsuario: State<List<List<Map<String, Any>>>> = _respuestasUsuario
+
     init {
         obtenerRolUsuario()
     }
@@ -402,13 +405,13 @@ class QuizViewModel : ViewModel() {
                                     opciones = (preguntaData["opciones"] as? List<String>) ?: listOf(),
                                     imagen = (preguntaData["imagen"] as? String),
                                     respuestasCorrectas = (preguntaData["respuestasCorrectas"] as? List<String>) ?: listOf(),
-                                    emparejamientos = (preguntaData["emparejamientos"] as? List<Map<String, String>>) ?: listOf(),
+                                    emparejamientos = (preguntaData["emparejamientos"] as? Map<String, String>) ?: mapOf(),
                                     itemsOrdenados = (preguntaData["itemsOrdenados"] as? List<String>) ?: listOf(),
                                     user_id = (preguntaData["user_id"] as? String),
                                     isSelected = (preguntaData["isSelected"] as? Boolean ?: false),
                                     fraseCompletar = (preguntaData["fraseCompletar"] as? String ?: ""),
                                     opcionCorrecta = (preguntaData["opcionCorrecta"] as? String ?: ""),
-                                    conceptosYDefiniciones = (preguntaData["conceptosYDefiniciones"] as? List<Map<String, String>>) ?: listOf(),
+                                    conceptosYDefiniciones = (preguntaData["conceptosYDefiniciones"] as? Map<String, String>) ?: mapOf(),
                                     opcionesCorrectasCompletarPalabras = (preguntaData["opcionesCorrectasCompletarPalabras"] as? List<String>) ?: listOf(),
                                     leftItems = (preguntaData["leftItems"] as? List<String>) ?: listOf(),
                                     rightItems = (preguntaData["rightItems"] as? List<String>) ?: listOf(),
@@ -491,13 +494,13 @@ class QuizViewModel : ViewModel() {
                                                     opciones = it["opciones"] as? List<String> ?: listOf(),
                                                     imagen = it["imagen"] as? String,
                                                     respuestasCorrectas = it["respuestasCorrectas"] as? List<String> ?: listOf(),
-                                                    emparejamientos = it["emparejamientos"] as? List<Map<String, String>> ?: listOf(),
+                                                    emparejamientos = it["emparejamientos"] as? Map<String, String> ?: mapOf(),
                                                     itemsOrdenados = it["itemsOrdenados"] as? List<String> ?: listOf(),
                                                     user_id = it["user_id"] as? String,
                                                     isSelected = it["isSelected"] as? Boolean ?: false,
                                                     fraseCompletar = it["fraseCompletar"] as? String ?: "",
                                                     opcionCorrecta = it["opcionCorrecta"] as? String ?: "",
-                                                    conceptosYDefiniciones = it["conceptosYDefiniciones"] as? List<Map<String, String>> ?: listOf(),
+                                                    conceptosYDefiniciones = it["conceptosYDefiniciones"] as? Map<String, String> ?: mapOf(),
                                                     opcionesCorrectasCompletarPalabras = it["opcionesCorrectasCompletarPalabras"] as? List<String> ?: listOf(),
                                                     leftItems = it["leftItems"] as? List<String> ?: listOf(),
                                                     rightItems = it["rightItems"] as? List<String> ?: listOf(),
@@ -659,19 +662,18 @@ class QuizViewModel : ViewModel() {
                 // Verificamos si el UID del usuario está presente en el mapa
                 val usuarioData = usuariosMap[usuarioUid]
                 if (usuarioData != null) {
-                    // Creamos la referencia al documento del usuario
-                    val usuarioRef = usuariosEsperaRef.collection("usuarios").document(usuarioUid)
-
-                    println("Usuario ref iniciarquiz: $usuarioRef")
-
+                    // Crear referencia al campo 'quizTerminado' dentro del mapa del usuario
                     // Actualizamos el campo 'quizTerminado' a false para el usuario específico
-                    usuarioRef.update("quizTerminado", false).addOnCompleteListener { task ->
-                        if (task.isSuccessful) {
-                            Log.d("QuizViewModel", "El campo quizTerminado para el usuario $usuarioUid ha sido actualizado a false")
-                        } else {
-                            Log.e("QuizViewModel", "Error al actualizar el campo quizTerminado para el usuario $usuarioUid.")
+                    usuariosEsperaRef.update("usuarios.$usuarioUid.quizTerminado", false)
+                        .addOnCompleteListener { task ->
+                            if (task.isSuccessful) {
+                                Log.d("QuizViewModel", "El campo quizTerminado para el usuario $usuarioUid ha sido actualizado a false")
+                            } else {
+                                task.exception?.let { exception ->
+                                    Log.e("QuizViewModel", "Error al actualizar el campo quizTerminado para el usuario $usuarioUid: ${exception.message}")
+                                }
+                            }
                         }
-                    }
                 } else {
                     Log.e("QuizViewModel", "El usuario con UID $usuarioUid no se encontró en el mapa de usuarios.")
                 }
@@ -840,11 +842,11 @@ class QuizViewModel : ViewModel() {
                     val opciones = (preguntaData["opciones"] as? List<String>) ?: emptyList()
                     val imagen = preguntaData["imagen"] as? String
                     val respuestasCorrectas = (preguntaData["respuestasCorrectas"] as? List<String>) ?: emptyList()
-                    val emparejamientos = (preguntaData["emparejamientos"] as? List<Map<String, String>>) ?: emptyList()
+                    val emparejamientos = (preguntaData["emparejamientos"] as? Map<String, String>) ?: emptyMap()
                     val itemsOrdenados = (preguntaData["itemsOrdenados"] as? List<String>) ?: emptyList()
                     val fraseCompletar = preguntaData["fraseCompletar"] as? String ?: ""
                     val opcionCorrecta = preguntaData["opcionCorrecta"] as? String ?: ""
-                    val conceptosYDefiniciones = (preguntaData["conceptosYDefiniciones"] as? List<Map<String, String>>) ?: emptyList()
+                    val conceptosYDefiniciones = (preguntaData["conceptosYDefiniciones"] as? Map<String, String>) ?: emptyMap()
                     val user_id = preguntaData["user_id"] as? String
                     val isSelected = preguntaData["isSelected"] as? Boolean ?: false
                     val opcionesCorrectasCompletarPalabras = preguntaData["opcionesCorrectasCompletarPalabras"] as? List<String> ?: emptyList()
@@ -1055,6 +1057,40 @@ class QuizViewModel : ViewModel() {
             }
     }
 
+
+    // Función para obtener las respuestas desde Firestore
+    fun obtenerRespuestasDelCuestionario(cuestionarioId: String) {
+        val db = FirebaseFirestore.getInstance()
+        val cuestionariosRef = db.collection("cuestionarios")
+
+        // Usar un "listener" en lugar de hacer una consulta estática
+        cuestionariosRef
+            .whereEqualTo("id", cuestionarioId)
+            .addSnapshotListener { querySnapshot, exception ->
+                if (exception != null) {
+                    Log.e("obtenerRespuestas", "Error al obtener respuestas: ${exception.message}")
+                    _respuestasUsuario.value = listOf() // Si ocurre un error, asignamos una lista vacía
+                    return@addSnapshotListener
+                }
+
+                if (querySnapshot != null && !querySnapshot.isEmpty) {
+                    // Si la consulta devuelve resultados, procesamos los datos
+                    val document = querySnapshot.documents[0]
+                    val cuestionario = document.toObject(Cuestionario::class.java)
+
+                    // Acceder a las respuestas de usuario
+                    val respuestas = cuestionario?.preguntas?.mapNotNull { pregunta ->
+                        pregunta.userAnswers
+                    } ?: listOf()
+
+                    // Actualizamos el estado con las nuevas respuestas
+                    _respuestasUsuario.value = respuestas
+                    println("Respuestas del cuestionario: $respuestas")
+                } else {
+                    _respuestasUsuario.value = listOf() // Si no se encuentra el cuestionario, asignamos una lista vacía
+                }
+            }
+    }
 
 
 }

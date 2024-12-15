@@ -56,7 +56,7 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
     //EMPAREJAR
     var leftItems by remember { mutableStateOf(preguntaMod.leftItems) }
     var rightItems by remember { mutableStateOf(preguntaMod.rightItems) }
-    var itemPairs by remember { mutableStateOf(listOf<Map<String, String>>())}  // Lista de pares
+    var itemPairs by remember { mutableStateOf(mapOf<String, String>()) } // Mapa de item1 a item2
     //ORDENAR
     var itemsOrdenados by remember { mutableStateOf(preguntaMod.itemsOrdenados) } // Lista de ítems que deben ser ordenados
     //COMPLETAR ESPACIOS
@@ -98,36 +98,38 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
         }
     )
 
-    // Para agregar como concepto una img
     val pickPicture2 = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri ->
-            Log.d("EditarPreguntaScreen", "URI seleccionada: $uri")
+            Log.d("EditQuestionsScreen", "URI seleccionada: $uri")
             if (uri != null) {
                 AMovServer.asyncUploadImage(
                     inputStream = context.contentResolver.openInputStream(uri)!!,
                     extension = "jpg",
                     onResult = { result ->
-                        Log.d("EditarPreguntaScreen", "Resultado de subir imagen: $result")
+                        Log.d("EditQuestionsScreen", "Resultado de subir imagen: $result")
                         if (result != null) {
-                            conceptosYDefiniciones = conceptosYDefiniciones.toMutableList().apply {
-                                val indexToUpdate = conceptosYDefiniciones.indexOfFirst { it["concepto"] == "" }
-                                if (indexToUpdate >= 0) {
-                                    this[indexToUpdate] = mapOf(
-                                        "concepto" to result,
-                                        //"definicion" to this[indexToUpdate]["definicion"] ?: ""
-                                    )
+                            // Actualizar el concepto con la URL de la imagen
+                            conceptosYDefiniciones = conceptosYDefiniciones.toMutableMap().apply {
+                                // Encontrar un concepto vacío (con la clave vacía)
+                                val conceptoVacio = this.keys.firstOrNull { it.isEmpty() }
+                                if (conceptoVacio != null) {
+                                    val definicion = this[conceptoVacio] ?: ""
+                                    // Reemplazar el concepto vacío por la URL de la imagen
+                                    this[result] = definicion
+                                    this.remove(conceptoVacio) // Eliminar la entrada vacía
+                                } else {
+                                    Log.d("EditQuestionsScreen", "No se encontró un concepto vacío para actualizar")
                                 }
                             }
                         } else {
-                            Log.d("EditarPreguntaScreen", "Error al subir la imagen")
+                            Log.d("EditQuestionsScreen", "Error al subir la imagen")
                         }
                     }
                 )
             }
         }
     )
-
 
     LazyColumn(
         modifier = Modifier
@@ -333,7 +335,9 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                     )
                     leftItems.forEachIndexed { index, item ->
                         Row(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             OutlinedTextField(
@@ -360,7 +364,9 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                     }
                     Button(
                         onClick = { leftItems = leftItems + "" },
-                        modifier = Modifier.fillMaxWidth(0.8f).padding(vertical = 8.dp)
+                        modifier = Modifier
+                            .fillMaxWidth(0.8f)
+                            .padding(vertical = 8.dp)
                     ) {
                         Text("Agregar Ítem a la Columna Izquierda")
                     }
@@ -374,7 +380,9 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                     )
                     rightItems.forEachIndexed { index, item ->
                         Row(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             OutlinedTextField(
@@ -402,13 +410,16 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                     }
                     Button(
                         onClick = { rightItems = rightItems + "" },
-                        modifier = Modifier.fillMaxWidth(0.8f).padding(vertical = 8.dp)
+                        modifier = Modifier
+                            .fillMaxWidth(0.8f)
+                            .padding(vertical = 8.dp)
                     ) {
                         Text("Agregar Ítem a la Columna Derecha")
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
                 }
+
 
                 TipoPregunta.ORDENAR -> {
                     Text(
@@ -542,9 +553,7 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
 
                     Text("Conceptos y definiciones:", style = MaterialTheme.typography.bodyMedium)
 
-                    conceptosYDefiniciones.forEachIndexed { index, mapConceptoDefinicion ->
-                        val concepto = mapConceptoDefinicion.keys.firstOrNull() ?: ""
-                        val definicion = mapConceptoDefinicion.values.firstOrNull() ?: ""
+                    conceptosYDefiniciones.forEach { (concepto, definicion) ->
 
                         // Cada par concepto/definición estará en una columna
                         Column(
@@ -572,10 +581,8 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                                     // Botón para eliminar la imagen
                                     Button(
                                         onClick = {
-                                            conceptosYDefiniciones = conceptosYDefiniciones.toMutableList().apply {
-                                                this[index] = mapOf(
-                                                    "" to definicion
-                                                )
+                                            conceptosYDefiniciones = conceptosYDefiniciones.toMutableMap().apply {
+                                                this[concepto] = "" // Eliminar el valor de la imagen
                                             }
                                         }
                                     ) {
@@ -587,14 +594,14 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                                         value = concepto,
                                         onValueChange = { nuevoConcepto ->
                                             if (!nuevoConcepto.startsWith("http://")) {
-                                                conceptosYDefiniciones = conceptosYDefiniciones.toMutableList().apply {
-                                                    this[index] = mapOf(
-                                                        nuevoConcepto to definicion
-                                                    )
+                                                conceptosYDefiniciones = conceptosYDefiniciones.toMutableMap().apply {
+                                                    // Actualizar el concepto en el Map, manteniendo la misma definición
+                                                    this.remove(concepto)  // Eliminamos el antiguo concepto
+                                                    this[nuevoConcepto] = definicion // Añadimos el nuevo concepto
                                                 }
                                             }
                                         },
-                                        label = { Text("Concepto ${index + 1}") },
+                                        label = { Text("Concepto") },
                                         modifier = Modifier.weight(1f),
                                         enabled = !concepto.startsWith("content://")
                                     )
@@ -623,21 +630,19 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                             OutlinedTextField(
                                 value = definicion,
                                 onValueChange = { nuevaDefinicion ->
-                                    conceptosYDefiniciones = conceptosYDefiniciones.toMutableList().apply {
-                                        this[index] = mapOf(
-                                            concepto to nuevaDefinicion
-                                        )
+                                    conceptosYDefiniciones = conceptosYDefiniciones.toMutableMap().apply {
+                                        this[concepto] = nuevaDefinicion // Actualizamos la definición correspondiente
                                     }
                                 },
-                                label = { Text("Definición ${index + 1}") },
+                                label = { Text("Definición") },
                                 modifier = Modifier.fillMaxWidth()
                             )
 
                             // Botón de eliminar par (concepto + definición)
                             IconButton(
                                 onClick = {
-                                    conceptosYDefiniciones = conceptosYDefiniciones.toMutableList().apply {
-                                        removeAt(index)
+                                    conceptosYDefiniciones = conceptosYDefiniciones.toMutableMap().apply {
+                                        remove(concepto) // Eliminamos el concepto y su definición
                                     }
                                 }
                             ) {
@@ -652,8 +657,8 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                     // Botón para agregar un nuevo par de concepto y definición
                     Button(
                         onClick = {
-                            conceptosYDefiniciones = conceptosYDefiniciones.toMutableList().apply {
-                                add(mapOf("" to ""))
+                            conceptosYDefiniciones = conceptosYDefiniciones.toMutableMap().apply {
+                                this[""] = "" // Agregar un nuevo par vacío
                             }
                         },
                         modifier = Modifier.fillMaxWidth(0.8f).padding(vertical = 8.dp)
@@ -663,6 +668,7 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
 
                     Spacer(modifier = Modifier.height(16.dp))
                 }
+
 
 
                 TipoPregunta.COMPLETAR_PALABRAS -> {
@@ -762,18 +768,19 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                                     errorMessage = ""
                                 }
                             }
-                            //ME FALTA QUE LOS ITEMS SEAN != "". YA Q SI NO PONES NADA, T DEJA CREAR LA PREG
+
+
                             TipoPregunta.EMPAREJAR -> {
                                 if (leftItems.size !in 2..6 || rightItems.size !in 2..6) {
                                     errorMessage = "Por favor, ingrese entre 2 y 6 ítems en ambas columnas."
                                 } else if (leftItems.size != rightItems.size) {
                                     errorMessage = "Por favor, complete ambas columnas con el mismo número de ítems."
+                                } else if (leftItems.any { it.isBlank() } || rightItems.any { it.isBlank() }) {
+                                    errorMessage = "Por favor, asegúrese de que todos los ítems contengan texto válido."
                                 } else {
-                                    errorMessage = "" //ya esta bien
+                                    errorMessage = ""
                                     // Emparejar los ítems si las validaciones son correctas
-                                    itemPairs = leftItems.zip(rightItems) { leftItem, rightItem ->
-                                        mapOf(leftItem to rightItem)
-                                    }
+                                    itemPairs = leftItems.zip(rightItems).toMap() // Crear el mapa directamente
                                 }
                             }
 
@@ -800,15 +807,19 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                                 }
                             }
 
+
                             TipoPregunta.ASOCIACION -> {
+                                // Comprobar si hay al menos dos conceptos y definiciones
                                 if (conceptosYDefiniciones.size < 2) {
                                     errorMessage = "Por favor, ingrese al menos 2 conceptos y definiciones."
-                                } else if (conceptosYDefiniciones.any { it["concepto"].isNullOrBlank() || it["definicion"].isNullOrBlank() }) {
+                                } else if (conceptosYDefiniciones.any { (concepto, definicion) ->
+                                        // Comprobar si algún concepto o definición está vacío o nulo
+                                        concepto.isNullOrBlank() || definicion.isNullOrBlank()
+                                    }) {
                                     errorMessage = "Por favor, asegúrese de que todos los conceptos y definiciones no estén vacíos."
                                 } else {
-                                    errorMessage = ""
+                                    errorMessage = "" // No hay error si todo está lleno
                                 }
-
                             }
 
                             TipoPregunta.COMPLETAR_PALABRAS -> {

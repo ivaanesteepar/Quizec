@@ -152,14 +152,14 @@ fun AnswerResultScreen(
                             isAcceptButtonClicked = true
                         )
                     }
-                    TipoPregunta.EMPAREJAR -> {
+                    TipoPregunta.EMPAREJAR -> { //REVISALO PQ AL CAMBIAR emparejamientos NS SI SIGUE TU LOGICA, IVAN
                         MatchingQuestionScreen(
                             currentQuestion = currentQuestion,
-                            userSelections = currentQuestion.emparejamientos.associate { it.entries.first().toPair() }
-                                .toMutableMap(),
+                            userSelections = currentQuestion.emparejamientos.toMutableMap(),
                             isAcceptButtonClicked = true
                         )
                     }
+
                     TipoPregunta.COMPLETAR_PALABRAS -> {
                         MissingWordsQuestionScreen(
                             currentQuestion = currentQuestion,

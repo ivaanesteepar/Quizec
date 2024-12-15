@@ -25,7 +25,6 @@ import com.example.quizec.ui.screens.UserQuestionTypes.MultChoicesQuestionScreen
 import com.example.quizec.ui.screens.UserQuestionTypes.OneMultChoicesQuestionScreen
 import com.example.quizec.ui.screens.UserQuestionTypes.OrderingQuestionScreen
 import com.example.quizec.ui.screens.UserQuestionTypes.TrueFalseQuestionScreen
-import com.example.quizec.ui.theme.defaultButtonColor
 import com.example.quizec.ui.theme.selectedButtonColor
 import com.example.quizec.ui.viewmodel.QuizViewModel
 import com.example.quizec.ui.viewmodel.UsersViewModel
@@ -427,13 +426,13 @@ fun UserQuizzesScreen(
 
                             TipoPregunta.EMPAREJAR -> {
                                 var isAllCorrect = true
-                                currentQuestion.emparejamientos.forEach { correctPair ->
-                                    val (key, correctValue) = correctPair.entries.first()
+                                for ((key, correctValue) in currentQuestion.emparejamientos) {
                                     if (userSelections[key] != correctValue) {
                                         isAllCorrect = false
-                                        return@forEach
+                                        break // Salir del bucle en cuanto se encuentre un error
                                     }
                                 }
+
                                 if (isAllCorrect) localIsAnswerCorrect = true
 
                                 userSelections.let {
@@ -461,14 +460,10 @@ fun UserQuizzesScreen(
                             }
 
                             TipoPregunta.ASOCIACION -> {
-                                var isAllCorrect = true
-                                currentQuestion.conceptosYDefiniciones.forEach { correctPair ->
-                                    val (key, correctValue) = correctPair.entries.first()
-                                    if (userSelections[key] != correctValue) {
-                                        isAllCorrect = false
-                                        return@forEach
-                                    }
+                                val isAllCorrect = currentQuestion.conceptosYDefiniciones.all { (key, correctValue) ->
+                                    userSelections[key] == correctValue
                                 }
+
                                 Log.d("isAllCorrect asociar", "valor de is allcorrrct: $isAllCorrect")
 
                                 if (isAllCorrect) localIsAnswerCorrect = true

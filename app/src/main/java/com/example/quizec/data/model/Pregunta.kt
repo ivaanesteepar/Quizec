@@ -8,13 +8,13 @@ data class Pregunta(
     val opciones: List<String> = listOf(), // Opciones de respuesta con valor por defecto
     val imagen: String? = null, // Imagen opcional
     val respuestasCorrectas: List<String> = listOf(), // Respuestas correctas
-    val emparejamientos: List<Map<String, String>> = listOf(),
+    val emparejamientos: Map<String, String> = mapOf(),
     val itemsOrdenados: List<String> = listOf(),
     val user_id: String? = null, // ID del usuario que creó la pregunta
     var isSelected: Boolean = false,
     val fraseCompletar: String = "",
     val opcionCorrecta: String = "",
-    val conceptosYDefiniciones: List<Map<String, String>> = listOf(),
+    val conceptosYDefiniciones: Map<String, String> = mapOf(),
     val opcionesCorrectasCompletarPalabras: List<String> = listOf(),
     val leftItems: List<String> = listOf(),
     val rightItems: List<String> = listOf(),

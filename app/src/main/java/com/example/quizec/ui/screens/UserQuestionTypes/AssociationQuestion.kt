@@ -20,10 +20,11 @@ fun AssociationQuestionScreen(
     currentQuestion: Pregunta,
     userSelections: MutableMap<String, String>
 ) {
-    var selectedLeftItem by remember { mutableStateOf<String?>(null) }
+    var selectedConcept by remember { mutableStateOf<String?>(null) }
 
-    // Shuffle items for randomized display
-    val shuffledConceptsAndDefinitions = remember { currentQuestion.conceptosYDefiniciones.shuffled() }
+    // Barajar conceptos y definiciones para visualización aleatoria
+    val shuffledConcepts = remember { currentQuestion.conceptosYDefiniciones.keys.shuffled() }
+    val shuffledDefinitions = remember { currentQuestion.conceptosYDefiniciones.values.shuffled() }
 
     Column(
         modifier = Modifier
@@ -43,26 +44,25 @@ fun AssociationQuestionScreen(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // Left Column: Concepts
+            // Columna izquierda: Conceptos
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                shuffledConceptsAndDefinitions.forEach { pair ->
-                    val concept = pair.keys.firstOrNull() ?: ""
+                shuffledConcepts.forEach { concept ->
                     val isDisabled = userSelections.containsKey(concept)
 
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(
-                                if (selectedLeftItem == concept) Color.LightGray else Color.Transparent,
+                                if (selectedConcept == concept) Color.LightGray else Color.Transparent,
                                 shape = RoundedCornerShape(8.dp)
                             )
                             .clickable {
                                 if (!isDisabled) {
-                                    selectedLeftItem = if (selectedLeftItem == concept) null else concept
+                                    selectedConcept = if (selectedConcept == concept) null else concept
                                 }
                             }
                             .padding(16.dp),
@@ -89,32 +89,32 @@ fun AssociationQuestionScreen(
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            // Right Column: Definitions
+            // Columna derecha: Definiciones
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                shuffledConceptsAndDefinitions.forEach { pair ->
-                    val definition = pair.values.firstOrNull() ?: ""
+                shuffledDefinitions.forEach { definition ->
                     val isUsed = userSelections.containsValue(definition)
 
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .background(
+                                if (isUsed) Color.LightGray else Color.Transparent,
+                                shape = RoundedCornerShape(8.dp)
+                            )
                             .clickable {
                                 if (isUsed) {
-                                    // Si el ítem de la derecha ya está emparejado, lo liberamos
+                                    // Si la definición ya está emparejada, eliminar la asociación
                                     val conceptToRemove = userSelections.entries.firstOrNull { it.value == definition }?.key
-                                    conceptToRemove?.let {
-                                        userSelections.remove(it)
-                                    }
-
-                                } else if (selectedLeftItem != null){
-                                    userSelections[selectedLeftItem!!] = definition
-                                    selectedLeftItem = null
+                                    conceptToRemove?.let { userSelections.remove(it) }
+                                } else if (selectedConcept != null) {
+                                    // Asociar el concepto seleccionado con la definición
+                                    userSelections[selectedConcept!!] = definition
+                                    selectedConcept = null
                                 }
-
                             }
                             .padding(16.dp),
                         contentAlignment = Alignment.Center

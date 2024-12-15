@@ -113,15 +113,15 @@ class QuestionsViewModel : ViewModel() {
                         imagen = preguntaMap["imagen"] as? String,
                         respuestasCorrectas = preguntaMap["respuestasCorrectas"] as? List<String>
                             ?: listOf(),
-                        emparejamientos = preguntaMap["emparejamientos"] as? List<Map<String, String>>
-                            ?: listOf(),
+                        emparejamientos = preguntaMap["emparejamientos"] as? Map<String, String>
+                            ?: mapOf(),
                         itemsOrdenados = preguntaMap["itemsOrdenados"] as? List<String> ?: listOf(),
                         user_id = preguntaMap["user_id"] as? String,
                         isSelected = preguntaMap["isSelected"] as? Boolean ?: false,
                         fraseCompletar = preguntaMap["fraseCompletar"] as? String ?: "",
                         opcionCorrecta = preguntaMap["opcionCorrecta"] as? String ?: "",
-                        conceptosYDefiniciones = preguntaMap["conceptosYDefiniciones"] as? List<Map<String, String>>
-                            ?: listOf(),
+                        conceptosYDefiniciones = preguntaMap["conceptosYDefiniciones"] as? Map<String, String>
+                            ?: mapOf(),
                         opcionesCorrectasCompletarPalabras = preguntaMap["opcionesCorrectasCompletarPalabras"] as? List<String>
                             ?: listOf(),
                         leftItems = preguntaMap["leftItems"] as? List<String> ?: listOf(),
