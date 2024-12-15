@@ -1092,6 +1092,90 @@ class QuizViewModel : ViewModel() {
             }
     }
 
+    fun limpiarCampos(codigoQuiz: String) {
+        val db = FirebaseFirestore.getInstance()
+
+        // Referencia al documento en la colección 'cuestionarios' cuyo campo 'id' es igual a codigoQuiz
+        db.collection("cuestionarios")
+            .whereEqualTo("id", codigoQuiz)
+            .get()
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    // Verificar si se encontró algún documento
+                    val document = task.result?.documents?.firstOrNull()
+                    if (document != null) {
+                        // Obtener la lista de preguntas del documento
+                        val preguntas = document.get("preguntas") as? List<Map<String, Any>>
+
+                        // Comprobar si hay preguntas en el documento
+                        if (!preguntas.isNullOrEmpty()) {
+                            val preguntasActualizadas = preguntas.map { pregunta ->
+                                val preguntaActualizada = pregunta.toMutableMap()
+
+                                // Eliminar el mapa 'userAnswer' en cada pregunta
+                                preguntaActualizada["userAnswers"] = emptyList<String>()
+
+                                preguntaActualizada
+                            }
+
+                            // Actualizar el campo 'preguntas' en el documento
+                            document.reference.update("preguntas", preguntasActualizadas)
+                                .addOnCompleteListener { updateTask ->
+                                    if (updateTask.isSuccessful) {
+                                        Log.d("LimpiarCampos", "Los campos 'userAnswer' han sido eliminados exitosamente.")
+                                    } else {
+                                        Log.e("LimpiarCampos", "Error al eliminar los campos 'userAnswer': ${updateTask.exception?.message}")
+                                    }
+                                }
+                        } else {
+                            Log.e("LimpiarCampos", "No se encontraron preguntas en el documento.")
+                        }
+                    } else {
+                        Log.e("LimpiarCampos", "No se encontró un documento con el id '$codigoQuiz'.")
+                    }
+                } else {
+                    Log.e("LimpiarCampos", "Error al obtener el documento: ${task.exception?.message}")
+                }
+            }
+    }
+
+
+    fun actualizarIsQuizIniciadoFalse(codigoQuiz: String?, onComplete: (Boolean) -> Unit) {
+        _isQuizIniciado.value = true
+        Log.d("QuizViewModel", "Estado de _isQuizIniciado actualizado a: ${_isQuizIniciado.value}")
+
+        if (codigoQuiz.isNullOrEmpty()) {
+            Log.e("QuizViewModel", "Código de cuestionario no válido")
+            onComplete(false) // Llamar con false si el código no es válido
+            return
+        }
+
+        val cuestionariosRef = firestore.collection("cuestionarios").whereEqualTo("id", codigoQuiz)
+
+        cuestionariosRef.get()
+            .addOnSuccessListener { querySnapshot ->
+                if (!querySnapshot.isEmpty) {
+                    val documentId = querySnapshot.documents[0].id // Obtiene el ID del primer documento que coincide
+                    firestore.collection("cuestionarios").document(documentId)
+                        .update("quizIniciado", false)
+                        .addOnSuccessListener {
+                            Log.d("QuizViewModel", "Campo isQuizIniciado actualizado a false para el cuestionario con ID: $codigoQuiz")
+                            onComplete(true) // Llama al callback indicando éxito
+                        }
+                        .addOnFailureListener { e ->
+                            Log.e("QuizViewModel", "Error al actualizar isQuizIniciado: ${e.message}")
+                            onComplete(false) // Llama al callback indicando fallo
+                        }
+                } else {
+                    Log.e("QuizViewModel", "No se encontró un cuestionario con el código proporcionado: $codigoQuiz")
+                    onComplete(false) // Llama al callback indicando que no se encontró el documento
+                }
+            }
+            .addOnFailureListener { e ->
+                Log.e("QuizViewModel", "Error al obtener el documento del cuestionario: ${e.message}")
+                onComplete(false) // Llama al callback indicando error
+            }
+    }
 
 }
 

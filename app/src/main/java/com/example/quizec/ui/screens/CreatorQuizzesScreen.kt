@@ -14,6 +14,8 @@ import androidx.compose.ui.graphics.Color as ComposeColor
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.quizec.data.model.TipoPregunta
+import com.example.quizec.ui.screens.CreatorResults.MatchingAssociationResults
+
 import com.example.quizec.ui.viewmodel.QuizViewModel
 import kotlinx.coroutines.launch
 
@@ -45,12 +47,6 @@ fun CreatorQuizzesScreen(
     // Control para mostrar gráficos y resultados
     var isQuizFinished by remember { mutableStateOf(false) }
 
-    //Codigo quiz
-    Text(
-        text = "$codigoQuiz",
-        style = MaterialTheme.typography.headlineMedium
-    )
-
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -58,6 +54,15 @@ fun CreatorQuizzesScreen(
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+
+        //Codigo quiz
+        Text(
+            text = "$codigoQuiz",
+            style = MaterialTheme.typography.headlineMedium
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+
+
         if (preguntas.isNotEmpty()) {
             // Mostrar el número de la pregunta actual
             Text(
@@ -76,7 +81,6 @@ fun CreatorQuizzesScreen(
 
             // Contar las respuestas correctas e incorrectas
             val respuestasUsuarioPregunta = respuestasUsuario.getOrNull(currentIndex) ?: emptyList()
-            println("Respuestas del usuario: $respuestasUsuarioPregunta")
 
             // Verificar el tipo de pregunta
             when (pregunta.tipo) {
@@ -117,64 +121,143 @@ fun CreatorQuizzesScreen(
                 TipoPregunta.OPCION_MULTIPLE_UNA -> {
                     // Lógica para preguntas de opción múltiple
                     // Mostrar las opciones de respuesta y las barras de resultados
-//                    MultiChoiceBarChart(
-//                        questionIndex = currentIndex,
-//                        totalResponses = respuestasUsuarioPregunta.size,
-//                        opcionesPregunta = pregunta.opciones, // Lista de opciones
-//                        respuestasUsuarioPregunta = respuestasUsuarioPregunta
-//                    )
+                    MultiChoiceBarChart(
+                        questionIndex = currentIndex,
+                        totalResponses = respuestasUsuarioPregunta.size,
+                        opcionesPregunta = pregunta.opciones, // Lista de opciones de respuesta
+                        hayRespuestas = respuestasUsuarioPregunta.isNotEmpty(), // Verificar si hay respuestas
+                        respuestasUsuarioPregunta = respuestasUsuarioPregunta,
+                        respuestasCorrectas = pregunta.respuestasCorrectas // Opción correcta para esta pregunta
+                    )
+                }
+
+                TipoPregunta.EMPAREJAR -> {
+                    MatchingAssociationResults(
+                        respuestasUsuarioPregunta,
+                        pregunta.tipo
+                    )
                 }
 
                 TipoPregunta.ASOCIACION -> {
-                    // Recorrer las respuestas de los usuarios
-                    respuestasUsuarioPregunta.forEach { respuestaUsuario ->
-                        // Obtener la lista de respuestas (ya en formato Map<String, String>)
-                        val respuestas = respuestaUsuario["respuesta"] as? Map<String, String> // Aquí es un mapa de concepto -> definición
-
-                        Log.d("CreatorQuizzesScreen", "Respuestas obtenidas: $respuestas") // Log para verificar si las respuestas existen
-
-                        if (respuestas != null) {
-                            // Mapa para contar las asociaciones de concepto-definición
-                            val conteoAsociaciones = mutableMapOf<String, Int>()
-
-                            Log.d("CreatorQuizzesScreen", "Inicializando el conteo de asociaciones...") // Log para verificar si se entra en este bloque
-
-                            // Iterar sobre las respuestas de los usuarios
-                            respuestas.forEach { (concepto, definicion) ->
-                                Log.d("CreatorQuizzesScreen", "Respuesta: concepto = $concepto, definición = $definicion") // Log para verificar los valores
-
-                                // Crear una clave única para la combinación concepto-definición
-                                val asociacion = "$concepto - $definicion"
-
-                                // Incrementar el contador de esa combinación si ya existe, o agregarla si no
-                                conteoAsociaciones[asociacion] = conteoAsociaciones.getOrDefault(asociacion, 0) + 1
-
-                                Log.d("CreatorQuizzesScreen", "Asociación contada: $asociacion, Total: ${conteoAsociaciones[asociacion]}") // Log para verificar el conteo
-                            }
-
-                            // Ordenar las asociaciones por la cantidad de veces que fueron elegidas, en orden descendente
-                            val resultadosOrdenados = conteoAsociaciones.entries
-                                .sortedByDescending { it.value } // Ordenar por el número de elecciones
-                                .map { "${it.key}: ${it.value} elecciones" } // Crear representación legible
-
-                            Log.d("CreatorQuizzesScreen", "Resultados ordenados: $resultadosOrdenados") // Log para verificar los resultados ordenados
-
-                            // Mostrar los resultados ordenados
-                            println("Resultados: \n" + resultadosOrdenados.joinToString("\n"))
-                            Log.d("CreatorQuizzesScreen", "Resultados en consola: ${resultadosOrdenados.joinToString("\n")}") // Log para verificar la salida en consola
-
-                            // Mostrar los resultados en la UI
-                            Column {
-                                Text(text = "Resultados de las asociaciones:")
-                                resultadosOrdenados.forEach { resultado ->
-                                    Text(text = resultado)
-                                }
-                            }
-                        } else {
-                            Log.d("CreatorQuizzesScreen", "No se encontraron respuestas válidas en la lista.") // Log para verificar si las respuestas son nulas o vacías
-                        }
-                    }
+                    MatchingAssociationResults(
+                        respuestasUsuarioPregunta,
+                        pregunta.tipo
+                    )
                 }
+
+//                TipoPregunta.ASOCIACION -> {
+//                    AssociationResults(respuestasUsuarioPregunta)
+//                    // Mapa para contar las asociaciones concepto-definición
+//                    val conteoAsociaciones = mutableMapOf<String, Int>()
+//
+//                    // Procesar las respuestas de todos los usuarios
+//                    respuestasUsuarioPregunta.forEach { respuestaUsuario ->
+//                        // Obtener el mapa de respuestas (concepto -> definición)
+//                        val respuestas = respuestaUsuario["respuesta"] as? Map<String, String>
+//
+//                        respuestas?.forEach { (concepto, definicion) ->
+//                            // Crear clave única para la asociación
+//                            val asociacion = "$concepto - $definicion"
+//                            conteoAsociaciones[asociacion] = conteoAsociaciones.getOrDefault(asociacion, 0) + 1
+//                        }
+//                    }
+//
+//                    // Ordenar las asociaciones por cantidad de selecciones
+//                    val resultadosOrdenados = conteoAsociaciones.entries
+//                        .sortedByDescending { it.value }
+//                        .map { Pair(it.key, it.value) }
+//
+//                    // Mostrar los resultados en una UI profesional
+//                    Column(
+//                        modifier = Modifier
+//                            .padding(16.dp)
+//                            .fillMaxWidth()
+//                    ) {
+//                        Text(
+//                            text = "Resultados",
+//                            style = MaterialTheme.typography.headlineMedium,
+//                            color = MaterialTheme.colorScheme.primary,
+//                            modifier = Modifier.padding(bottom = 16.dp)
+//                        )
+//
+//                        resultadosOrdenados.forEach { (asociacion, conteo) ->
+//                            val partes = asociacion.split(" - ")
+//                            val concepto = partes[0]
+//                            val definicion = partes[1]
+//
+//                            // Cada fila con fondo diferenciado
+//                            Box(
+//                                modifier = Modifier
+//                                    .fillMaxWidth()
+//                                    .padding(vertical = 4.dp)
+//                                    .background(
+//                                        color = MaterialTheme.colorScheme.surfaceVariant,
+//                                        shape = RoundedCornerShape(8.dp)
+//                                    )
+//                                    .padding(16.dp)
+//                            ) {
+//                                Row(
+//                                    verticalAlignment = Alignment.CenterVertically,
+//                                    modifier = Modifier.fillMaxWidth()
+//                                ) {
+//                                    // Concepto: como imagen o texto
+//                                    Box(
+//                                        modifier = Modifier
+//                                            .weight(1f)
+//                                            .padding(end = 8.dp),
+//                                        contentAlignment = Alignment.Center
+//                                    ) {
+//                                        if (concepto.startsWith("http")) {
+//                                            AsyncImage(
+//                                                model = concepto,
+//                                                contentDescription = "Concepto como imagen",
+//                                                modifier = Modifier.size(64.dp)
+//                                            )
+//                                        } else {
+//                                            Text(
+//                                                text = concepto,
+//                                                style = MaterialTheme.typography.bodyMedium,
+//                                                color = MaterialTheme.colorScheme.onSurface,
+//                                                textAlign = TextAlign.Center
+//                                            )
+//                                        }
+//                                    }
+//
+//                                    // Definición: siempre como texto
+//                                    Box(
+//                                        modifier = Modifier
+//                                            .weight(1f)
+//                                            .padding(horizontal = 8.dp),
+//                                        contentAlignment = Alignment.Center
+//                                    ) {
+//                                        Text(
+//                                            text = definicion,
+//                                            style = MaterialTheme.typography.bodyMedium,
+//                                            color = MaterialTheme.colorScheme.onSurface,
+//                                            textAlign = TextAlign.Center
+//                                        )
+//                                    }
+//
+//                                    // Contador de elecciones
+//                                    Box(
+//                                        modifier = Modifier
+//                                            .weight(1f)
+//                                            .padding(start = 8.dp),
+//                                        contentAlignment = Alignment.Center
+//                                    ) {
+//                                        Text(
+//                                            text = "$conteo ${if (conteo == 1) "elección" else "elecciones"}",
+//                                            style = MaterialTheme.typography.bodyMedium,
+//                                            color = MaterialTheme.colorScheme.secondary,
+//                                            textAlign = TextAlign.Center
+//                                        )
+//                                    }
+//                                }
+//                            }
+//                        }
+//                    }
+               // }
+
 
 
                 // Otros tipos de preguntas pueden ser manejados aquí
@@ -203,7 +286,16 @@ fun CreatorQuizzesScreen(
                         // Ejecutar lógica para finalizar el quiz
                         coroutineScope.launch {
                             if (codigoQuiz != null) {
-                                quizViewModel.endQuiz(codigoQuiz)
+                                quizViewModel.endQuiz(codigoQuiz) // termina el juego para todos los usuarios
+                                quizViewModel.limpiarCampos(codigoQuiz) // limpia las respuestas de los usuarios
+                                quizViewModel.actualizarIsQuizIniciadoFalse(codigoQuiz) { success -> // actualiza el estado del quiz
+                                    if (success) {
+                                        Log.d("QuizScreen", "El quiz ha sido marcado como no iniciado.")
+                                    } else {
+                                        Log.e("QuizScreen", "Hubo un error al actualizar el estado del quiz.")
+                                    }
+                                }
+
                             }
                             // Después de finalizar el quiz, navegar a la pantalla de resultados
                             navController.navigate("results_screen/$codigoQuiz")
@@ -237,7 +329,7 @@ fun BarChartBar(
     val maxHeight = 300f // Altura máxima de las barras
     val barWidth = 80f // Ancho de las barras
     val spaceBetweenBars = 80f // Espacio entre las barras
-    val additionalOffset = 300f // Desplazamiento adicional hacia la derecha
+    val additionalOffset = 170f // Desplazamiento adicional hacia la derecha
 
     Canvas(
         modifier = Modifier
@@ -354,6 +446,114 @@ fun BarChartBar(
                     respuesta,
                     offsetX,
                     adjustedY, // Usar la posición ajustada para "Falso"
+                    android.graphics.Paint().apply {
+                        color = android.graphics.Color.BLACK
+                        textSize = 14f
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun MultiChoiceBarChart(
+    questionIndex: Int,
+    totalResponses: Int, // Total de respuestas
+    opcionesPregunta: List<String>, // Opciones de la pregunta
+    hayRespuestas: Boolean, // Indica si hay respuestas disponibles para esta pregunta
+    respuestasUsuarioPregunta: List<Map<String, Any>>, // Respuestas de los usuarios
+    respuestasCorrectas: List<String> // Lista de respuestas correctas (puede ser una o varias)
+) {
+    val maxHeight = 300f // Altura máxima de las barras
+    val barWidth = 80f // Ancho de las barras
+    val spaceBetweenBars = 35f // Espacio entre las barras
+    val additionalOffset = 20f // Desplazamiento adicional hacia la derecha
+
+    // Inicializamos un mapa para contar cuántas veces cada opción ha sido seleccionada
+    val responseCounts = mutableMapOf<String, Int>()
+    opcionesPregunta.forEach { opcion ->
+        responseCounts[opcion] = 0
+    }
+
+    // Contamos cuántas veces cada opción ha sido seleccionada
+    respuestasUsuarioPregunta.forEach { respuestaUsuario ->
+        println("RespuestaUsuario: $respuestaUsuario")
+
+        // Acceder al primer valor de la lista dentro de la clave "respuesta"
+        val respuesta = (respuestaUsuario["respuesta"] as? List<*>)?.firstOrNull() as? String
+
+        if (respuesta != null && responseCounts.containsKey(respuesta)) {
+            responseCounts[respuesta] = responseCounts[respuesta]!! + 1
+            println("Respuesta seleccionada: $respuesta opciones de la pregunta: $opcionesPregunta con $responseCounts respuestas")
+        } else {
+            println("Respuesta no valida: $respuesta")
+        }
+    }
+
+    Canvas(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(350.dp) // Altura del gráfico
+            .padding(16.dp) // Asegurarse de que esté centrado
+    ) {
+        // Dibujar los ejes
+        drawLine(
+            color = ComposeColor.Black,
+            start = androidx.compose.ui.geometry.Offset(10f, maxHeight),
+            end = androidx.compose.ui.geometry.Offset(size.width - 10f, maxHeight),
+            strokeWidth = 2f
+        )
+        drawLine(
+            color = ComposeColor.Black,
+            start = androidx.compose.ui.geometry.Offset(10f, 0f),
+            end = androidx.compose.ui.geometry.Offset(10f, maxHeight),
+            strokeWidth = 2f
+        )
+
+        // Verificamos si tenemos respuestas para esta pregunta
+        if (totalResponses > 0) {
+            // Calculamos la altura de las barras basada en las respuestas
+            val maxCount = responseCounts.values.maxOrNull() ?: 0
+            opcionesPregunta.forEachIndexed { index, opcion ->
+                val count = responseCounts[opcion] ?: 0
+                val barHeight = maxHeight * (count.toFloat() / totalResponses)
+
+                // Determinamos si la opción es correcta
+                val isCorrect = respuestasCorrectas.contains(opcion)
+
+                // Dibujamos la barra para esta opción
+                val barColor = if (isCorrect) {
+                    ComposeColor.Green // Si la opción es correcta, la barra será verde
+                } else {
+                    ComposeColor.Blue // Si la opción no es correcta, la barra será azul
+                }
+
+                drawRect(
+                    color = barColor, // Usamos el color determinado para las barras
+                    topLeft = androidx.compose.ui.geometry.Offset(
+                        x = (index * (barWidth + spaceBetweenBars)) + 10f + additionalOffset, // Ajuste en el eje X
+                        y = maxHeight - barHeight // La altura de la barra dependerá del número de respuestas
+                    ),
+                    size = androidx.compose.ui.geometry.Size(width = barWidth, height = barHeight)
+                )
+
+                // Dibujamos el número de respuestas debajo de la barra
+                drawContext.canvas.nativeCanvas.drawText(
+                    "$count", // El número de respuestas seleccionadas para esta opción
+                    (index * (barWidth + spaceBetweenBars)) + 11f + additionalOffset + 33f, // Posición en X
+                    maxHeight + 21f, // Posición en Y para mostrar el número debajo de la barra
+                    android.graphics.Paint().apply {
+                        color = android.graphics.Color.BLACK
+                        textSize = 16f
+                    }
+                )
+
+                // Dibujamos el nombre de la opción debajo de la barra
+                drawContext.canvas.nativeCanvas.drawText(
+                    opcion, // El texto de la opción (por ejemplo, "A", "B", "C", ... )
+                    (index * (barWidth + spaceBetweenBars)) + 25f + additionalOffset + 11f, // Posición en X
+                    maxHeight + 42f, // Posición en Y para mostrar la opción debajo del número
                     android.graphics.Paint().apply {
                         color = android.graphics.Color.BLACK
                         textSize = 14f

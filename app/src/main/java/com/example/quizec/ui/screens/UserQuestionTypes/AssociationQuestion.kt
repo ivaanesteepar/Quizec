@@ -26,6 +26,27 @@ fun AssociationQuestionScreen(
     val shuffledConcepts = remember { currentQuestion.conceptosYDefiniciones.keys.shuffled() }
     val shuffledDefinitions = remember { currentQuestion.conceptosYDefiniciones.values.shuffled() }
 
+    // Lista de colores fijos predefinidos (hasta 6)
+    val fixedColors = listOf(
+        Color(0xFFEF9A9A), // Rojo claro
+        Color(0xFF81C784), // Verde claro
+        Color(0xFF64B5F6), // Azul claro
+        Color(0xFFFFD54F), // Amarillo
+        Color(0xFFBA68C8), // Morado
+        Color(0xFFFF8A65)  // Naranja
+    )
+
+    // Asignar colores fijos a los pares formados
+    val pairColors = remember { mutableMapOf<Pair<String, String>, Color>() }
+    var colorIndex by remember { mutableStateOf(0) }
+
+    // Función para obtener el siguiente color fijo
+    fun getNextColor(): Color {
+        val color = fixedColors[colorIndex]
+        colorIndex = (colorIndex + 1) % fixedColors.size // Ciclo de colores
+        return color
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -52,12 +73,15 @@ fun AssociationQuestionScreen(
             ) {
                 shuffledConcepts.forEach { concept ->
                     val isDisabled = userSelections.containsKey(concept)
+                    val conceptColor = userSelections[concept]?.let { definition ->
+                        pairColors[concept to definition] ?: Color.Transparent
+                    } ?: Color.Transparent
 
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(
-                                if (selectedConcept == concept) Color.LightGray else Color.Transparent,
+                                if (selectedConcept == concept) Color.LightGray else conceptColor,
                                 shape = RoundedCornerShape(8.dp)
                             )
                             .clickable {
@@ -80,7 +104,7 @@ fun AssociationQuestionScreen(
                             Text(
                                 text = concept,
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = if (isDisabled) Color.Gray else Color.Unspecified
+                                color = Color.Unspecified // Mantener color original
                             )
                         }
                     }
@@ -97,12 +121,15 @@ fun AssociationQuestionScreen(
             ) {
                 shuffledDefinitions.forEach { definition ->
                     val isUsed = userSelections.containsValue(definition)
+                    val definitionColor = userSelections.entries.firstOrNull { it.value == definition }?.let {
+                        pairColors[it.key to definition] ?: Color.Transparent
+                    } ?: Color.Transparent
 
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(
-                                if (isUsed) Color.LightGray else Color.Transparent,
+                                if (isUsed) definitionColor else Color.Transparent,
                                 shape = RoundedCornerShape(8.dp)
                             )
                             .clickable {
@@ -110,9 +137,12 @@ fun AssociationQuestionScreen(
                                     // Si la definición ya está emparejada, eliminar la asociación
                                     val conceptToRemove = userSelections.entries.firstOrNull { it.value == definition }?.key
                                     conceptToRemove?.let { userSelections.remove(it) }
+                                    pairColors.remove(conceptToRemove to definition)
                                 } else if (selectedConcept != null) {
                                     // Asociar el concepto seleccionado con la definición
                                     userSelections[selectedConcept!!] = definition
+                                    // Asignar un color fijo al par formado
+                                    pairColors[selectedConcept!! to definition] = getNextColor()
                                     selectedConcept = null
                                 }
                             }
@@ -122,7 +152,7 @@ fun AssociationQuestionScreen(
                         Text(
                             text = definition,
                             style = MaterialTheme.typography.bodyMedium,
-                            color = if (isUsed) Color.Gray else Color.Unspecified
+                            color = Color.Unspecified // Mantener color original
                         )
                     }
                 }

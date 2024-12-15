@@ -116,6 +116,11 @@ fun UserQuizzesScreen(
     }
 
     LaunchedEffect(currentQuestionIndex) {
+        //hay q resetar los valores aqui pq si no, las preguntas de mismo tipo o q comparten var, tienen las respuestas anteriores.
+        userSelections.clear()
+        userOrderedItems = emptyList()
+        selectedOption = null
+
         remainingTime = 30 // Reinicia el tiempo de la pregunta al cambiar
         timerActive = true
         isAcceptButtonClicked = false // Reinicia el estado del botón "Aceptar"
@@ -308,6 +313,7 @@ fun UserQuizzesScreen(
 
 
                 } else if (currentQuestion.tipo == TipoPregunta.EMPAREJAR) {
+
                     MatchingQuestionScreen(
                         currentQuestion = currentQuestion,
                         userSelections = userSelections,
@@ -340,7 +346,7 @@ fun UserQuizzesScreen(
                         currentQuestion = currentQuestion,
                         userSelections = userSelections
                     )
-
+                    println("userSelections: $userSelections")
                     if (userSelections.size == currentQuestion.conceptosYDefiniciones.size) {
                         enableAcept = true
                     }else{

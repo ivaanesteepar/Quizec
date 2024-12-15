@@ -136,7 +136,12 @@ fun HomeScreenPortrait(navController: NavHostController, quizViewModel: QuizView
                         }
                         0 to 1 -> {
                             Button(
-                                onClick = { navController.navigate("createQuiz") },
+                                onClick = {
+                                    quizViewModel.resetearPreguntas() //JIMENA
+//                                    quizViewModel._preguntas.clear() // Limpia la lista de preguntas seleccionadas
+//                                    quizViewModel.contadorPreguntas.value = 0 // Limpia el contador de preguntas seleccionadas
+                                    navController.navigate("createQuiz") // Navega a la pantalla de creación de cuestionarios
+                                },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .aspectRatio(1f) // Hace que el botón sea cuadrado
@@ -145,6 +150,7 @@ fun HomeScreenPortrait(navController: NavHostController, quizViewModel: QuizView
                             ) {
                                 Text(text = "CREAR")
                             }
+
                         }
                         1 to 0 -> {
                             Button(
@@ -226,7 +232,7 @@ fun Grid(rows: Int, columns: Int, modifier: Modifier = Modifier, content: @Compo
                 for (col in 0 until columns) {
                     Box(
                         modifier = Modifier
-                            .weight(1f) // Se asegura de que los botones ocupen todo el espacio disponible
+                            .weight(1f) // Se asegura de que los botones ocupen tdo el espacio disponible
                     ) {
                         content(row, col)
                     }
