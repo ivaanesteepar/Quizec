@@ -8,11 +8,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import com.example.quizec.R
 import com.example.quizec.ui.viewmodel.QuestionsViewModel
 import com.example.quizec.data.model.Pregunta
+import com.example.quizec.data.model.TipoPregunta
 import com.example.quizec.ui.viewmodel.QuizViewModel
 import com.example.quizec.utils.AMovServer
 
@@ -46,7 +49,7 @@ fun SelectQuestionsScreen(
             CircularProgressIndicator(modifier = Modifier.padding(16.dp)) // Indicador de carga
         } else {
             Text(
-                text = "SELECCIONAR PREGUNTAS",
+                text = stringResource(R.string.seleccionar_preguntas_titulo),
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(16.dp)
             )
@@ -88,8 +91,8 @@ fun SelectQuestionsScreen(
         if (showDeleteConfirmationDialog && questionToDelete != null) {
             AlertDialog(
                 onDismissRequest = { showDeleteConfirmationDialog = false },
-                title = { Text("Confirmar Eliminación") },
-                text = { Text("¿Estás seguro de que quieres eliminar esta pregunta?") },
+                title = { Text(stringResource(R.string.confirmar_eliminaci_n)) },
+                text = { Text(stringResource(R.string.est_s_seguro_de_que_quieres_eliminar_esta_pregunta)) },
                 confirmButton = {
                     TextButton(
                         onClick = {
@@ -128,7 +131,7 @@ fun SelectQuestionsScreen(
                             questionToDelete = null
                         }
                     ) {
-                        Text("Sí")
+                        Text(stringResource(R.string.si))
                     }
                 },
                 dismissButton = {
@@ -139,7 +142,7 @@ fun SelectQuestionsScreen(
                             questionToDelete = null
                         }
                     ) {
-                        Text("No")
+                        Text(stringResource(R.string.no))
                     }
                 }
             )
@@ -149,8 +152,8 @@ fun SelectQuestionsScreen(
         if (showDuplicateConfirmationDialog && questionToDuplicate != null) {
             AlertDialog(
                 onDismissRequest = { showDuplicateConfirmationDialog = false },
-                title = { Text("Confirmar Duplicación") },
-                text = { Text("¿Estás seguro de que quieres duplicar esta pregunta?") },
+                title = { Text(stringResource(R.string.duplicar_pregunta)) },
+                text = { Text(stringResource(R.string.est_s_seguro_de_que_quieres_duplicar_esta_pregunta)) },
                 confirmButton = {
                     TextButton(
                         onClick = {
@@ -165,7 +168,7 @@ fun SelectQuestionsScreen(
                             questionToDuplicate = null
                         }
                     ) {
-                        Text("Sí")
+                        Text(stringResource(R.string.si))
                     }
                 },
                 dismissButton = {
@@ -176,7 +179,7 @@ fun SelectQuestionsScreen(
                             questionToDuplicate = null
                         }
                     ) {
-                        Text("No")
+                        Text(stringResource(R.string.no))
                     }
                 }
             )
@@ -196,7 +199,7 @@ fun SelectQuestionsScreen(
                 },
                 modifier = Modifier.fillMaxWidth(0.4f)  // Menos ancho para que no ocupe toda la pantalla
             ) {
-                Text(text = "Guardar") // Emoji para guardar
+                Text(text = stringResource(R.string.guardar)) // Emoji para guardar
             }
 
             Spacer(modifier = Modifier.height(8.dp)) // Menos espacio entre los botones
@@ -207,7 +210,7 @@ fun SelectQuestionsScreen(
                 },
                 modifier = Modifier.fillMaxWidth(0.4f)
             ) {
-                Text(text = "Volver") // Emoji para volver
+                Text(text = stringResource(R.string.volver)) // Emoji para volver
             }
         }
     }
@@ -248,8 +251,20 @@ fun PreguntaItem(
 
                 Spacer(modifier = Modifier.width(8.dp))
 
+                // Usar stringResource para traducir el tipo de pregunta
+                val tipoPregunta = when (pregunta.tipo) {
+                    TipoPregunta.VERDADERO_FALSO -> stringResource(R.string.true_false)
+                    TipoPregunta.OPCION_MULTIPLE_UNA -> stringResource(R.string.multiple_choice_single)
+                    TipoPregunta.OPCION_MULTIPLE_MULTIPLES -> stringResource(R.string.multiple_choice_multiple)
+                    TipoPregunta.EMPAREJAR -> stringResource(R.string.matching)
+                    TipoPregunta.ORDENAR -> stringResource(R.string.ordering)
+                    TipoPregunta.COMPLETAR_ESPACIOS -> stringResource(R.string.fill_in_blanks)
+                    TipoPregunta.ASOCIACION -> stringResource(R.string.association)
+                    TipoPregunta.COMPLETAR_PALABRAS -> stringResource(R.string.fill_in_words)
+                }
+
                 Text(
-                    text = "${pregunta.titulo} - ${pregunta.tipo.name}",
+                    text = "${pregunta.titulo} - $tipoPregunta",
                     style = MaterialTheme.typography.bodyMedium
                 )
             }

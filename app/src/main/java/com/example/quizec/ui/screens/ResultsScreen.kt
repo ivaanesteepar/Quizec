@@ -1,5 +1,6 @@
 package com.example.quizec.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -8,8 +9,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.example.quizec.R
+import com.example.quizec.data.model.Rol
 import com.example.quizec.ui.viewmodel.QuizViewModel
 import com.example.quizec.ui.viewmodel.UsersViewModel
 import com.google.firebase.auth.FirebaseAuth
@@ -20,6 +24,7 @@ fun ResultsScreen(
     usersViewModel: UsersViewModel,
     codigoQuiz: String?
 ) {
+
     // Estado para almacenar la lista de usuarios y sus respuestas correctas
     val (usuariosConRespuestas, setUsuariosConRespuestas) = remember { mutableStateOf<List<Pair<String, Int>>>(emptyList()) }
 
@@ -34,6 +39,8 @@ fun ResultsScreen(
 
     // ViewModel para historial
     val quizViewModel = remember { QuizViewModel() }
+
+    val userRole by quizViewModel.userRole.collectAsState()
 
     // Obtener el valor de immediateResults
     LaunchedEffect(codigoQuiz) {
@@ -76,11 +83,10 @@ fun ResultsScreen(
     ) {
         // Título
         Text(
-            text = "Leaderboard",
+            text = stringResource(R.string.leaderboard),
             style = MaterialTheme.typography.headlineLarge.copy(color = Color.Black),
             modifier = Modifier.padding(bottom = 32.dp)
         )
-
         // Lista de resultados
         Box(modifier = Modifier.weight(1f)) {
             LazyColumn(
@@ -88,8 +94,15 @@ fun ResultsScreen(
                     .fillMaxWidth()
                     .fillMaxHeight(0.6f)
             ) {
-                items(usuariosConRespuestas.size) { index ->
-                    val (nombre, respuestasCorrectas) = usuariosConRespuestas[index]
+                // Ordenar usuarios por respuestas correctas (second) en orden descendente
+                //val usuariosOrdenados = usuariosConRespuestas.sortedByDescending { it.second }
+                // Filtrar y ordenar usuarios: excluir al creador y ordenar por respuestas correctas
+                val usuariosOrdenados = usuariosConRespuestas
+                    .filter { it.first != userName || userRole != Rol.CREADOR.toString() }
+                    .sortedByDescending { it.second }
+
+                items(usuariosOrdenados.size) { index ->
+                    val (nombre, respuestasCorrectas) = usuariosOrdenados[index]
 
                     val backgroundColor = when (index) {
                         0 -> MaterialTheme.colorScheme.primary
@@ -106,7 +119,7 @@ fun ResultsScreen(
                             .padding(16.dp)
                     ) {
                         Text(
-                            text = "${index + 1}. $nombre - $respuestasCorrectas respuestas",
+                            text = "${index + 1}. $nombre - $respuestasCorrectas",
                             style = MaterialTheme.typography.bodyLarge,
                             color = if (index < 3) Color.White else Color.Black
                         )
@@ -114,10 +127,9 @@ fun ResultsScreen(
                 }
             }
         }
-        println("immediateResults en results: $immediateResults")
 
-        // Condición para mostrar el botón "Ver resultados" si immediateResults es false
-        if (!immediateResults) {
+        // Condición para mostrar el botón "Ver resultados" si immediateResults es false y solo si es participante
+        if (userRole == Rol.PARTICIPANTE.toString() && !immediateResults) {
             Button(
                 onClick = {
                     navController.navigate("answers/$codigoQuiz")
@@ -127,15 +139,19 @@ fun ResultsScreen(
                     .padding(vertical = 16.dp),
                 shape = MaterialTheme.shapes.medium
             ) {
-                Text(text = "Ver resultados")
+                Text(text = stringResource(R.string.ver_resultados))
             }
         }
+
+        BackHandler {} //no hace nada si da atrás
 
         // Botón para regresar
         Button(
             onClick = {
-                if (userId.isNotEmpty() && codigoQuiz != null) {
-                    usersViewModel.eliminarUsuarioDeQuiz(codigoQuiz)
+                if (userRole == Rol.CREADOR.toString()){
+                    if (userId.isNotEmpty() && codigoQuiz != null) {
+                        usersViewModel.eliminarUsuariosDeQuiz(codigoQuiz)
+                    }
                 }
                 navController.navigate("home")
             },
@@ -144,7 +160,7 @@ fun ResultsScreen(
                 .padding(vertical = 16.dp),
             shape = MaterialTheme.shapes.medium
         ) {
-            Text(text = "Volver al Home")
+            Text(text = stringResource(R.string.volver_al_home))
         }
     }
 }

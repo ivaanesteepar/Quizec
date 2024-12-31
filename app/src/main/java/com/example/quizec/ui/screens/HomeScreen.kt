@@ -18,7 +18,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -49,6 +51,7 @@ fun HomeScreenPortrait(navController: NavHostController, quizViewModel: QuizView
     var userName by remember { mutableStateOf("Usuario") }
     val userUid = FirebaseAuth.getInstance().currentUser?.uid
     var isLoading by remember { mutableStateOf(true) }
+    val context = LocalContext.current
 
     // Obtener el nombre del usuario desde Firestore o FirebaseAuth
     LaunchedEffect(Unit) {
@@ -58,12 +61,13 @@ fun HomeScreenPortrait(navController: NavHostController, quizViewModel: QuizView
             db.collection("users").document(userId).get()
                 .addOnSuccessListener { document ->
                     if (document.exists()) {
-                        userName = document.getString("nombre") ?: "Usuario"
+                        userName = document.getString("nombre") ?: context.getString(R.string.usuario)
                     }
                     isLoading = false
                 }
                 .addOnFailureListener { exception ->
-                    Log.e("HomeScreen", "Error obteniendo el nombre del usuario", exception)
+                    Log.e("HomeScreen",
+                        context.getString(R.string.error_obteniendo_el_nombre_del_usuario), exception)
                     isLoading = false
                 }
         } ?: run {
@@ -89,7 +93,7 @@ fun HomeScreenPortrait(navController: NavHostController, quizViewModel: QuizView
                 .fillMaxSize()
                 .padding(0.dp)
         ) {
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(150.dp)) // ajusta la columna de elementos
 
             // Imagen del título QUIZEC
             Image(
@@ -104,14 +108,14 @@ fun HomeScreenPortrait(navController: NavHostController, quizViewModel: QuizView
 
             if (isLoading) {
                 Text(
-                    text = "Cargando...",
+                    text = stringResource(R.string.cargando),
                     style = androidx.compose.material3.MaterialTheme.typography.headlineMedium,
                     color = Color.White
                 )
             } else {
                 // Saludo de bienvenida con el nombre del usuario
                 Text(
-                    text = "¡Bienvenido, $userName!",
+                    text = stringResource(R.string.bienvenido, userName),
                     style = androidx.compose.material3.MaterialTheme.typography.headlineMedium,
                     color = Color.White,
                     modifier = Modifier.padding(bottom = 16.dp)
@@ -131,7 +135,7 @@ fun HomeScreenPortrait(navController: NavHostController, quizViewModel: QuizView
                                     .clip(RoundedCornerShape(16.dp)) // Bordes redondeados más grandes
                                     .padding(4.dp) // Espaciado adicional
                             ) {
-                                Text(text = "UNIRSE")
+                                Text(text = stringResource(R.string.unirse))
                             }
                         }
                         0 to 1 -> {
@@ -148,7 +152,7 @@ fun HomeScreenPortrait(navController: NavHostController, quizViewModel: QuizView
                                     .clip(RoundedCornerShape(16.dp)) // Bordes redondeados más grandes
                                     .padding(4.dp) // Espaciado adicional
                             ) {
-                                Text(text = "CREAR")
+                                Text(text = stringResource(R.string.crear))
                             }
 
                         }
@@ -167,7 +171,7 @@ fun HomeScreenPortrait(navController: NavHostController, quizViewModel: QuizView
                                     .padding(4.dp) // Espaciado adicional
                             ) {
                                 Text(
-                                    text = "SELECCIONAR CUESTIONARIO",
+                                    text = stringResource(R.string.seleccionar_cuestionario),
                                     fontSize = 12.sp
                                 )
                             }
@@ -185,7 +189,7 @@ fun HomeScreenPortrait(navController: NavHostController, quizViewModel: QuizView
                                     .clip(RoundedCornerShape(16.dp)) // Bordes redondeados más grandes
                                     .padding(4.dp) // Espaciado adicional
                             ) {
-                                Text(text = "HISTORIAL")
+                                Text(text = stringResource(R.string.historial))
                             }
                         }
                     }
@@ -207,12 +211,12 @@ fun HomeScreenPortrait(navController: NavHostController, quizViewModel: QuizView
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ExitToApp,
-                    contentDescription = "Cerrar sesión",
+                    contentDescription = stringResource(R.string.cerrar_sesion),
                     modifier = Modifier.padding(end = 8.dp),
                     tint = Color.White
                 )
                 Text(
-                    text = "Cerrar Sesión",
+                    text = stringResource(R.string.cerrar_sesion),
                     color = Color.White
                 )
             }
@@ -251,6 +255,7 @@ fun HomeScreenLandscape(navController: NavHostController, quizViewModel: QuizVie
     var userName by remember { mutableStateOf("Usuario") }  // Nombre por defecto
     val userUid = FirebaseAuth.getInstance().currentUser?.uid
     var isLoading by remember { mutableStateOf(true) }  // Estado para indicar si la carga está en proceso
+    val context = LocalContext.current
 
     // Obtener el nombre del usuario desde Firestore o FirebaseAuth
     LaunchedEffect(Unit) {
@@ -262,7 +267,7 @@ fun HomeScreenLandscape(navController: NavHostController, quizViewModel: QuizVie
                 .addOnSuccessListener { document ->
                     if (document.exists()) {
                         // Suponiendo que el nombre está guardado en el campo "nombre"
-                        userName = document.getString("nombre") ?: "Usuario"
+                        userName = document.getString("nombre") ?: context.getString(R.string.usuario)
                     }
                     isLoading = false  // Indicamos que la carga ha finalizado
                 }
@@ -314,14 +319,14 @@ fun HomeScreenLandscape(navController: NavHostController, quizViewModel: QuizVie
                 if (isLoading) {
                     // Si aún estamos cargando, mostrar un mensaje de carga
                     Text(
-                        text = "Cargando...",
+                        text = stringResource(R.string.cargando),
                         style = androidx.compose.material3.MaterialTheme.typography.headlineMedium,
                         color = Color.White
                     )
                 } else {
                     // Saludo de bienvenida con el nombre del usuario
                     Text(
-                        text = "¡Bienvenido, $userName!",
+                        text = stringResource(R.string.bienvenido),
                         style = androidx.compose.material3.MaterialTheme.typography.headlineMedium,
                         color = Color.White,
                         modifier = Modifier.padding(bottom = 16.dp)
@@ -336,7 +341,7 @@ fun HomeScreenLandscape(navController: NavHostController, quizViewModel: QuizVie
                             .fillMaxWidth(0.8f)  // Botón más ancho
                             .padding(bottom = 4.dp) // Espaciado reducido entre los botones
                     ) {
-                        Text(text = "Unirse a un Quiz")
+                        Text(text = stringResource(R.string.unirse))
                     }
 
                     // Botón para crear un quiz
@@ -348,7 +353,7 @@ fun HomeScreenLandscape(navController: NavHostController, quizViewModel: QuizVie
                             .fillMaxWidth(0.8f)  // Botón más ancho
                             .padding(bottom = 4.dp) // Espaciado reducido entre los botones
                     ) {
-                        Text(text = "Crear un Quiz")
+                        Text(text = stringResource(R.string.crear))
                     }
 
                     // Botón para seleccionar cuestionario
@@ -363,7 +368,7 @@ fun HomeScreenLandscape(navController: NavHostController, quizViewModel: QuizVie
                             .fillMaxWidth(0.9f)  // Botón más ancho
                             .padding(bottom = 4.dp) // Espaciado reducido entre los botones
                     ) {
-                        Text("Seleccionar Cuestionario")
+                        Text(stringResource(R.string.seleccionar_cuestionario))
                     }
 
                     // Botón para ir al historial
@@ -377,7 +382,7 @@ fun HomeScreenLandscape(navController: NavHostController, quizViewModel: QuizVie
                             .fillMaxWidth(0.8f)  // Botón más ancho
                             .padding(bottom = 4.dp) // Espaciado reducido entre los botones
                     ) {
-                        Text(text = "Historial")
+                        Text(text = stringResource(R.string.historial))
                     }
 
                     // Nuevo botón debajo de la imagen
@@ -398,7 +403,7 @@ fun HomeScreenLandscape(navController: NavHostController, quizViewModel: QuizVie
                             tint = Color.White // Color blanco para el icono
                         )
                         Text(
-                            text = "Cerrar Sesión",
+                            text = stringResource(R.string.cerrar_sesion),
                             color = Color.White // Texto blanco para contrastar con el fondo rojo
                         )
                     }

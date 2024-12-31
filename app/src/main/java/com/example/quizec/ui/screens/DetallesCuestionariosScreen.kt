@@ -16,8 +16,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.example.quizec.R
 import com.example.quizec.data.model.Pregunta
 import com.example.quizec.ui.viewmodel.QuestionsViewModel
 import com.example.quizec.ui.viewmodel.QuizViewModel
@@ -30,6 +32,7 @@ fun DetalleCuestionarioScreen(
     questionsViewModel: QuestionsViewModel,
     userId: String
 ) {
+    val context = navController.context
     val preguntasState = remember { mutableStateOf<List<Pregunta>>(emptyList()) }
     val loading = remember { mutableStateOf(true) }
     val errorMessage = remember { mutableStateOf<String?>(null) }
@@ -47,7 +50,7 @@ fun DetalleCuestionarioScreen(
                 if (titulo != null) {
                     cuestionarioTitulo.value = titulo
                 } else {
-                    cuestionarioTitulo.value = "Título no disponible"
+                    cuestionarioTitulo.value = context.getString(R.string.titulo_no_disponible)
                 }
             }
 
@@ -57,7 +60,7 @@ fun DetalleCuestionarioScreen(
             loading.value = false
         } catch (e: Exception) {
             Log.e("DetalleCuestionarioScreen", "Error al cargar preguntas", e)
-            errorMessage.value = "Error al cargar las preguntas"
+            errorMessage.value = context.getString(R.string.error_al_cargar_las_preguntas)
             loading.value = false
         }
     }
@@ -90,13 +93,13 @@ fun DetalleCuestionarioScreen(
                 ) {
                     Icon(
                         imageVector = Icons.Default.ArrowBack,
-                        contentDescription = "Volver",
+                        contentDescription = stringResource(R.string.volver),
                         tint = Color.White // Color del ícono (blanco)
                     )
                 }
 
                 Text(
-                    text = "Cuestionario: ${cuestionarioTitulo.value}",
+                    text = stringResource(R.string.cuestionario, cuestionarioTitulo.value),
                     style = MaterialTheme.typography.headlineLarge,
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
@@ -112,7 +115,7 @@ fun DetalleCuestionarioScreen(
                     }
                     preguntasState.value.isEmpty() -> {
                         Text(
-                            text = "No hay preguntas disponibles.",
+                            text = stringResource(R.string.no_hay_preguntas_disponibles),
                             style = MaterialTheme.typography.bodyLarge,
                             modifier = Modifier.padding(16.dp)
                         )
@@ -161,10 +164,10 @@ fun DetalleCuestionarioScreen(
             AlertDialog(
                 onDismissRequest = { showDialog.value = false },
                 title = {
-                    Text(text = "¿Duplicar pregunta?")
+                    Text(text = stringResource(R.string.duplicar_pregunta))
                 },
                 text = {
-                    Text(text = "¿Estás seguro de que quieres duplicar esta pregunta?")
+                    Text(text = stringResource(R.string.est_s_seguro_de_que_quieres_duplicar_esta_pregunta))
                 },
                 confirmButton = {
                     TextButton(
@@ -178,19 +181,19 @@ fun DetalleCuestionarioScreen(
                                 // Mostrar el Toast de notificación
                                 Toast.makeText(
                                     navController.context, // Contexto desde el NavController
-                                    "Pregunta duplicada con éxito.",
+                                    context.getString(R.string.pregunta_duplicada_con_xito),
                                     Toast.LENGTH_SHORT
                                 ).show()
                             }
                             showDialog.value = false
                         }
                     ) {
-                        Text("Sí")
+                        Text(stringResource(R.string.si))
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showDialog.value = false }) {
-                        Text("No")
+                        Text(stringResource(R.string.no))
                     }
                 }
             )
@@ -210,7 +213,7 @@ fun DetalleCuestionarioScreen(
             )
         ) {
             Text(
-                text = "Volver",
+                text = stringResource(R.string.volver),
                 style = MaterialTheme.typography.bodyLarge.copy(color = Color.White) // Texto blanco en el botón
             )
         }

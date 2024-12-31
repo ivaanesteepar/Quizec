@@ -415,6 +415,28 @@ class QuestionsViewModel : ViewModel() {
             }
     }
 
+
+    fun borrarCuestionarioHistorial(nombreUsuario: String, cuestionarioId: String) {
+        // Obtén una instancia de Firestore
+        val db = FirebaseFirestore.getInstance()
+
+        // Accede al documento del usuario y a la colección de cuestionarios
+        val usuarioRef = db.collection("usuarioHistorial")
+            .document(nombreUsuario) // Nombre del usuario
+            .collection("cuestionarios") // Colección de cuestionarios
+
+        // Borrar el cuestionario especificado por su ID
+        usuarioRef.document(cuestionarioId).delete()
+            .addOnSuccessListener {
+                // Operación exitosa, el cuestionario ha sido borrado
+                println("Cuestionario con ID $cuestionarioId borrado correctamente")
+            }
+            .addOnFailureListener { exception ->
+                // Ocurrió un error al borrar el cuestionario
+                println("Error al borrar el cuestionario: ${exception.message}")
+            }
+    }
+
     fun actualizarPregunta(pregunta: Pregunta) {
         // Obtener una instancia de Firebase Firestore
         val firestore = FirebaseFirestore.getInstance()
@@ -537,6 +559,65 @@ class QuestionsViewModel : ViewModel() {
                 // Si hubo un error al buscar el documento, lo manejamos aquí
                 println("Error al buscar el cuestionario: ${exception.message}")
             }
+    }
+
+    fun eliminarPreguntasCuestionario(codigoQuiz: String, preguntas: List<Pregunta>) {
+        // Extraemos los IDs de las preguntas seleccionadas
+        val idsPreguntas = preguntas.map { it.id }
+
+        val db = FirebaseFirestore.getInstance()
+
+        // Acceder a la colección 'cuestionarios'
+        db.collection("cuestionarios")
+            .whereEqualTo("id", codigoQuiz)
+            .get()
+            .addOnSuccessListener { snapshot ->
+                if (!snapshot.isEmpty) {
+                    for (document in snapshot.documents) {
+                        val cuestionarioDocRef = db.collection("cuestionarios")
+                            .document(document.id)
+                        val cuestionarioData = document.data
+
+                        if (cuestionarioData != null && cuestionarioData.containsKey("preguntas")) {
+                            val preguntasActuales = cuestionarioData["preguntas"] as? List<Map<String, Any>>
+                            val preguntasFiltradas = preguntasActuales?.filterNot { pregunta ->
+                                pregunta["id"] in idsPreguntas
+                            }
+
+                            // Actualizar el campo 'preguntas' del documento
+                            if (preguntasFiltradas != null) {
+                                cuestionarioDocRef.update("preguntas", preguntasFiltradas)
+                                    .addOnSuccessListener {
+                                        Log.d("EliminarPreguntas", "Preguntas eliminadas correctamente del cuestionario con código '$codigoQuiz'.")
+                                    }
+                                    .addOnFailureListener { e ->
+                                        Log.e("EliminarPreguntas", "Error al actualizar el cuestionario '$codigoQuiz': ${e.message}")
+                                    }
+                            }
+                        } else {
+                            Log.e("EliminarPreguntas", "El cuestionario no contiene un campo 'preguntas' o es nulo.")
+                        }
+                    }
+                } else {
+                    Log.e("EliminarPreguntas", "No se encontraron documentos con el id '$codigoQuiz'.")
+                }
+            }
+            .addOnFailureListener { e ->
+                Log.e("EliminarPreguntas", "Error al obtener el cuestionario: ${e.message}")
+            }
+    }
+
+
+
+    private val _preguntasParaEliminar = mutableStateListOf<Pregunta>()
+
+    fun marcarPreguntasParaEliminar(codigoQuiz: String, preguntas: List<Pregunta>) {
+        _preguntasParaEliminar.clear()
+        _preguntasParaEliminar.addAll(preguntas)
+    }
+
+    fun cancelarEliminacion() {
+        _preguntasParaEliminar.clear()
     }
 
 }

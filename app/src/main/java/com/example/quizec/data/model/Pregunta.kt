@@ -1,5 +1,9 @@
 package com.example.quizec.data.model
 
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import com.example.quizec.R
+
 // Clase que representa una pregunta
 data class Pregunta(
     val id: String = "",            // ID único de la pregunta, con valor por defecto
@@ -39,3 +43,18 @@ enum class TipoPregunta {
     ASOCIACION,                // Pregunta de asociación (imagen o concepto con descripción)
     COMPLETAR_PALABRAS         // Pregunta de completar múltiples palabras
 }
+
+@Composable
+fun TipoPregunta.toLocalizedString(): String {
+    return when (this) {
+        TipoPregunta.VERDADERO_FALSO -> stringResource(R.string.true_false)
+        TipoPregunta.OPCION_MULTIPLE_UNA -> stringResource(R.string.multiple_choice_single)
+        TipoPregunta.OPCION_MULTIPLE_MULTIPLES -> stringResource(R.string.multiple_choice_multiple)
+        TipoPregunta.EMPAREJAR -> stringResource(R.string.matching)
+        TipoPregunta.ORDENAR -> stringResource(R.string.ordering)
+        TipoPregunta.COMPLETAR_ESPACIOS -> stringResource(R.string.fill_in_blanks)
+        TipoPregunta.ASOCIACION -> stringResource(R.string.association)
+        TipoPregunta.COMPLETAR_PALABRAS -> stringResource(R.string.fill_in_words)
+    }
+}
+

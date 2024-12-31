@@ -34,19 +34,43 @@ fun MatchingQuestionScreen(
     isAcceptButtonClicked: Boolean
 ) {
     var selectedLeftItem by remember { mutableStateOf<String?>(null) }
-    val shuffledRightItems = remember { currentQuestion.rightItems.shuffled() }
+    val shuffledRightItems = remember(currentQuestion) { currentQuestion.rightItems.shuffled() }
 
-    // Generador de colores para las parejas
-    val colors = listOf(Color.Red, Color.Green, Color.Blue, Color.Yellow, Color.Cyan, Color.Magenta)
+
+    // Lista de colores fijos predefinidos
+    val fixedColors = listOf(
+        Color(0xFFEF9A9A), // Rojo claro
+        Color(0xFF81C784), // Verde claro
+        Color(0xFF64B5F6), // Azul claro
+        Color(0xFFFFD54F), // Amarillo
+        Color(0xFFBA68C8), // Morado
+        Color(0xFFFF8A65)  // Naranja
+    )
+
+    val pairColors = remember { mutableMapOf<Pair<String, String>, Color>() }
     var colorIndex by remember { mutableStateOf(0) }
 
-    // Mapa de colores de las parejas
-    val colorMap = remember { mutableStateMapOf<String, Color>() }
+    fun getNextColor(): Color {
+        val color = fixedColors[colorIndex]
+        colorIndex = (colorIndex + 1) % fixedColors.size
+        return color
+    }
 
-    Box(
+    // Resaltar pares correctos si el botón de aceptar es pulsado
+    if (isAcceptButtonClicked) {
+        pairColors.clear()
+        colorIndex = 0
+
+        currentQuestion.emparejamientos.forEach { (leftItem, rightItem) ->
+            pairColors[leftItem to rightItem] = getNextColor()
+        }
+    }
+
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp)
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -60,29 +84,26 @@ fun MatchingQuestionScreen(
             ) {
                 currentQuestion.leftItems.forEach { leftItem ->
                     val isDisabled = userSelections.containsKey(leftItem)
-                    val itemColor = colorMap[leftItem] ?: Color.Transparent
+                    val itemColor = userSelections[leftItem]?.let { rightItem ->
+                        pairColors[leftItem to rightItem] ?: Color.Transparent
+                    } ?: Color.Transparent
 
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(
                                 if (selectedLeftItem == leftItem) Color.LightGray else itemColor,
-                                RoundedCornerShape(8.dp)
+                                shape = RoundedCornerShape(8.dp)
                             )
-                            .border(2.dp, Color.Black, RoundedCornerShape(8.dp))
-                            .clickable(enabled = !isAcceptButtonClicked) {
-                                if (!isDisabled) {
-                                    selectedLeftItem =
-                                        if (selectedLeftItem == leftItem) null else leftItem
-                                }
+                            .clickable(enabled = !isDisabled) {
+                                selectedLeftItem = if (selectedLeftItem == leftItem) null else leftItem
                             }
                             .padding(16.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = leftItem,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = if (isDisabled) Color.Black else Color.Unspecified
+                            style = MaterialTheme.typography.bodyMedium
                         )
                     }
                 }
@@ -98,30 +119,27 @@ fun MatchingQuestionScreen(
             ) {
                 shuffledRightItems.forEach { rightItem ->
                     val isUsed = userSelections.containsValue(rightItem)
-                    val itemColor = userSelections.entries
-                        .find { it.value == rightItem }
-                        ?.key
-                        ?.let { colorMap[it] }
-                        ?: Color.Transparent
+                    val associatedLeftItem = userSelections.entries.firstOrNull { it.value == rightItem }?.key
+                    val itemColor = associatedLeftItem?.let {
+                        pairColors[it to rightItem] ?: Color.Transparent
+                    } ?: Color.Transparent
 
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(itemColor, RoundedCornerShape(8.dp))
-                            .border(2.dp, Color.Black, RoundedCornerShape(8.dp))
-                            .clickable(enabled = !isAcceptButtonClicked) {
-                                if (isUsed) {
-                                    val leftItem =
-                                        userSelections.entries.find { it.value == rightItem }?.key
-                                    leftItem?.let {
-                                        userSelections.remove(it)
-                                        colorMap.remove(it)
-                                    }
+                            .background(
+                                if (isUsed) itemColor else Color.Transparent,
+                                shape = RoundedCornerShape(8.dp)
+                            )
+                            .clickable {
+                                if (associatedLeftItem != null) {
+                                    // Deshacer el par
+                                    userSelections.remove(associatedLeftItem)
+                                    pairColors.remove(associatedLeftItem to rightItem)
                                 } else if (selectedLeftItem != null) {
+                                    // Crear un nuevo par
                                     userSelections[selectedLeftItem!!] = rightItem
-                                    val parejaColor = colors[colorIndex % colors.size]
-                                    colorMap[selectedLeftItem!!] = parejaColor
-                                    colorIndex++
+                                    pairColors[selectedLeftItem!! to rightItem] = getNextColor()
                                     selectedLeftItem = null
                                 }
                             }
@@ -130,27 +148,11 @@ fun MatchingQuestionScreen(
                     ) {
                         Text(
                             text = rightItem,
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                fontWeight = if (isUsed) FontWeight.Bold else FontWeight.Normal
-                            ),
-                            color = if (isUsed) Color.Black else Color.Unspecified
+                            style = MaterialTheme.typography.bodyMedium
                         )
                     }
                 }
             }
-        }
-    }
-
-    // Manejo del botón de aceptar
-    if (isAcceptButtonClicked) {
-        colorMap.clear()
-        colorIndex = 0
-
-        currentQuestion.emparejamientos.forEach { (leftItem, rightItem) ->
-            val parejaColor = colors[colorIndex % colors.size]
-            colorMap[leftItem] = parejaColor
-            colorMap[rightItem] = parejaColor
-            colorIndex++
         }
     }
 }

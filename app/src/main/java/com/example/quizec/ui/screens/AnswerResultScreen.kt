@@ -10,12 +10,15 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
+import com.example.quizec.R
 import com.example.quizec.data.model.Pregunta
 import com.example.quizec.data.model.TipoPregunta
+import com.example.quizec.ui.screens.UserQuestionTypes.AssociationQuestionScreen
 import com.example.quizec.ui.screens.UserQuestionTypes.FillBlankQuestionScreen
 import com.example.quizec.ui.screens.UserQuestionTypes.MatchingQuestionScreen
 import com.example.quizec.ui.screens.UserQuestionTypes.MissingWordsQuestionScreen
@@ -56,7 +59,7 @@ fun AnswerResultScreen(
     ) {
         if (preguntas.isEmpty()) {
             Text(
-                text = "No hay preguntas disponibles",
+                text = stringResource(R.string.no_hay_preguntas_disponibles),
                 style = MaterialTheme.typography.headlineMedium,
                 modifier = Modifier.align(Alignment.Center)
             )
@@ -93,7 +96,7 @@ fun AnswerResultScreen(
                                 .padding(8.dp)
                         )
                     } else {
-                        Text(text = "Archivo no encontrado")
+                        Text(text = stringResource(R.string.archivo_no_encontrado))
                     }
                 }
 
@@ -105,10 +108,9 @@ fun AnswerResultScreen(
                     TipoPregunta.VERDADERO_FALSO -> {
                         val respuestaCorrecta = currentQuestion.respuestasCorrectas.firstOrNull() ?: "" // Obtener la primera respuesta correcta
 
-                        TrueFalseQuestionScreen(
-                            onSelectedAnswerChange = {},
-                            falseButtonColor = if (respuestaCorrecta == "Falso") Color.Green else Color.Unspecified, // Si la respuesta correcta es "Falso", el botón "Falso" se pone verde
-                            trueButtonColor = if (respuestaCorrecta == "Verdadero") Color.Green else Color.Unspecified, // Si la respuesta correcta es "Verdadero", el botón "Verdadero" se pone verde
+                        TrueFalseQuestionScreen(                            onSelectedAnswerChange = {},
+                            falseButtonColor = if (respuestaCorrecta == stringResource(R.string.falso)) Color.Green else Color.Unspecified, // Si la respuesta correcta es "Falso", el botón "Falso" se pone verde
+                            trueButtonColor = if (respuestaCorrecta == stringResource(R.string.verdadero)) Color.Green else Color.Unspecified, // Si la respuesta correcta es "Verdadero", el botón "Verdadero" se pone verde
                             isAcceptButtonClicked = true, // Asegúrate de que los botones no se deshabiliten, solo cambien de color
                             correctAnswer = respuestaCorrecta // Pasamos la respuesta correcta como parámetro
                         )
@@ -152,7 +154,7 @@ fun AnswerResultScreen(
                             isAcceptButtonClicked = true
                         )
                     }
-                    TipoPregunta.EMPAREJAR -> { //REVISALO PQ AL CAMBIAR emparejamientos NS SI SIGUE TU LOGICA, IVAN
+                    TipoPregunta.EMPAREJAR -> {
                         MatchingQuestionScreen(
                             currentQuestion = currentQuestion,
                             userSelections = currentQuestion.emparejamientos.toMutableMap(),
@@ -169,25 +171,40 @@ fun AnswerResultScreen(
                         )
                     }
                     TipoPregunta.ASOCIACION -> {
-                        // Añade aquí la lógica específica para manejar preguntas de tipo ASOCIACION
-                        Text(text = "Lógica para preguntas de asociación no implementada.")
+                        AssociationQuestionScreen(
+                            currentQuestion = currentQuestion,
+                            userSelections = currentQuestion.conceptosYDefiniciones.toMutableMap(),
+                            isAcceptButtonClicked = true
+                        )
                     }
                 }
-
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                Button(
-                    onClick = {
-                        if (currentQuestionIndex < preguntas.size - 1) {
-                            currentQuestionIndex++
-                        } else {
-                            navController.navigate("results_screen/$codigoQuiz")
-                        }
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    // Botón para ir a la pregunta anterior
+                    Button(
+                        onClick = { currentQuestionIndex-- },
+                        enabled = currentQuestionIndex > 0, // Deshabilitar si es la primera pregunta
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    ) {
+                        Text(stringResource(R.string.pregunta_anterior))
                     }
-                ) {
-                    Text(text = "Siguiente pregunta")
+
+                    Button(
+                        onClick = {
+                            if (currentQuestionIndex < preguntas.size - 1) {
+                                currentQuestionIndex++
+                            } else {
+                                navController.navigate("results_screen/$codigoQuiz")
+                            }
+                        },
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    ) {
+                        Text(text = stringResource(R.string.siguiente_pregunta))
+                    }
                 }
+
             }
         }
     }

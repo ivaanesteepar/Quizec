@@ -1,7 +1,11 @@
 package com.example.quizec.ui.screens
 
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
+import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -11,10 +15,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
-import coil.compose.rememberAsyncImagePainter
+import coil.compose.AsyncImage
+import com.example.quizec.R
 import com.example.quizec.data.model.Pregunta
 import com.example.quizec.data.model.TipoPregunta
 import com.example.quizec.ui.screens.UserQuestionTypes.AssociationQuestionScreen
@@ -48,11 +56,10 @@ fun UserQuizzesScreen(
     var trueButtonColor by remember { mutableStateOf(Color.Unspecified) }
     var falseButtonColor by remember { mutableStateOf(Color.Unspecified) }
     //JIMENA
-    var enableAcept by remember { mutableStateOf(false) } //habilita el botoón de aceptar
+    var enableAcept by remember { mutableStateOf(false) } //habilita el botón de aceptar
     var selectedOption by remember { mutableStateOf<String?>(null) } //ESPACIOS
     var userOrderedItems by remember { mutableStateOf<List<String>>(emptyList()) } //ORDENAR
     val userSelections = remember { mutableStateMapOf<String, String>() } //ASOCIAR Y MATCH
-    var answer by remember { mutableStateOf<Any?>(null) }
     // Estado para controlar si el botón "Aceptar" fue presionado
     var isAcceptButtonClicked by remember { mutableStateOf(false) }
     val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
@@ -68,16 +75,26 @@ fun UserQuizzesScreen(
 
     var immediateResults by remember { mutableStateOf(false) }
 
+    val context = LocalContext.current
+
+    var userInputs = remember { mutableStateListOf<String>() }
+
+    var isTimeLoaded by remember { mutableStateOf(false) }
 
     LaunchedEffect(codigoQuiz) {
         if (codigoQuiz != null) {
-            println("Usuario ha entrado con id: $userId al cuestionario: $codigoQuiz")
+            // Establece el tiempo desde Firestore
+            quizViewModel.setQuestionsTime(codigoQuiz)
             quizViewModel.iniciarQuiz(codigoQuiz, userId)
             quizViewModel.cargarPreguntasPorCodigo(codigoQuiz)
             immediateResults = quizViewModel.obtenerImmediateResults(codigoQuiz)
             userName = usersViewModel.obtenerNombreUsuario(userId, codigoQuiz)
             usersViewModel.agregarUsuarioAQuiz(codigoQuiz)
-            quizViewModel.resetTimes()  // Restablece los tiempos a su valor inicial
+
+            // Establece el tiempo desde Firestore
+            quizViewModel.setQuestionsTime(codigoQuiz)
+            // Cambiar el estado cuando el tiempo esté cargado, ya q si no, sale 60
+            isTimeLoaded = true
         }
     }
 
@@ -115,29 +132,54 @@ fun UserQuizzesScreen(
         }
     }
 
-    LaunchedEffect(currentQuestionIndex) {
-        //hay q resetar los valores aqui pq si no, las preguntas de mismo tipo o q comparten var, tienen las respuestas anteriores.
-        userSelections.clear()
-        userOrderedItems = emptyList()
-        selectedOption = null
+    LaunchedEffect(isTimeLoaded, currentQuestionIndex) {
+        if (isTimeLoaded) {
+            userOrderedItems = emptyList()
+            selectedOption = null
 
-        remainingTime = 30 // Reinicia el tiempo de la pregunta al cambiar
-        timerActive = true
-        isAcceptButtonClicked = false // Reinicia el estado del botón "Aceptar"
+            //Reinicia el tiempo de la pregunta al cambiar
+            remainingTime = quizViewModel.remainingTime.value
 
-        while (timerActive && remainingTime > 0 && totalTime > 0) {
-            delay(1000)
-            remainingTime -= 1
-            quizViewModel.tick() // Disminuye el tiempo total
-        }
+            timerActive = true
+            isAcceptButtonClicked = false // Reinicia el estado del botón "Aceptar"
 
-        if (remainingTime == 0) {
-            if (currentQuestionIndex < preguntas.size - 1) {
-                currentQuestionIndex++ // Cambiar a la siguiente pregunta
-            } else {
-                navController.navigate("results_screen/$codigoQuiz") // Ir a resultados
+            while (timerActive && remainingTime > 0 && totalTime > 0) {
+                delay(1000)
+                remainingTime -= 1
+                quizViewModel.tick() // Disminuye el tiempo total
             }
+
+            if (remainingTime == 0) {
+                if (codigoQuiz != null) {
+                    immediateResults = quizViewModel.obtenerImmediateResults(codigoQuiz)
+                }
+
+                if (immediateResults) {
+                    // Si immediateResults es true, esperar 10 segundos antes de cambiar a la siguiente pregunta
+                    isAcceptButtonClicked = true
+                    Handler(Looper.getMainLooper()).postDelayed({
+                        if (currentQuestionIndex < preguntas.size - 1) {
+                            currentQuestionIndex++ // Cambiar a la siguiente pregunta
+                        } else {
+                            // Aquí va el código que quieres ejecutar si ya no hay más preguntas
+                        }
+                    }, 10000) // 10000 milisegundos = 10 segundos
+                } else {
+                    // Si immediateResults es false, cambiar a la siguiente pregunta inmediatamente
+                    if (currentQuestionIndex < preguntas.size - 1) {
+                        currentQuestionIndex++ // Cambiar a la siguiente pregunta
+                    } else {
+                        // Aquí va el código que quieres ejecutar si ya no hay más preguntas
+                    }
+                }
+            }
+
         }
+    }
+
+    BackHandler {
+        Toast.makeText(context,
+            context.getString(R.string.no_puedes_retroceder_durante_el_quiz), Toast.LENGTH_SHORT).show()
     }
 
     preguntas = quizViewModel.preguntas
@@ -148,7 +190,7 @@ fun UserQuizzesScreen(
     ) {
         if (preguntas.isEmpty()) {
             Text(
-                text = "No hay preguntas disponibles",
+                text = stringResource(R.string.no_hay_preguntas_disponibles),
                 style = MaterialTheme.typography.headlineMedium,
                 modifier = Modifier.align(Alignment.Center) // Centra el texto en el centro de la pantalla
             )
@@ -156,7 +198,7 @@ fun UserQuizzesScreen(
             val currentQuestion = preguntas[currentQuestionIndex]
             // Opciones de respuesta para completar las palabras
             val opcionesCorrectas = currentQuestion.opcionesCorrectasCompletarPalabras
-            var userInputs = remember {
+            userInputs = remember {
                 mutableStateListOf<String>().apply {
                     repeat(opcionesCorrectas.size) {
                         add("")
@@ -172,7 +214,7 @@ fun UserQuizzesScreen(
             ) {
                 // Número de pregunta actual
                 Text(
-                    text = "Pregunta ${currentQuestionIndex + 1} de ${preguntas.size}",
+                    text = LocalContext.current.getString(R.string.pregunta_texto, currentQuestionIndex + 1, preguntas.size),
                     style = MaterialTheme.typography.bodyMedium,
                     fontSize = 16.sp
                 )
@@ -180,21 +222,33 @@ fun UserQuizzesScreen(
                 Spacer(modifier = Modifier.width(50.dp)) // Ajusta el valor según lo necesites
 
                 Text(
-                    text = "Tiempo restante: $remainingTime segundos (Total: $totalTime)",
+                    text = LocalContext.current.getString(R.string.tiempo_restante, remainingTime, totalTime),
                     style = MaterialTheme.typography.bodyMedium,
                     fontSize = 16.sp
                 )
             }
 
-            // Centrar todo el contenido dentro de un Column
+            // Centrar tdo el contenido dentro de un Column
             Column(
-                horizontalAlignment = Alignment.CenterHorizontally, // Centra todo el contenido horizontalmente
-                verticalArrangement = Arrangement.Center, // Centra todo el contenido verticalmente
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
                 modifier = Modifier
                     .align(Alignment.Center) // Alinea la columna en el centro de la pantalla
                     .verticalScroll(rememberScrollState())
 
             ) {
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Show selected image if available
+                if (currentQuestion.imagen != null) {
+                    AsyncImage(
+                        model = currentQuestion.imagen,
+                        contentDescription = "Imagen cargada del servidor",
+                        contentScale = ContentScale.Crop, // Ajusta la imagen para q aproveche tdo el tam
+                        modifier = Modifier.size(200.dp)
+                    )
+                }
+
                 Spacer(modifier = Modifier.height(20.dp))
 
                 // Mostrar el título de la pregunta
@@ -207,36 +261,15 @@ fun UserQuizzesScreen(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                currentQuestion.imagen?.let { imageUrl ->
-                    if (imageUrl.startsWith("file://")) {
-                        // Asegúrate de que el archivo existe antes de intentar cargarlo
-                        val file = File(Uri.parse(imageUrl).path ?: "")
-                        if (file.exists()) {
-                            Image(
-                                painter = rememberAsyncImagePainter(model = imageUrl),
-                                contentDescription = "Imagen de la pregunta",
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(200.dp) // Ajusta el tamaño de la imagen
-                                    .padding(8.dp)
-                            )
-                        } else {
-                            // Si el archivo no existe, puedes mostrar un mensaje o una imagen predeterminada
-                            Text(
-                                text = "Archivo no encontrado"
-                            )
-                        }
-                    }
-                }
-
                 // Opciones de respuesta dependiendo del tipo de pregunta
                 if (currentQuestion.tipo == TipoPregunta.VERDADERO_FALSO) {
                     val correctAnswer = currentQuestion.respuestasCorrectas.firstOrNull() ?: ""
 
+                    var context = LocalContext.current
                     TrueFalseQuestionScreen(
                         onSelectedAnswerChange = { newAnswer ->
                             selectedAnswer = newAnswer
-                            if (selectedAnswer?.contains("Verdadero") == true) {
+                            if (selectedAnswer?.contains(context.getString(R.string.verdadero)) == true) {
                                 trueButtonColor = selectedButtonColor
                                 falseButtonColor = Color.Unspecified // alterna color naranja
                             } else {
@@ -250,7 +283,7 @@ fun UserQuizzesScreen(
                         correctAnswer = correctAnswer
                     )
 
-                    if (selectedAnswer != null) enableAcept = true
+                    if (selectedAnswer != null && remainingTime > 0) enableAcept = true else enableAcept = false
 
                 } else if (currentQuestion.tipo == TipoPregunta.OPCION_MULTIPLE_UNA) {
                     val correctAnswer = currentQuestion.respuestasCorrectas.firstOrNull() ?: ""
@@ -265,7 +298,7 @@ fun UserQuizzesScreen(
                         correctAnswer = correctAnswer
 
                     )
-                    enableAcept = if (!selectedAnswer.isNullOrEmpty()) true else false
+                    enableAcept = if (!selectedAnswer.isNullOrEmpty() && remainingTime > 0) true else false
 
 
                 } else if (currentQuestion.tipo == TipoPregunta.OPCION_MULTIPLE_MULTIPLES) {
@@ -279,7 +312,7 @@ fun UserQuizzesScreen(
                         correctAnswers = currentQuestion.respuestasCorrectas
                     )
                     println("selectedAnswer: $selectedAnswer")
-                    enableAcept = if (!selectedAnswer.isNullOrEmpty()) true else false
+                    enableAcept = if (!selectedAnswer.isNullOrEmpty() && remainingTime > 0) true else false
 
 
                 } else if (currentQuestion.tipo == TipoPregunta.COMPLETAR_ESPACIOS) {
@@ -293,15 +326,14 @@ fun UserQuizzesScreen(
 
                         )
                     //habilitar o no el boton de aceptar
-                    if (selectedOption != null){
+                    if (selectedOption != null && remainingTime > 0){
                         enableAcept = true
                     }else{
                         enableAcept = false
                     }
 
-
-
                 } else if (currentQuestion.tipo == TipoPregunta.ORDENAR) {
+                    Log.d("OrderingQuestionScreen", "currentQuestion: $currentQuestion")
                     OrderingQuestionScreen(
                         currentQuestion = currentQuestion,
                         userOrderedItems = { newOrderedItems ->
@@ -309,22 +341,18 @@ fun UserQuizzesScreen(
                         },
                         isAcceptButtonClicked = isAcceptButtonClicked
                     )
-                    enableAcept = true
+                    enableAcept = if (remainingTime > 0) true else false
 
 
                 } else if (currentQuestion.tipo == TipoPregunta.EMPAREJAR) {
-
+                    Log.d("MatchingQuestionScreen", "currentQuestion: $currentQuestion")
                     MatchingQuestionScreen(
                         currentQuestion = currentQuestion,
                         userSelections = userSelections,
                         isAcceptButtonClicked = isAcceptButtonClicked
                     )
                     println("userSelections: $userSelections")
-                    if (userSelections.size == currentQuestion.emparejamientos.size) {
-                        enableAcept = true
-                    }else{
-                        enableAcept = false
-                    }
+                    enableAcept = if (userSelections.size == currentQuestion.emparejamientos.size && remainingTime > 0) true else false
 
 
                 } else if (currentQuestion.tipo == TipoPregunta.COMPLETAR_PALABRAS) {
@@ -335,19 +363,24 @@ fun UserQuizzesScreen(
                         userInputs = userInputs,
                         isAcceptButtonClicked = isAcceptButtonClicked
                     )
-                    if (userInputs.all { it.isNotBlank() } && userInputs.size == currentQuestion.opcionesCorrectasCompletarPalabras.size) {
+                    if (userInputs.all { it.isNotBlank() } &&
+                         userInputs.size == currentQuestion.opcionesCorrectasCompletarPalabras.size
+                        && remainingTime > 0) {
                         enableAcept = true
                     }else{
                         enableAcept = false
                     }
 
                 } else if (currentQuestion.tipo == TipoPregunta.ASOCIACION) {
+                    Log.d("AssociationQuesiton", "currentQuestion: $currentQuestion")
+
                     AssociationQuestionScreen(
                         currentQuestion = currentQuestion,
-                        userSelections = userSelections
+                        userSelections = userSelections,
+                        isAcceptButtonClicked = isAcceptButtonClicked
                     )
                     println("userSelections: $userSelections")
-                    if (userSelections.size == currentQuestion.conceptosYDefiniciones.size) {
+                    if (userSelections.size == currentQuestion.conceptosYDefiniciones.size && remainingTime > 0) {
                         enableAcept = true
                     }else{
                         enableAcept = false
@@ -394,6 +427,7 @@ fun UserQuizzesScreen(
 
                             TipoPregunta.OPCION_MULTIPLE_MULTIPLES -> {
                                 if (selectedAnswer?.sorted() == correctAnswers.sorted()) localIsAnswerCorrect = true
+                                println("selectedAnswer: $selectedAnswer")
                                 // Registrar la respuesta seleccionada
                                 selectedAnswer?.let {
                                     quizViewModel.actualizarUserAnswers(
@@ -407,6 +441,7 @@ fun UserQuizzesScreen(
 
                             TipoPregunta.COMPLETAR_ESPACIOS -> {
                                 if (selectedOption == currentQuestion.opcionCorrecta) localIsAnswerCorrect = true
+                                println("selectedOption: $selectedOption")
                                 selectedOption?.let {
                                     quizViewModel.actualizarUserAnswers(
                                         codigoQuiz.toString(),
@@ -441,28 +476,34 @@ fun UserQuizzesScreen(
 
                                 if (isAllCorrect) localIsAnswerCorrect = true
 
+                                Log.d("userSelections", "valor de userSelections: ${userSelections}")
+                                // Hacer una copia de los datos antes de guardarlos en la base de datos
+                                val respuestasParaGuardar = userSelections.toMap() // Crea una copia inmutable
+
                                 userSelections.let {
                                     quizViewModel.actualizarUserAnswers(
                                         codigoQuiz.toString(),
                                         currentQuestionIndex,
                                         userId,
-                                        it
+                                        respuestasParaGuardar
                                     )
                                 }
 
                             }
 
                             TipoPregunta.COMPLETAR_PALABRAS -> {
-                                if (userInputs.sorted() == currentQuestion.opcionesCorrectasCompletarPalabras.sorted()) localIsAnswerCorrect =
-                                    true
-                                userInputs.let {
-                                    quizViewModel.actualizarUserAnswers(
-                                        codigoQuiz.toString(),
-                                        currentQuestionIndex,
-                                        userId,
-                                        it
-                                    )
-                                }
+                                if (userInputs.sorted() == currentQuestion.opcionesCorrectasCompletarPalabras.sorted()) localIsAnswerCorrect = true
+
+                                // Hacer una copia de los datos antes de guardarlos en la base de datos
+                                val respuestasParaGuardar = userInputs.toList() // Crea una copia inmutable
+
+                                // Guardar las respuestas de manera persistente en la base de datos
+                                quizViewModel.actualizarUserAnswers(
+                                    codigoQuiz.toString(),
+                                    currentQuestionIndex,
+                                    userId,
+                                    respuestasParaGuardar // Usa la copia de los datos
+                                )
                             }
 
                             TipoPregunta.ASOCIACION -> {
@@ -470,25 +511,27 @@ fun UserQuizzesScreen(
                                     userSelections[key] == correctValue
                                 }
 
-                                Log.d("isAllCorrect asociar", "valor de is allcorrrct: $isAllCorrect")
+                                Log.d("isAllCorrect asociar", "valor de isAllCorrect: $isAllCorrect")
 
                                 if (isAllCorrect) localIsAnswerCorrect = true
 
-                                userSelections.let {
-                                    quizViewModel.actualizarUserAnswers(
-                                        codigoQuiz.toString(),
-                                        currentQuestionIndex,
-                                        userId,
-                                        it
-                                    )
-                                }
+                                // Hacer una copia de los datos antes de guardarlos en la base de datos
+                                val respuestasParaGuardar = userSelections.toMap() // Crea una copia inmutable
+
+                                // Guardar las respuestas de manera persistente en la base de datos
+                                quizViewModel.actualizarUserAnswers(
+                                    codigoQuiz.toString(),
+                                    currentQuestionIndex,
+                                    userId,
+                                    respuestasParaGuardar // Usa la copia de los datos
+                                )
                             }
                         }
                         // Asigna el mensaje de resultado dependiendo de si la respuesta es correcta o no
                         resultMessage = if (localIsAnswerCorrect) {
-                            "Respuesta Correcta!"
+                            context.getString(R.string.respuesta_correcta)
                         } else {
-                            "Respuesta Incorrecta!"
+                            context.getString(R.string.respuesta_incorrecta)
                         }
                         isAnswerCorrect = localIsAnswerCorrect
                         isAcceptButtonClicked = true
@@ -508,28 +551,29 @@ fun UserQuizzesScreen(
                                 println("Respuestas correctas actualizadas: $respuestasCorrectasActualizadas")
                             }
                         }
-                        if (!immediateResults) {
+                        if (!immediateResults && isAcceptButtonClicked) {
                             // Si immediateResults es false, avanzar automáticamente
                             if (currentQuestionIndex < preguntas.size - 1) {
                                 currentQuestionIndex++
-                                isAcceptButtonClicked = false // Reset para la próxima pregunta
-                            } else {
-                                navController.navigate("results_screen/$codigoQuiz")
+                                // Reinicia los estados para la próxima pregunta
+                                selectedAnswer = null
+                                isAnswerCorrect = null
+                                isAnswerSelected = false
+                                isAcceptButtonClicked = false
+                                enableAcept = false
+                                trueButtonColor = Color.Unspecified
+                                falseButtonColor = Color.Unspecified
+                                resultMessage = ""
+
+                                // Limpiar los datos temporales después de guardar las respuestas en la base de datos
+                                userInputs.clear()  // Esto no afectará a las respuestas almacenadas en la base de datos
+                                userSelections.clear()
                             }
                         }
-                        // Reinicia los estados para la próxima pregunta
-                        selectedAnswer = null
-                        isAnswerCorrect = null
-                        isAnswerSelected = false
-                        isAcceptButtonClicked = false
-                        enableAcept = false
-                        trueButtonColor = Color.Unspecified
-                        falseButtonColor = Color.Unspecified
-                        resultMessage = ""
                     },
-                    enabled = enableAcept
+                    enabled = !isAcceptButtonClicked && enableAcept
                 ) {
-                    Text(text = "Aceptar")
+                    Text(text = stringResource(R.string.aceptar))
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
@@ -562,18 +606,21 @@ fun UserQuizzesScreen(
                             falseButtonColor = Color.Unspecified
                             resultMessage = ""
 
+                            // Limpiar los datos temporales después de guardar las respuestas en la base de datos
+                            userInputs.clear()  // Esto no afectará a las respuestas almacenadas en la base de datos
+                            userSelections.clear()
+
                             if (currentQuestionIndex < preguntas.size - 1) {
                                 // Avanzar a la siguiente pregunta
                                 currentQuestionIndex++
                             } else {
                                 // Navegar a la pantalla de resultados si es la última pregunta
-                                navController.navigate("results_screen/$codigoQuiz")
                             }
                         },
-                        enabled = isAcceptButtonClicked, // Habilitar solo si se presionó "Aceptar"
+                        enabled = isAcceptButtonClicked && (currentQuestionIndex < preguntas.size - 1), // Habilitar solo si se presionó "Aceptar"
                         modifier = Modifier.padding(bottom = 10.dp)
                     ) {
-                        Text(text = "Siguiente pregunta")
+                        Text(text = stringResource(R.string.siguiente_pregunta))
                     }
                 }
             }

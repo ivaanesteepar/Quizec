@@ -18,8 +18,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.activity.result.PickVisualMediaRequest
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
@@ -53,14 +57,13 @@ fun EditarCuestionarioScreen(
     var locationRestricted by remember { mutableStateOf(cuestionarioMod.locationRestricted) }
     var immediateResults by remember { mutableStateOf(cuestionarioMod.immediateResults) }
     var radio by rememberSaveable { mutableStateOf(cuestionarioMod.radio.toString()) }
+    //tiempo
+    var questionsTime by remember { mutableStateOf(cuestionarioMod.questionsTime) }
 
     val preguntasSeleccionadas = quizViewModel.preguntas
 
     //NEW
     var preguntasInicialesQuiz by rememberSaveable { mutableStateOf(emptyList<Pregunta>()) }
-
-
-    println("preguntasSeleccionadas en editar cuestionario: $preguntasSeleccionadas") // bien
 
     LaunchedEffect(cuestionarioId) {
         // Llamamos a la función suspendida para cargar las preguntas del nuevo cuestionario
@@ -76,11 +79,7 @@ fun EditarCuestionarioScreen(
         //NEW
         preguntasInicialesQuiz = questionsViewModel.cargarPreguntasCuestionario(cuestionarioId)
 
-
-        println("tamaño de la lista de preguntas al cambiar de cuestionario: ${listaPreguntas.size}")
     }
-
-    println("listaPreguntas: $listaPreguntas")
 
     val context = LocalContext.current
     var error by remember { mutableStateOf<String?>(null) }
@@ -96,7 +95,7 @@ fun EditarCuestionarioScreen(
                     onResult = { result ->
                         Log.d("EditarCuestionarioScreen", "Resultado de subir imagen: $result")
                         if (result != null) {
-                            imageUri = result // Now you're setting a String?
+                            imageUri = result
                             error = null
                         } else {
                             Log.d("EditarCuestionarioScreen", "Error al subir la imagen")
@@ -116,11 +115,11 @@ fun EditarCuestionarioScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // Título del cuestionario
-        Text("Editar Cuestionario", style = MaterialTheme.typography.titleLarge)
+        Text(stringResource(R.string.editar_cuestionario), style = MaterialTheme.typography.titleLarge)
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Text("Título del Cuestionario", style = MaterialTheme.typography.bodyMedium)
+        Text(stringResource(R.string.titulo_del_cuestionario), style = MaterialTheme.typography.bodyMedium)
         BasicTextField(
             value = titulo,
             onValueChange = {
@@ -138,7 +137,7 @@ fun EditarCuestionarioScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Text("Descripción", style = MaterialTheme.typography.bodyMedium)
+        Text(stringResource(R.string.descripcion), style = MaterialTheme.typography.bodyMedium)
         BasicTextField(
             value = descripcion,
             onValueChange = {
@@ -156,36 +155,89 @@ fun EditarCuestionarioScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Text("Subir Imagen (Opcional)", style = MaterialTheme.typography.bodyMedium)
-        Button(
-            onClick = {
-                pickPicture.launch(
-                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+        // Componente para seleccionar o eliminar imagen
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(stringResource(R.string.subir_imagen_opcional), style = MaterialTheme.typography.bodyMedium)
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Verificamos si hay imagen seleccionada o no
+            if (imageUri == null) {
+                // Si no hay imagen, centramos el botón de seleccionar imagen
+                Button(
+                    onClick = {
+                        pickPicture.launch(
+                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                        )
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth() // Ocupa tdo el ancho disponible
+                        .padding(horizontal = 50.dp) // Márgenes laterales para que no esté pegado a los bordes
+                ) {
+                    Text(stringResource(R.string.seleccionar_imagen))
+                }
+            } else {
+                // Si hay una imagen, alineamos los botones horizontalmente
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center, // Centrar los botones
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Botón para seleccionar imagen
+                    Button(
+                        onClick = {
+                            pickPicture.launch(
+                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                            )
+                        },
+                    ) {
+                        Text(stringResource(R.string.seleccionar_imagen))
+                    }
+
+                    Spacer(modifier = Modifier.width(16.dp)) // Espacio entre los botones
+
+                    // Botón para eliminar la imagen
+                    Button(
+                        onClick = {
+                            // Eliminar la imagen
+                            imageUri = null
+                        }
+                    ) {
+                        Text(
+                            text = stringResource(R.string.eliminar_imagen),
+                            color = Color.White // Texto blanco para mayor visibilidad
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Mostrar la imagen seleccionada si existe
+            if (!imageUri.isNullOrEmpty()) {
+                AsyncImage(
+                    model = imageUri, // Usando la URI de la imagen cargada
+                    contentDescription = stringResource(R.string.imagen_cargada_del_servidor),
+                    contentScale = ContentScale.Crop, // Ajusta la imagen para que aproveche todo el tamaño
+                    modifier = Modifier.size(100.dp)
+                )
+            } else {
+                // Mostrar una imagen predeterminada si no se ha seleccionado ninguna imagen
+                Image(
+                    painter = painterResource(id = R.drawable.no_image_icon), // Reemplaza con tu recurso
+                    contentDescription = stringResource(R.string.imagen_predeterminada),
+                    modifier = Modifier.size(100.dp)
                 )
             }
-        ) {
-            Text("Seleccionar Imagen")
-        }
 
-        if (!imageUri.isNullOrEmpty()) {
-            AsyncImage(
-                model = imageUri, // Utiliza la URI de la imagen cargada
-                contentDescription = "Imagen cargada del servidor",
-                modifier = Modifier.size(200.dp)
-            )
-        } else {
-            // Mostrar una imagen predeterminada de los recursos de drawable
-            Image(
-                painter = painterResource(id = R.drawable.no_image_icon), // Reemplaza con tu recurso
-                contentDescription = "Imagen predeterminada",
-                modifier = Modifier.size(200.dp)
-            )
+            Spacer(modifier = Modifier.height(16.dp))
         }
 
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text("Contador de preguntas: ${listaPreguntas.size}") //tiene las pregs nuevas y las iniciales
+        Text(stringResource(R.string.contador_de_preguntas, listaPreguntas.size)) // tiene las pregs nuevas y las iniciales
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -194,31 +246,60 @@ fun EditarCuestionarioScreen(
             onClick = { navController.navigate("select_questions_edit/$creadorId/$cuestionarioId") },
             modifier = Modifier.fillMaxWidth(0.8f)
         ) {
-            Text("Seleccionar Preguntas")
+            Text(stringResource(R.string.seleccionar_preguntas))
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Boton para seleccionar preguntas
-        // DESAPARECEN LAS PREGUNTAS SELECCIONADAS CUANDO SE VUELVE DE ESTA PANTALLA
+        // Boton para deseleccionar preguntas
         Button(
             onClick = {
                 navController.navigate("delete_questions/$cuestionarioId")
             },
             modifier = Modifier.fillMaxWidth(0.8f)
         ) {
-            Text("Eliminar Preguntas")
+            Text(stringResource(R.string.eliminar_preguntas_boton))
         }
 
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Mostrar mensaje de error si es necesario
+        if (errorMessage.isNotEmpty()) {
+            Text(text = errorMessage, color = Color.Red)
+        }
 
         Spacer(modifier = Modifier.height(12.dp))
+
+        // Fila para seleccionar el tiempo límite por pregunta
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = stringResource(R.string.tiempo_de_las_preguntas_s),
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.bodyLarge
+            )
+            OutlinedTextField(
+                value = questionsTime.toString(),
+                onValueChange = { newquestionsTime ->
+                    questionsTime = newquestionsTime.toIntOrNull() ?: 0 // Actualiza el tiempo, validando la entrada
+                },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier
+                    .padding(start = 8.dp)
+                    .width(100.dp)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp)) // Más espacio entre los elementos
 
         // Switches para configuración adicional
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Acceso Inmediato al Cuestionario", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+            Text(stringResource(R.string.acceso_inmediato_al_cuestionario), modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
             Switch(
                 checked = immediateAccess,
                 onCheckedChange = { immediateAccess = it },
@@ -232,7 +313,7 @@ fun EditarCuestionarioScreen(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Restringir por Ubicación", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+            Text(stringResource(R.string.restringir_por_ubicaci_n), modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
             Switch(
                 checked = locationRestricted,
                 onCheckedChange = { locationRestricted = it },
@@ -242,7 +323,7 @@ fun EditarCuestionarioScreen(
 
         if (locationRestricted) {
             Spacer(modifier = Modifier.height(16.dp))
-            Text("Radio del área permitida (km)", style = MaterialTheme.typography.bodyLarge)
+            Text(stringResource(R.string.radio_del_rea_permitida_km), style = MaterialTheme.typography.bodyLarge)
             BasicTextField(
                 value = radio,
                 onValueChange = { radio = it },
@@ -261,7 +342,7 @@ fun EditarCuestionarioScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Acceso Inmediato a Resultados",
+                text = stringResource(R.string.acceso_inmediato_a_resultados),
                 modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.bodyLarge
             )
@@ -281,63 +362,74 @@ fun EditarCuestionarioScreen(
         // ARREGLAR CUANDO ACTUALIZO EL CUESTIONARIO SIN HABER HECHO CAMBIOS, SE DUPLICAN LAS PREGUNTAS INICIALES
         Button(
             onClick = {
-                var valid = true
-                if (titulo.isEmpty()) {
-                    tituloError = true  // Activar el error del título
-                    valid = false
-                }
+                errorMessage = "" // Reinicia el mensaje de error
+                tituloError = false
+                descripcionError = false
 
-                if (descripcion.isEmpty()) {
-                    descripcionError = true  // Activar el error de la descripción
-                    valid = false
-                }
+                when {
+                    titulo.isEmpty() -> {
+                        tituloError = true
+                        errorMessage =
+                            context.getString(R.string.por_favor_ingrese_un_valor_v_lido_para_el_t_tulo)
+                    }
+                    descripcion.isEmpty() -> {
+                        descripcionError = true
+                        errorMessage =
+                            context.getString(R.string.por_favor_ingrese_un_valor_v_lido_para_la_descripci_n)
+                    }
 
-                val radioValue = radio.toDoubleOrNull()
-                if (radioValue == null && locationRestricted) {  // Validar si el radio es requerido
-                    errorMessage = "Por favor, ingrese un valor válido para el radio."
-                    valid = false
-                }
+                    listaPreguntas.isEmpty() -> {
+                        errorMessage =
+                            context.getString(R.string.debe_agregar_al_menos_una_pregunta_al_cuestionario)
+                    }
 
-                if (!valid) {
-                    errorMessage = "Por favor, complete todos los campos requeridos."  // Mostrar el mensaje de error
-                } else {
-                    // Actualizar el cuestionario con las preguntas seleccionadas
-                    quizViewModel.actualizarCuestionario(
-                        cuestionario = Cuestionario(
-                            id = cuestionarioId,
-                            titulo = titulo,
-                            descripcion = descripcion,
-                            creadorId = creadorId,
-                            imagen = imageUri?.toString(),
-                            preguntas = listaPreguntas, //CAMBIADO
-                            immediateAccess = immediateAccess,
-                            locationRestricted = locationRestricted,
-                            immediateResults = immediateResults,
-                            quizIniciado = false,
-                            quizUsed = false,
-                            latitude = 0.0,
-                            longitude = 0.0,
-                            radio = radioValue ?: 0.0
-                        ),
-                        codigoQuiz = cuestionarioId,
-                        onError = { errorMessage = it ?: "Unknown error" }
-                    )
+                    locationRestricted && radio.toDoubleOrNull() == null -> {
+                        errorMessage =
+                            context.getString(R.string.por_favor_ingrese_un_valor_v_lido_para_el_radio)
+                    }
+                    questionsTime <= 0 -> {
+                        errorMessage =
+                            context.getString(R.string.por_favor_ingrese_un_valor_v_lido_para_el_tiempo)
+                    }
+                    else -> {
+                        // Actualizar el cuestionario con las preguntas seleccionadas
+                        quizViewModel.actualizarCuestionario(
+                            cuestionario = Cuestionario(
+                                id = cuestionarioId,
+                                titulo = titulo,
+                                descripcion = descripcion,
+                                creadorId = creadorId,
+                                imagen = imageUri,
+                                preguntas = listaPreguntas, // Actualización de preguntas
+                                immediateAccess = immediateAccess,
+                                locationRestricted = locationRestricted,
+                                immediateResults = immediateResults,
+                                quizIniciado = false,
+                                quizUsed = false,
+                                latitude = 0.0,
+                                longitude = 0.0,
+                                radio = radio.toDoubleOrNull() ?: 0.0,
+                                questionsTime = questionsTime
+                            ),
+                            codigoQuiz = cuestionarioId,
+                            onError = { errorMessage = it ?: context.getString(R.string.error_desconocido) }
+                        )
 
-                    // Guardar las preguntas en el ViewModel
-                    questionsViewModel.guardarPreguntasCuestionario(cuestionarioId, listaPreguntas - preguntasInicialesQuiz)
+                        // Guardar las preguntas en el ViewModel
+                        questionsViewModel.guardarPreguntasCuestionario(cuestionarioId, listaPreguntas - preguntasInicialesQuiz)
 
-                    // Vaciar las preguntas seleccionadas para evitar que se sumen a otro cuestionario
-                    quizViewModel.resetearPreguntas()
+                        // Reiniciar las preguntas seleccionadas
+                        quizViewModel.resetearPreguntas()
 
-                    // Navegar de vuelta a la pantalla de cuestionarios
-                    navController.navigate("select_cuestionario")
+                        // Navegar de vuelta a la pantalla de selección de cuestionarios
+                        navController.navigate("select_cuestionario")
+                    }
                 }
             },
             modifier = Modifier.fillMaxWidth(0.8f)
         ) {
-            Text("Actualizar Cuestionario", color = Color.White)
+            Text(stringResource(R.string.actualizar_cuestionario), color = Color.White)
         }
-
 
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -345,20 +437,36 @@ fun EditarCuestionarioScreen(
             onClick = {
                 // Restaurar las preguntas a su estado original
                 listaPreguntas = listaPreguntasOriginal
+                // Actualizar el cuestionario para recuperar las preguntas borradas
+                quizViewModel.actualizarCuestionario(
+                    cuestionario = Cuestionario(
+                        id = cuestionarioId,
+                        titulo = cuestionarioMod.titulo,
+                        descripcion = cuestionarioMod.descripcion,
+                        creadorId = cuestionarioMod.creadorId,
+                        imagen = cuestionarioMod.imagen,
+                        preguntas = listaPreguntas, // Recupero las preguntas borradas
+                        immediateAccess = cuestionarioMod.immediateAccess,
+                        locationRestricted = cuestionarioMod.locationRestricted,
+                        immediateResults = cuestionarioMod.immediateResults,
+                        quizIniciado = cuestionarioMod.quizIniciado,
+                        quizUsed = cuestionarioMod.quizUsed,
+                        latitude = cuestionarioMod.latitude,
+                        longitude = cuestionarioMod.longitude,
+                        radio = cuestionarioMod.radio,
+                        questionsTime = cuestionarioMod.questionsTime
+                    ),
+                    codigoQuiz = cuestionarioId,
+                    onError = { errorMessage = it ?: context.getString(R.string.error_desconocido) }
+                )
                 quizViewModel.resetearPreguntas()
                 navController.navigate("select_cuestionario")
             },
             modifier = Modifier.fillMaxWidth(0.8f)
         ) {
-            Text("Volver", color = Color.White)
+            Text(stringResource(R.string.volver), color = Color.White)
         }
 
-
-
-        // Mostrar mensaje de error si es necesario
-        if (errorMessage.isNotEmpty()) {
-            Text(text = errorMessage, color = Color.Red)
-        }
     }
 }
 

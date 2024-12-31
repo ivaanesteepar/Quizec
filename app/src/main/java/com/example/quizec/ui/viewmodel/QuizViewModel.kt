@@ -16,6 +16,10 @@ import com.example.quizec.data.model.Rol
 import com.example.quizec.data.model.TipoPregunta
 import com.example.quizec.data.model.Usuario
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -75,8 +79,16 @@ class QuizViewModel : ViewModel() {
     private val _respuestasUsuario = mutableStateOf<List<List<Map<String, Any>>>>(listOf())
     val respuestasUsuario: State<List<List<Map<String, Any>>>> = _respuestasUsuario
 
+    private val _numeroUsuarios = MutableStateFlow(0)
+    val numeroUsuarios: StateFlow<Int> = _numeroUsuarios
+
     init {
         obtenerRolUsuario()
+    }
+
+    // Función para actualizar el tiempo en el ViewModel
+    fun updateQuestionTime(newTime: Int) {
+        _remainingTime.value = newTime
     }
 
     // Modificamos la función para que devuelva un valor Boolean
@@ -154,41 +166,6 @@ class QuizViewModel : ViewModel() {
             }
     }
 
-    // Función para eliminar una pregunta
-    fun eliminarPreguntaCuestionario(cuestionarioId: String, preguntaId: String, onSuccess: () -> Unit) {
-        val db = FirebaseFirestore.getInstance()
-
-        db.collection("cuestionarios")
-            .whereEqualTo("id", cuestionarioId)
-            .get()
-            .addOnSuccessListener { querySnapshot ->
-                if (querySnapshot.documents.isNotEmpty()) {
-                    val documento = querySnapshot.documents[0]
-                    val cuestionarioRef = documento.reference
-                    val preguntas = documento.get("preguntas") as? MutableList<Map<String, Any>> ?: mutableListOf()
-
-                    // Filtra el array para eliminar la pregunta
-                    val preguntasActualizadas = preguntas.filter { it["id"] != preguntaId }
-
-                    // Actualiza Firestore
-                    cuestionarioRef.update("preguntas", preguntasActualizadas)
-                        .addOnSuccessListener {
-                            // Aquí también actualizamos la lista local de preguntas en el ViewModel
-                            _preguntas.removeIf { it.id == preguntaId }
-
-                            // Llama al callback de éxito
-                            onSuccess()
-                        }
-                        .addOnFailureListener { exception ->
-                            println("Error al eliminar la pregunta: ${exception.message}")
-                        }
-                }
-            }
-            .addOnFailureListener { exception ->
-                println("Error al obtener el cuestionario: ${exception.message}")
-            }
-    }
-
 
     fun obtenerCuestionario(cuestionarioId: String, onResult: (Cuestionario?) -> Unit) {
         val db = FirebaseFirestore.getInstance()
@@ -242,7 +219,9 @@ class QuizViewModel : ViewModel() {
                         "quizIniciado" to cuestionario.quizIniciado,
                         "latitude" to cuestionario.latitude,
                         "longitude" to cuestionario.longitude,
-                        "radio" to cuestionario.radio
+                        "radio" to cuestionario.radio,
+                        "questionsTime" to cuestionario.questionsTime
+
                     )
 
                     // Si la imagen ha cambiado, también actualizamos ese campo
@@ -429,6 +408,7 @@ class QuizViewModel : ViewModel() {
                                 "preguntas" to preguntas, // Lista de preguntas mapeadas
                                 "immediateAccess" to (cuestionarioData["immediateAccess"] as? Boolean ?: false),
                                 "locationRestricted" to (cuestionarioData["locationRestricted"] as? Boolean ?: false),
+                                "questionsTime" to (cuestionarioData["questionsTime"] as? Int ?: 30), // Valor por defecto en caso de error"
                                 "immediateResults" to (cuestionarioData["immediateResults"] as? Boolean ?: false),
                                 "quizIniciado" to (cuestionarioData["quizIniciado"] as? Boolean ?: false)
 
@@ -525,7 +505,8 @@ class QuizViewModel : ViewModel() {
                                             latitude = (cuestionarioData?.get("latitude") as? String)?.toDoubleOrNull() ?: 0.0,
                                             longitude = (cuestionarioData?.get("longitude") as? String)?.toDoubleOrNull() ?: 0.0,
                                             // Conversión de radio a Double (si es necesario)
-                                            radio = (cuestionarioData?.get("radio") as? String)?.toDoubleOrNull() ?: 0.0 // Valor por defecto en caso de error
+                                            radio = (cuestionarioData?.get("radio") as? String)?.toDoubleOrNull() ?: 0.0, // Valor por defecto en caso de error
+                                            questionsTime = (cuestionarioData?.get("questionsTime") as? String)?.toIntOrNull() ?: 30 // Valor por defecto en caso de error
                                         )
 
                                         // Añadir el cuestionario a la lista
@@ -888,7 +869,10 @@ class QuizViewModel : ViewModel() {
 
     // Función para generar un código de 6 dígitos
     fun generarClave(): String {
-        return (100000..999999).random().toString()  // Genera un código de 6 dígitos
+        val caracteres = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+        return (1..6)
+            .map { caracteres.random() }
+            .joinToString("")  // Genera una cadena de 6 caracteres aleatorios alfanuméricos
     }
 
     // Función para guardar un cuestionario en Firestore
@@ -1092,6 +1076,7 @@ class QuizViewModel : ViewModel() {
             }
     }
 
+    //vacia el campo userAnswers de cada pregunta
     fun limpiarCampos(codigoQuiz: String) {
         val db = FirebaseFirestore.getInstance()
 
@@ -1176,6 +1161,84 @@ class QuizViewModel : ViewModel() {
                 onComplete(false) // Llama al callback indicando error
             }
     }
+
+    // Función que actualiza el tiempo por pregunta por questionsTime
+    fun setQuestionsTime(quizId: String) {
+        val quizRef = firestore.collection("cuestionarios").whereEqualTo("id", quizId)
+
+        quizRef.addSnapshotListener { querySnapshot, error ->
+            if (error != null) {
+                Log.e("QuizViewModel", "Error al escuchar cambios en questionsTime: ${error.message}")
+                return@addSnapshotListener
+            }
+
+            if (querySnapshot != null && !querySnapshot.isEmpty) {
+                val document = querySnapshot.documents[0] // Obtiene el primer documento que coincide
+                val questionsTime = document.getLong("questionsTime")?.toInt() ?: 0 // Obtiene el valor de questionsTime, o 0 si no existe
+                _remainingTime.value = questionsTime // Actualiza el flujo con el valor de questionsTime
+
+
+                Log.d("QuizViewModel", "_remainingTime actualizado: $_remainingTime")
+            } else {
+                Log.e("QuizViewModel", "No se encontró un cuestionario con el ID proporcionado: $quizId")
+            }
+        }
+    }
+
+
+    fun agregarUsuarioAlQuiz(codigoQuiz: String, userId: String) {
+        val db = FirebaseFirestore.getInstance()
+        val usuariosRef = db.collection("usuariosCuestionario").document(codigoQuiz)
+
+        // Intentar agregar el userId a la lista de usuarios
+        usuariosRef.get().addOnSuccessListener { documentSnapshot ->
+            if (documentSnapshot.exists()) {
+                // Si el documento existe, solo actualizamos
+                usuariosRef.update("usuarios.$userId", true)
+                    .addOnSuccessListener {
+                        Log.d("Firestore", "Usuario agregado al cuestionario correctamente.")
+                    }
+                    .addOnFailureListener { e ->
+                        Log.e("Firestore", "Error al agregar usuario: ", e)
+                    }
+            } else {
+                // Si el documento no existe, creamos un nuevo documento con el usuario
+                val usuariosMap = mapOf(userId to true)
+                usuariosRef.set(mapOf("usuarios" to usuariosMap))
+                    .addOnSuccessListener {
+                        Log.d("Firestore", "Documento creado y usuario agregado al cuestionario.")
+                    }
+                    .addOnFailureListener { e ->
+                        Log.e("Firestore", "Error al crear el documento y agregar usuario: ", e)
+                    }
+            }
+        }
+    }
+
+
+
+    fun obtenerNumeroDeUsuarios(codigoQuiz: String) {
+        val db = FirebaseFirestore.getInstance()
+        val usuariosRef = db.collection("usuariosCuestionario").document(codigoQuiz)
+
+        usuariosRef.addSnapshotListener { documentSnapshot, error ->
+            if (error != null) {
+                Log.e("QuizViewModel", "Error al escuchar cambios en el número de usuarios: ${error.message}")
+                return@addSnapshotListener
+            }
+
+            if (documentSnapshot != null && documentSnapshot.exists()) {
+                val usuariosMap = documentSnapshot.get("usuarios") as? Map<String, Boolean>
+                // Actualiza el número de usuarios
+                _numeroUsuarios.value = usuariosMap?.size ?: 0 // Si el mapa es nulo, asigna 0
+                Log.d("QuizViewModel", "Número de usuarios actualizado: ${_numeroUsuarios.value}")
+            } else {
+                Log.e("QuizViewModel", "No se encontró un documento para el cuestionario con ID: $codigoQuiz")
+            }
+        }
+    }
+
+
 
 }
 

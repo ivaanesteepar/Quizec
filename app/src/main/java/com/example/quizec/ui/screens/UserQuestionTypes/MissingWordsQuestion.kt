@@ -15,9 +15,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.quizec.R
 import com.example.quizec.data.model.Pregunta
 
 @Composable
@@ -49,7 +51,7 @@ fun MissingWordsQuestionScreen(
     // Manejar listas vacías
     if (opcionesCorrectas.isEmpty()) {
         Text(
-            text = "No hay opciones correctas disponibles.",
+            text = stringResource(R.string.no_hay_opciones_correctas_disponibles),
             style = MaterialTheme.typography.bodyLarge,
             fontSize = 16.sp
         )
@@ -58,7 +60,7 @@ fun MissingWordsQuestionScreen(
 
     // Mostrar la frase modificada
     Text(
-        text = "Completa la frase: $fraseConEspacios",
+        text = stringResource(R.string.completa_la_frase, fraseConEspacios),
         style = MaterialTheme.typography.bodyLarge,
         fontSize = 16.sp
     )
@@ -92,7 +94,7 @@ fun MissingWordsQuestionScreen(
                     TextField(
                         value = opcionesCorrectas[index], // Muestra la respuesta correcta
                         onValueChange = { newValue -> userInputs[index] = newValue },
-                        label = { Text(text = "Respuesta correcta") },
+                        label = { Text(text = stringResource(R.string.respuesta_correcta)) },
                         textStyle = TextStyle(color = Color.Green),
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
@@ -102,7 +104,7 @@ fun MissingWordsQuestionScreen(
                     TextField(
                         value = userInputs[index],
                         onValueChange = { newValue -> userInputs[index] = newValue },
-                        label = { Text(text = "Ingresa la palabra correcta") },
+                        label = { Text(text = stringResource(R.string.ingresa_la_palabra_correcta)) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
                     )

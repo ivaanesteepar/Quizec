@@ -1,17 +1,24 @@
 
 package com.example.quizec.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import coil.compose.AsyncImage
+import com.example.quizec.R
 import com.example.quizec.data.model.Rol
 import com.example.quizec.ui.viewmodel.QuizViewModel
 import com.example.quizec.ui.viewmodel.UsersViewModel
@@ -34,7 +41,6 @@ fun WaitingScreen(navController: NavHostController, codigoQuiz: String?, usersVi
     // Cuando cambia el código del quiz, agregamos el usuario y comenzamos a escuchar la lista
     LaunchedEffect(codigoQuiz) {
         if (codigoQuiz != null) {
-            usersViewModel.agregarUsuarioAQuiz(codigoQuiz)
             usersViewModel.escucharUsuariosEnEspera(codigoQuiz)
         }
     }
@@ -42,7 +48,9 @@ fun WaitingScreen(navController: NavHostController, codigoQuiz: String?, usersVi
     // Obtener la lista de usuarios en espera desde el ViewModel
     val usuariosEnEspera by usersViewModel.usuariosEnEspera.collectAsState()
 
-    // Todo dentro de una sola columna
+    var imagenCuestionario by remember { mutableStateOf<String?>(null) }
+
+    // Tdo dentro de una sola columna
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -52,7 +60,7 @@ fun WaitingScreen(navController: NavHostController, codigoQuiz: String?, usersVi
     ) {
         // Título de jugadores en espera
         Text(
-            text = "Esperando jugadores",
+            text = stringResource(R.string.esperando_jugadores),
             style = MaterialTheme.typography.headlineMedium
         )
         //Codigo quiz
@@ -66,6 +74,38 @@ fun WaitingScreen(navController: NavHostController, codigoQuiz: String?, usersVi
             color = Color.Gray,
             strokeWidth = 2.dp
         )
+
+        //var imagenCuestionario: String? = null
+        quizViewModel.obtenerCuestionario(codigoQuiz.toString()) { cuestionario ->
+            if (cuestionario != null) {
+                // El cuestionario fue encontrado, puedes trabajar con el objeto 'cuestionario'
+                println("Cuestionario encontrado: $cuestionario")
+                imagenCuestionario = cuestionario.imagen
+                println("Imagen del cuestionario: $imagenCuestionario")
+            } else {
+                // El cuestionario no fue encontrado o hubo un error
+                println("No se encontró el cuestionario con ID $codigoQuiz")
+            }
+        }
+
+        // Mostrar imagen de la pregunta si está disponible
+        if (!imagenCuestionario.isNullOrEmpty()) {
+            AsyncImage(
+                model = imagenCuestionario,
+                contentDescription = "Imagen de la pregunta",
+                contentScale = ContentScale.Crop, // Ajusta la imagen
+                modifier = Modifier
+                    .size(100.dp)
+                    //.background(Color.Gray, RoundedCornerShape(8.dp))
+            )
+        } else {
+            Text(
+                text = stringResource(R.string.no_hay_imagen_para_mostrar),
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(top = 16.dp)
+            )
+        }
+
 
         LazyColumn(
             modifier = Modifier
@@ -113,9 +153,9 @@ fun WaitingScreen(navController: NavHostController, codigoQuiz: String?, usersVi
                         println("Rol desconocido: $userRole")
                     }
                 },
-                //enabled = userRole != null && userRole == Rol.CREADOR.toString()
+                enabled = userRole != null && userRole == Rol.CREADOR.toString()
             ) {
-                Text("Iniciar Quiz")
+                Text(stringResource(R.string.iniciar_quiz))
             }
 
 
@@ -128,7 +168,7 @@ fun WaitingScreen(navController: NavHostController, codigoQuiz: String?, usersVi
                 // Volver a la pantalla anterior
                 navController.popBackStack()
             }) {
-                Text(text = "Volver")
+                Text(text = stringResource(R.string.volver))
             }
         }
     }

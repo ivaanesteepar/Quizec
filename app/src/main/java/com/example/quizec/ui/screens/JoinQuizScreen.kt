@@ -16,11 +16,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavHostController
+import com.example.quizec.R
 import com.example.quizec.data.model.Rol
 import com.example.quizec.ui.viewmodel.QuizViewModel
+import com.example.quizec.ui.viewmodel.UsersViewModel
+import com.example.quizec.utils.LocationUtils
+import com.example.quizec.utils.LocationUtils.fetchLocation
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.tasks.CancellationTokenSource
@@ -38,6 +43,7 @@ fun JoinQuizScreen(
 ) {
     val context = LocalContext.current
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
+    val usersViewModel = UsersViewModel()
 
     var codigoQuiz by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
@@ -92,7 +98,7 @@ fun JoinQuizScreen(
 
     fun unirseAlQuiz() {
         if (codigoQuiz.isEmpty()) {
-            errorMessage = "Por favor, ingrese el código del quiz."
+            errorMessage = context.getString(R.string.por_favor_ingrese_el_c_digo_del_quiz)
         } else {
             loading = true
 
@@ -103,10 +109,14 @@ fun JoinQuizScreen(
                     Log.d("JoinQuizScreen", "Datos del quiz: $datosQuiz")
 
                     if (datosQuiz == null) {
-                        errorMessage = "Error al obtener los datos del quiz."
+                        errorMessage =
+                            context.getString(R.string.error_al_obtener_los_datos_del_quiz)
                         loading = false
                         return@launch
                     }
+                    // Agregar el usuario al quiz
+                    usersViewModel.agregarUsuarioAQuiz(codigoQuiz)
+
                     quizViewModel.actualizarRolUsuario(Rol.PARTICIPANTE.toString()) { errorMessage ->
                         if (errorMessage == null) {
                             // Si no hay error, la actualización fue exitosa
@@ -134,7 +144,7 @@ fun JoinQuizScreen(
                     }
 
                     // Obtener la ubicación del usuario y calcular la distancia
-                    fetchLocation(fusedLocationClient) { location ->
+                    fetchLocation(context, fusedLocationClient) { location ->
                         Log.d("Geolocalización", "Ubicación actual: $location")
 
                         val distance = calculateDistance(location, quizLat, quizLng)
@@ -145,13 +155,14 @@ fun JoinQuizScreen(
                                 navController.navigate("waiting_screen/$codigoQuiz")
                             }
                         } else {
-                            errorMessage = "No estás dentro del radio del quiz."
+                            errorMessage =
+                                context.getString(R.string.no_est_s_dentro_del_radio_del_quiz)
                         }
                         loading = false
                     }
                 } catch (e: Exception) {
                     loading = false
-                    errorMessage = "Hubo un error al verificar el acceso."
+                    errorMessage = context.getString(R.string.hubo_un_error_al_verificar_el_acceso)
                 }
             }
         }
@@ -172,9 +183,9 @@ fun JoinQuizScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Text("Unirse a un Quiz", style = MaterialTheme.typography.titleLarge)
+            Text(stringResource(R.string.unirse_a_un_quiz), style = MaterialTheme.typography.titleLarge)
 
-            Text("Código del Quiz", style = MaterialTheme.typography.bodyMedium)
+            Text(stringResource(R.string.c_digo_del_quiz), style = MaterialTheme.typography.bodyMedium)
             BasicTextField(
                 value = codigoQuiz,
                 onValueChange = { codigoQuiz = it },
@@ -188,7 +199,7 @@ fun JoinQuizScreen(
             Button(
                 onClick = {
                     if (locationPermissionGranted) {
-                        fetchLocation(fusedLocationClient) { location ->
+                        fetchLocation(context, fusedLocationClient) { location ->
                             Log.d("Geolocalización", "Ubicación actual: $location")
                             unirseAlQuiz() // Asegúrate de llamar a unirseAlQuiz en una corrutina
                         }
@@ -197,7 +208,7 @@ fun JoinQuizScreen(
                     }
                 }
             ) {
-                Text("Unirse al Quiz")
+                Text(stringResource(R.string.unirse_al_quiz))
             }
 
             if (errorMessage.isNotEmpty()) {
@@ -212,30 +223,11 @@ fun JoinQuizScreen(
                 onClick = { navController.navigate("home") },
                 modifier = Modifier.padding(top = 8.dp)
             ) {
-                Text("Volver")
+                Text(stringResource(R.string.volver))
             }
         }
     }
 }
 
-@SuppressLint("MissingPermission")
-private fun fetchLocation(
-    fusedLocationClient: FusedLocationProviderClient,
-    onLocationFetched: (String) -> Unit
-) {
-    val cancellationTokenSource = CancellationTokenSource()
-    fusedLocationClient.getCurrentLocation(
-        com.google.android.gms.location.Priority.PRIORITY_HIGH_ACCURACY, // Usar el nuevo valor constante
-        cancellationTokenSource.token
-    ).addOnSuccessListener { location ->
-        if (location != null) {
-            val locationString = "Lat: ${location.latitude}, Lng: ${location.longitude}"
-            onLocationFetched(locationString)
-        } else {
-            Log.e("Geolocalización", "Ubicación no disponible.")
-        }
-    }.addOnFailureListener { exception ->
-        Log.e("Geolocalización", "Error obteniendo la ubicación: ${exception.message}")
-    }
-}
+
 

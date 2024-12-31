@@ -1,7 +1,6 @@
 package com.example.quizec.ui
 
-import android.content.Context
-import android.location.LocationManager
+
 import android.util.Log
 import com.example.quizec.ui.screens.SelectCuestionarioScreen
 import com.example.quizec.ui.screens.CreateQuestionsScreen
@@ -18,7 +17,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -27,12 +26,14 @@ import com.example.quizec.ui.screens.JoinQuizScreen
 import com.example.quizec.ui.screens.RegisterScreen
 import com.example.quizec.ui.viewmodel.QuizViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.quizec.R
 import com.example.quizec.data.model.Cuestionario
 import com.example.quizec.data.model.Pregunta
 import com.example.quizec.ui.screens.AnswerResultScreen
 import com.example.quizec.ui.screens.SelectQuestionsScreen
 import com.example.quizec.ui.screens.UserQuizzesScreen
 import com.example.quizec.ui.screens.CreatorQuizzesScreen
+import com.example.quizec.ui.screens.DeleteQuestionsScreen
 import com.example.quizec.ui.screens.DetalleCuestionarioScreen
 import com.example.quizec.ui.screens.EditarCuestionarioScreen
 import com.example.quizec.ui.screens.EditarPreguntaScreen
@@ -51,7 +52,6 @@ fun QuizecApp() {
     // Crea la instancia de QuizViewModel
     val quizViewModel: QuizViewModel = viewModel()
     val usersViewModel: UsersViewModel = viewModel()
-    val questionsViewModel: QuestionsViewModel = viewModel()
 
     Scaffold { padding ->
         NavHost(
@@ -79,7 +79,7 @@ fun QuizecApp() {
                     )
                 } else {
                     // Manejo en caso de que `codigoQuiz` sea null
-                    Text("Error: No se recibió el código del cuestionario")
+                    Text(stringResource(R.string.error_no_se_recibi_el_c_digo_del_cuestionario))
                 }
             }
 
@@ -175,7 +175,7 @@ fun QuizecApp() {
                 if (userId != null) {
                     HistorialScreen(navController, quizViewModel, userId)
                 } else {
-                    Text("Error: No se pudo obtener el ID del usuario")
+                    Text(stringResource(R.string.error_no_se_pudo_obtener_el_id_del_usuario))
                 }
             }
             composable("detalleCuestionarios/{cuestionarioId}") { backStackEntry ->
@@ -226,7 +226,7 @@ fun QuizecApp() {
                         )
                     }
                 } else {
-                    Text("Cargando...")
+                    Text(stringResource(R.string.cargando))
                 }
             }
             composable("answers/{codigoQuiz}") {
@@ -234,7 +234,16 @@ fun QuizecApp() {
                 if (codigoQuiz != null) {
                     AnswerResultScreen(navController, quizViewModel, codigoQuiz)
                 } else {
-                    Text("Error: No se recibió el código del cuestionario")
+                    Text(stringResource(R.string.error_no_se_recibi_el_c_digo_del_cuestionario))
+                }
+            }
+            composable("delete_questions/{codigoQuiz}"){
+                val codigoQuiz = it.arguments?.getString("codigoQuiz")
+                if (codigoQuiz != null) {
+                    DeleteQuestionsScreen(navController, quizViewModel, codigoQuiz)
+                }
+                else {
+                    Text(stringResource(R.string.error_no_se_recibi_el_c_digo_del_cuestionario))
                 }
             }
         }

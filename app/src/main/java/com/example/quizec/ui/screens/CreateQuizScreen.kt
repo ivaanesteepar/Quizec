@@ -1,13 +1,8 @@
 package com.example.quizec.ui.screens
 
-import android.Manifest
-import android.annotation.SuppressLint
-import android.content.Context
-import android.content.pm.PackageManager
-import android.net.Uri
+
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -26,10 +21,13 @@ import androidx.lifecycle.viewModelScope
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.result.PickVisualMediaRequest
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
+import com.example.quizec.R
 import com.example.quizec.data.model.Cuestionario
 import com.example.quizec.data.model.Rol
 import com.example.quizec.ui.viewmodel.QuizViewModel
@@ -59,6 +57,10 @@ fun CreateQuizScreen(
     var radio by rememberSaveable { mutableStateOf("") }
     val latitudActual by remember { mutableStateOf<Double?>(null) }
     val longitudActual by remember { mutableStateOf<Double?>(null) }
+    //tiempo
+    var questionsTime by remember { mutableStateOf(0) }
+    var rawInput by remember { mutableStateOf("") } // Almacena la entrada de texto del usuario
+
 
     // se resetean los valores de creación
     var reset by remember { mutableStateOf(false) }
@@ -70,8 +72,8 @@ fun CreateQuizScreen(
         errorMessage = ""
         tituloError = false
         descripcionError = false
+        questionsTime = 0
     }
-
 
     val context = LocalContext.current
     var error by remember { mutableStateOf<String?>(null) }
@@ -106,12 +108,12 @@ fun CreateQuizScreen(
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("Crear Cuestionario", style = MaterialTheme.typography.titleLarge)
+        Text(stringResource(R.string.crear_cuestionario), style = MaterialTheme.typography.titleLarge)
 
         Spacer(modifier = Modifier.height(16.dp))
 
         // Campo de título
-        Text("Título del Cuestionario", style = MaterialTheme.typography.bodyMedium)
+        Text(stringResource(R.string.t_tulo_del_cuestionario), style = MaterialTheme.typography.bodyMedium)
         BasicTextField(
             value = titulo,
             onValueChange = {
@@ -134,7 +136,7 @@ fun CreateQuizScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         // Campo de descripción
-        Text("Descripción", style = MaterialTheme.typography.bodyMedium)
+        Text(stringResource(R.string.descripci_n), style = MaterialTheme.typography.bodyMedium)
         BasicTextField(
             value = descripcion,
             onValueChange = {
@@ -155,56 +157,96 @@ fun CreateQuizScreen(
         )
 
         Spacer(modifier = Modifier.height(16.dp))
+// Texto explicativo
+        Text(stringResource(R.string.subir_imagen_opcional), style = MaterialTheme.typography.bodyMedium)
 
-        // Botón para elegir imagen
-        Text("Subir Imagen (Opcional)", style = MaterialTheme.typography.bodyMedium)
-        Button(
-            onClick = {
-                pickPicture.launch(
-                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                )
-            },
-        ) {
-            Text("Seleccionar Imagen")
+        Spacer(modifier = Modifier.height(10.dp))
+
+// Verificamos si hay imagen seleccionada o no
+        if (imageUri == null) {
+            // Si no hay imagen, centramos el botón de seleccionar imagen
+            Button(
+                onClick = {
+                    pickPicture.launch(
+                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                    )
+                },
+                modifier = Modifier
+                    .fillMaxWidth() // Ocupa todo el ancho disponible
+                    .padding(horizontal = 50.dp) // Márgenes laterales para que no esté pegado a los bordes
+            ) {
+                Text(stringResource(R.string.seleccionar_imagen))
+            }
+        } else {
+            // Si hay una imagen, alineamos los botones horizontalmente
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center, // Centrar los botones
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Botón para seleccionar imagen
+                Button(
+                    onClick = {
+                        pickPicture.launch(
+                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                        )
+                    },
+                ) {
+                    Text(stringResource(R.string.seleccionar_imagen))
+                }
+
+                Spacer(modifier = Modifier.width(16.dp)) // Espacio entre los botones
+
+                // Botón para eliminar la imagen
+                Button(
+                    onClick = {
+                        // Eliminar la imagen
+                        imageUri = null
+                        quizViewModel.imageUri = null // Actualizar también en el ViewModel
+                    }
+                ) {
+                    Text(
+                        text = stringResource(R.string.eliminar_imagen),
+                        color = Color.White // Texto blanco para mayor visibilidad
+                    )
+                }
+            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-
+        // Mostrar la imagen seleccionada
         if (imageUri != null) {
             AsyncImage(
-                model = imageUri, // Now using a String (imageUrl) instead of Uri
+                model = imageUri, // Usando el String (imageUri)
                 contentDescription = "Imagen cargada del servidor",
-                modifier = Modifier.size(200.dp)
+                contentScale = ContentScale.Crop, // Ajusta la imagen para que aproveche tdo el tamaño
+                modifier = Modifier.size(100.dp)
             )
-        } else {
-            Text(text = "No hay imagen para mostrar.")
+
+            Spacer(modifier = Modifier.height(8.dp))
         }
+
 
         println("Url de la imagen: $imageUri")
 
-        // Asignamos el enlace a la variable en el quizviewmodel
-
+        // Asignamos el enlace a la variable en el quizViewModel
         quizViewModel.imageUri = imageUri
 
         Spacer(modifier = Modifier.height(16.dp))
+
 
         // Botones para otras acciones
         Button(
             onClick = { navController.navigate("make_questions") },
             modifier = Modifier.fillMaxWidth(0.8f)
         ) {
-            Text("Crear Preguntas")
+            Text(stringResource(R.string.crear_preguntas))
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Text("Numero de preguntas: ${quizViewModel.contadorPreguntas.value}")
-
-        // Mensaje de error si aplica
-        if (errorMessage.isNotEmpty()) {
-            Text(text = errorMessage, color = Color.Red)
-        }
+        Text(stringResource(R.string.numero_de_preguntas, quizViewModel.contadorPreguntas.value))
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -213,23 +255,65 @@ fun CreateQuizScreen(
             onClick = { navController.navigate("select_questions/$userUid") },
             modifier = Modifier.fillMaxWidth(0.8f)
         ) {
-            Text("Seleccionar Preguntas")
+            Text(stringResource(R.string.seleccionar_preguntas))
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // Mensaje de error si aplica
+        if (errorMessage.isNotEmpty()) {
+            Text(text = errorMessage, color = Color.Red)
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
 
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp) // Añadir algo de padding a la columna general para mejorar la legibilidad
         ) {
+
+            // Fila para seleccionar el tiempo límite por pregunta
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Acceso Inmediato al Cuestionario",
+                    text = stringResource(R.string.tiempo_de_las_preguntas_s),
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                OutlinedTextField(
+                    value = rawInput, // Mostrar la entrada del usuario
+                    onValueChange = { userInput ->
+                        // Actualizar la entrada solo si el valor es numérico
+                        if (userInput.isEmpty() || userInput.toIntOrNull() != null) {
+                            rawInput = userInput // Actualizar la entrada
+                            val parsedTime = userInput.toIntOrNull()
+                            if (parsedTime != null && parsedTime > 0) {
+                                questionsTime = parsedTime // Si es válido, actualizar questionsTime
+                                errorMessage = "" // Limpiar el mensaje de error
+                            } else {
+                                errorMessage =
+                                    context.getString(R.string.por_favor_ingrese_un_tiempo_v_lido) // Si no es válido, mostrar el error
+                            }
+                        }
+                    },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier
+                        .padding(start = 8.dp)
+                        .width(100.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp)) // Más espacio entre los elementos
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.acceso_inmediato_al_cuestionario),
                     modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.bodyLarge // Puede ajustar el estilo para mejorar la visibilidad
                 )
@@ -251,7 +335,7 @@ fun CreateQuizScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Restringir por Ubicación",
+                    text = stringResource(R.string.restringir_por_ubicaci_n),
                     modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.bodyLarge
                 )
@@ -268,7 +352,7 @@ fun CreateQuizScreen(
 
             // Este campo de texto solo aparecerá si locationRestricted es true
             if (locationRestricted) {
-                Text("Radio del área permitida (km)", style = MaterialTheme.typography.bodyMedium)
+                Text(stringResource(R.string.radio_del_rea_permitida_km), style = MaterialTheme.typography.bodyMedium)
                 BasicTextField(
                     value = radio,
                     onValueChange = { radio = it },
@@ -288,7 +372,7 @@ fun CreateQuizScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Acceso Inmediato a Resultados",
+                    text = stringResource(R.string.acceso_inmediato_a_resultados),
                     modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.bodyLarge
                 )
@@ -309,52 +393,54 @@ fun CreateQuizScreen(
 
         Button(
             onClick = {
-                var valid = true
-                if (titulo.isEmpty()) {
-                    tituloError = true  // Activar el error del título
-                    valid = false
+                errorMessage = "" // Reinicia el mensaje de error
+                tituloError = false
+                descripcionError = false
+
+                when {
+                    titulo.isEmpty() -> {
+                        tituloError = true
+                        errorMessage = context.getString(R.string.por_favor_ingrese_un_valor_v_lido_para_el_t_tulo)
+                    }
+                    descripcion.isEmpty() -> {
+                        descripcionError = true
+                        errorMessage = context.getString(R.string.por_favor_ingrese_un_valor_v_lido_para_la_descripci_n)
+                    }
+                    quizViewModel.contadorPreguntas.value <= 0 -> {
+                        errorMessage = context.getString(R.string.debe_agregar_al_menos_una_pregunta_al_cuestionario)
+                    }
+                    locationRestricted && radio.toDoubleOrNull() == null -> {
+                        errorMessage = context.getString(R.string.por_favor_ingrese_un_valor_v_lido_para_el_radio)
+                    }
+                    questionsTime <= 0 -> {
+                        errorMessage = context.getString(R.string.por_favor_ingrese_un_tiempo_v_lido)
+                    }
+                    else -> {
+                        reset = true
+                        crearCuestionario(
+                            navController,
+                            titulo,
+                            descripcion,
+                            nombreUsuario,
+                            quizViewModel,
+                            { errorMessage = it },
+                            immediateAccess,
+                            locationRestricted,
+                            immediateResults,
+                            isQuizIniciado,
+                            latitudActual ?: 0.0, // Si latitudActual es nulo, asigna 0.0
+                            longitudActual ?: 0.0, // Si longitudActual es nulo, asigna 0.0
+                            radio.toDoubleOrNull() ?: 0.0, // Usamos el valor de radio, si no es válido, usamos 0.0
+                            questionsTime
+                        )
+                    }
                 }
-
-                if (descripcion.isEmpty()) {
-                    descripcionError = true  // Activar el error de la descripción
-                    valid = false
-                }
-
-                val radioValue = radio.toDoubleOrNull()
-                if (locationRestricted && radioValue == null) { //HACER ESTO SOLO SI ESTÁ ACTIVADA LA OPCIÓN DE RADIO!!!
-                    errorMessage = "Por favor, ingrese un valor válido para el radio."
-                    valid = false
-                }
-
-                if (!valid) {
-                    errorMessage = "Por favor, complete todos los campos requeridos."  // Mostrar el mensaje de error
-                } else {
-                    reset = true
-
-                    crearCuestionario(
-                        navController,
-                        titulo,
-                        descripcion,
-                        nombreUsuario,
-                        quizViewModel,
-                        { errorMessage = it },
-                        immediateAccess,
-                        locationRestricted,
-                        immediateResults,
-                        isQuizIniciado,
-                        latitudActual ?: 0.0, // Si latitudActual es nulo, asigna 0.0
-                        longitudActual ?: 0.0, // Si longitudActual es nulo, asigna 0.0
-                        radioValue ?: 0.0 // Usamos el valor de radio, si no es válido, usamos 0.0
-                    )
-
-                }
-
-
             },
             modifier = Modifier.fillMaxWidth(0.8f)
         ) {
-            Text("Crear Cuestionario", color = Color.White)
+            Text(stringResource(R.string.crear_cuestionario), color = Color.White)
         }
+
         Spacer(modifier = Modifier.height(8.dp))
         Button(
             onClick = {
@@ -363,7 +449,7 @@ fun CreateQuizScreen(
             },
             modifier = Modifier.fillMaxWidth(0.8f)
         ) {
-            Text("Volver", color = Color.White)
+            Text(stringResource(R.string.volver), color = Color.White)
         }
     }
 }
@@ -381,50 +467,51 @@ private fun crearCuestionario(
     isQuizIniciado: Boolean,
     latitude: Double,
     longitude: Double,
-    radio: Double
+    radio: Double,
+    questionsTime: Int
 ) {
-    if (titulo.isEmpty() || descripcion.isEmpty()) {
-        onError("Por favor, complete todos los campos requeridos.")
-    } else if (quizViewModel.contadorPreguntas.value <= 0) {
-        onError("Debe agregar al menos una pregunta al cuestionario.")
-    } else {
-        quizViewModel.viewModelScope.launch {
-            val quizCode = quizViewModel.generarClave()
-            val imageUri = quizViewModel.imageUri // Asegúrate de que este valor no sea null
-            Log.d("CreateQuizScreen", "El URL de la imagen es: $imageUri")
+    quizViewModel.viewModelScope.launch {
+        val quizCode = quizViewModel.generarClave()
+        val imageUri = quizViewModel.imageUri
+        Log.d("CreateQuizScreen", "El URL de la imagen es: $imageUri")
 
-            val userUid = FirebaseAuth.getInstance().currentUser?.uid
+        val userUid = FirebaseAuth.getInstance().currentUser?.uid
 
-            val cuestionario = Cuestionario(
-                id = quizCode,
-                titulo = titulo,
-                descripcion = descripcion,
-                creadorId = userUid ?: "",
-                imagen = imageUri, // Asignar la URL de la imagen correctamente
-                preguntas = quizViewModel.preguntas,
-                immediateAccess = immediateAccess,
-                locationRestricted = locationRestricted,
-                immediateResults = immediateResults,
-                quizIniciado = false,
-                quizUsed = false,
-                latitude = latitude,
-                longitude = longitude,
-                radio = radio
-            )
+        val cuestionario = Cuestionario(
+            id = quizCode,
+            titulo = titulo,
+            descripcion = descripcion,
+            creadorId = userUid ?: "",
+            imagen = imageUri, // Asignar la URL de la imagen correctamente
+            preguntas = quizViewModel.preguntas,
+            immediateAccess = immediateAccess,
+            locationRestricted = locationRestricted,
+            immediateResults = immediateResults,
+            quizIniciado = false,
+            quizUsed = false,
+            latitude = latitude,
+            longitude = longitude,
+            radio = radio,
+            questionsTime = questionsTime
+        )
 
-            // Guardar el cuestionario en Firestore
-            Log.d("CreateQuizScreen", "Guardando en Firestore: $cuestionario")
-            quizViewModel.guardarCuestionarioEnFirestore(cuestionario.toMap()) { error ->
-                if (error != null) {
-                    onError("Error al crear el cuestionario: $error")
-                    Toast.makeText(navController.context, "Error al crear el cuestionario", Toast.LENGTH_SHORT).show()
-                } else {
-                    if (userUid != null) {
-                        quizViewModel.actualizarRolUsuario2(userUid, Rol.CREADOR)
-                    }
-                    Toast.makeText(navController.context, "Cuestionario creado exitosamente", Toast.LENGTH_SHORT).show()
-                    navController.navigate("home")
+        // Guardar el cuestionario en Firestore
+        Log.d("CreateQuizScreen", "Guardando en Firestore: $cuestionario")
+        quizViewModel.guardarCuestionarioEnFirestore(cuestionario.toMap()) { error ->
+            if (error != null) {
+                onError("Error creating the cuestionary: $error")
+                Toast.makeText(navController.context, "Error creating the quiz", Toast.LENGTH_SHORT)
+                    .show()
+            } else {
+                if (userUid != null) {
+                    quizViewModel.actualizarRolUsuario2(userUid, Rol.CREADOR)
                 }
+                Toast.makeText(
+                    navController.context,
+                    "Quiz created successfully",
+                    Toast.LENGTH_SHORT
+                ).show()
+                navController.navigate("home")
             }
         }
     }
@@ -467,6 +554,7 @@ fun Cuestionario.toMap(): Map<String, Any> {
         "quizUsed" to quizUsed,
         "latitude" to latitude,
         "longitude" to longitude,
-        "radio" to radio // Añadido el valor de radio
+        "radio" to radio, // Añadido el valor de radio
+        "questionsTime" to questionsTime
     )
 }

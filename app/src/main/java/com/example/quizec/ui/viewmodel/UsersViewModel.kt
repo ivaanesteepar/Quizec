@@ -1,11 +1,11 @@
 package com.example.quizec.ui.viewmodel
 
-import android.util.Log
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.FieldValue
+import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,6 +22,29 @@ class UsersViewModel : ViewModel() {
     private val _usuariosConRespuestas = MutableStateFlow<List<Pair<String, Int>>>(emptyList())
     val usuariosConRespuestas: StateFlow<List<Pair<String, Int>>> = _usuariosConRespuestas
 
+
+    fun contarUsuariosEnEsperaTiempoReal(
+        codigoQuiz: String,
+        callback: (Int?, Exception?) -> Unit
+    ): ListenerRegistration {
+        val db = FirebaseFirestore.getInstance()
+
+        // Escuchar cambios en tiempo real
+        return db.collection("usuariosEspera").document(codigoQuiz)
+            .addSnapshotListener { snapshot, exception ->
+                if (exception != null) {
+                    callback(null, exception)
+                    return@addSnapshotListener
+                }
+
+                if (snapshot != null && snapshot.exists()) {
+                    val usuarios = snapshot.get("usuarios") as? Map<String, Any>
+                    callback(usuarios?.size ?: 0, null)
+                } else {
+                    callback(0, null)
+                }
+            }
+    }
 
     suspend fun obtenerNombreUsuario(userId: String, codigoQuiz: String): String {
         return withContext(Dispatchers.IO) {
@@ -281,6 +304,64 @@ class UsersViewModel : ViewModel() {
         }
     }
 
+    fun eliminarUsuariosDeQuiz(codigoQuiz: String) {
+        viewModelScope.launch {
+            // Obtener el usuario actual desde Firebase Authentication
+            val currentUser = FirebaseAuth.getInstance().currentUser
+            val userId = currentUser?.uid
+
+            if (userId != null) {
+                // Referencia a la colección "usuariosEspera"
+                val usuariosEsperaRef = db.collection("usuariosEspera")
+
+                // Obtener el documento de la colección "usuariosEspera" con el código del quiz
+                val quizRef = usuariosEsperaRef.document(codigoQuiz)
+
+                // Verificar si el documento con el código del quiz ya existe
+                quizRef.get()
+                    .addOnSuccessListener { doc ->
+                        if (doc.exists()) {
+                            // Obtener los usuarios existentes del documento
+                            val usuariosExistentes = doc.get("usuarios") as? MutableMap<String, Map<String, Any>> ?: mutableMapOf()
+
+                            // Eliminar todos los usuarios de la lista
+                            usuariosExistentes.clear()
+
+                            // Actualizamos el documento con la lista vacía
+                            quizRef.update("usuarios", usuariosExistentes)
+                                .addOnSuccessListener {
+                                    println("Todos los usuarios han sido eliminados correctamente de la lista de espera.")
+
+                                    // Verificar si no hay más usuarios en el quiz
+                                    if (usuariosExistentes.isEmpty()) {
+                                        // Si no hay más usuarios, eliminar el documento del quiz
+                                        quizRef.delete()
+                                            .addOnSuccessListener {
+                                                println("Documento del quiz eliminado, ya no hay usuarios.")
+                                            }
+                                            .addOnFailureListener { e ->
+                                                println("Error al eliminar el documento del quiz: ${e.message}")
+                                            }
+                                    }
+
+                                    // Actualizar la lista local de usuarios en espera
+                                    actualizarUsuariosEnEspera(codigoQuiz)
+                                }
+                                .addOnFailureListener { e ->
+                                    println("Error al eliminar los usuarios: ${e.message}")
+                                }
+                        } else {
+                            println("El documento del quiz no existe.")
+                        }
+                    }
+                    .addOnFailureListener { e ->
+                        println("Error al obtener el documento del quiz: ${e.message}")
+                    }
+            }
+        }
+    }
+
+
     // Actualiza la lista de usuarios de un quiz
     fun actualizarUsuariosEnEspera(codigoQuiz: String) {
         db.collection("usuariosEspera").document(codigoQuiz)
@@ -303,4 +384,9 @@ class UsersViewModel : ViewModel() {
                 println("Error al actualizar los usuarios en espera: ${e.message}")
             }
     }
+
+
+
+
+
 }

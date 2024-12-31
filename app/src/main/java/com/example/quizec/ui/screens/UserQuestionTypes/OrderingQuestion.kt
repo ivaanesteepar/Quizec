@@ -1,6 +1,7 @@
 package com.example.quizec.ui.screens.UserQuestionTypes
 
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -30,9 +31,10 @@ fun OrderingQuestionScreen(
     userOrderedItems: (List<String>) -> Unit,
     isAcceptButtonClicked: Boolean // Agregar el estado de si el botón de aceptar ha sido presionado
 ) {
-    // Estado para los ítems desordenados
-    var disorderedItems by remember { mutableStateOf(currentQuestion.itemsOrdenados.shuffled().toMutableList()) }
-
+    // Estado para los ítems desordenados, reiniciado si currentQuestion cambia
+    var disorderedItems by remember(currentQuestion) {
+        mutableStateOf(currentQuestion.itemsOrdenados.shuffled().toMutableList())
+    }
     // Mostrar los ítems ordenados si se presionó el botón de aceptar
     val itemsToDisplay = if (isAcceptButtonClicked) {
         currentQuestion.itemsOrdenados // Muestra el orden correcto
@@ -40,6 +42,7 @@ fun OrderingQuestionScreen(
         disorderedItems // Muestra los ítems desordenados
     }
 
+    Log.d("OrderingQuestionScreen", "disorderedItems: $disorderedItems")
     Column(modifier = Modifier.fillMaxWidth()) {
         itemsToDisplay.forEachIndexed { index, item ->
             Row(

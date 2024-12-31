@@ -10,12 +10,15 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import com.example.quizec.R
 import com.example.quizec.data.model.Rol
 import com.example.quizec.data.model.Usuario
 import com.google.firebase.auth.FirebaseAuth
@@ -35,6 +38,7 @@ fun RegisterScreen(navController: NavHostController) {
     }
 }
 
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun RegisterScreenPortrait(navController: NavHostController) {
     // Aquí va la implementación para la orientación portrait
@@ -51,6 +55,7 @@ fun RegisterScreenPortrait(navController: NavHostController) {
     var isPasswordEmpty by remember { mutableStateOf(false) }
     val scaffoldState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     Scaffold(
         snackbarHost = { SnackbarHost(scaffoldState) },
@@ -62,14 +67,14 @@ fun RegisterScreenPortrait(navController: NavHostController) {
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text("Register", style = MaterialTheme.typography.titleLarge)
+                Text(stringResource(R.string.registro), style = MaterialTheme.typography.titleLarge)
 
                 Spacer(modifier = Modifier.height(16.dp))
 
                 OutlinedTextField(
                     value = nombre,
                     onValueChange = { nombre = it },
-                    label = { Text("Nombre") },
+                    label = { Text(stringResource(R.string.nombre)) },
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -81,14 +86,14 @@ fun RegisterScreenPortrait(navController: NavHostController) {
                         email = it
                         isEmailEmpty = email.isEmpty()
                     },
-                    label = { Text("Email") },
+                    label = { Text(stringResource(R.string.email)) },
                     isError = isEmailEmpty,
                     modifier = Modifier.fillMaxWidth()
                 )
 
                 if (isEmailEmpty) {
                     Text(
-                        text = "El campo de correo es obligatorio",
+                        text = stringResource(R.string.el_campo_de_correo_es_obligatorio),
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodySmall
                     )
@@ -102,26 +107,26 @@ fun RegisterScreenPortrait(navController: NavHostController) {
                         password = it
                         isPasswordEmpty = password.isEmpty()
                     },
-                    label = { Text("Password") },
+                    label = { Text(stringResource(R.string.password)) },
                     isError = isPasswordEmpty,
                     visualTransformation = PasswordVisualTransformation(),
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                if (isPasswordEmpty) {
-                    Text(
-                        text = "El campo de contraseña es obligatorio",
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
+//                if (isPasswordEmpty) {
+//                    Text(
+//                        text = stringResource(R.string.el_campo_de_contrase_a_es_obligatorio),
+//                        color = MaterialTheme.colorScheme.error,
+//                        style = MaterialTheme.typography.bodySmall
+//                    )
+//                }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
                 OutlinedTextField(
                     value = confirmPassword,
                     onValueChange = { confirmPassword = it },
-                    label = { Text("Confirm Password") },
+                    label = { Text(stringResource(R.string.confirmar_password)) },
                     visualTransformation = PasswordVisualTransformation(),
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -143,7 +148,7 @@ fun RegisterScreenPortrait(navController: NavHostController) {
                                     rol = rol,
                                     onSuccess = {
                                         scope.launch {
-                                            scaffoldState.showSnackbar("Registro exitoso")
+                                            scaffoldState.showSnackbar(context.getString(R.string.registro_exitoso))
                                         }
                                     },
                                     onError = { errorMessage ->
@@ -156,21 +161,21 @@ fun RegisterScreenPortrait(navController: NavHostController) {
                             }
                         } else if (isEmailEmpty) {
                             scope.launch {
-                                scaffoldState.showSnackbar("El campo de correo es obligatorio")
+                                scaffoldState.showSnackbar(context.getString(R.string.el_campo_de_correo_es_obligatorio))
                             }
                         } else if (isPasswordEmpty) {
                             scope.launch {
-                                scaffoldState.showSnackbar("El campo de contraseña es obligatorio")
+                                scaffoldState.showSnackbar(context.getString(R.string.el_campo_de_contrase_a_es_obligatorio))
                             }
                         } else {
                             scope.launch {
-                                scaffoldState.showSnackbar("Las contraseñas no coinciden")
+                                scaffoldState.showSnackbar(context.getString(R.string.las_contrase_as_no_coinciden))
                             }
                         }
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Registrar")
+                    Text(stringResource(R.string.registro))
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -181,13 +186,14 @@ fun RegisterScreenPortrait(navController: NavHostController) {
                     },
                     modifier = Modifier.fillMaxWidth()
                 ){
-                    Text("Volver")
+                    Text(stringResource(R.string.volver))
                 }
             }
         }
     )
 }
 
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun RegisterScreenLandscape(navController: NavHostController) {
     // Implementación para la orientación landscape
@@ -204,6 +210,7 @@ fun RegisterScreenLandscape(navController: NavHostController) {
     var isPasswordEmpty by remember { mutableStateOf(false) }
     val scaffoldState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     Scaffold(
         snackbarHost = { SnackbarHost(scaffoldState) },
@@ -232,7 +239,7 @@ fun RegisterScreenLandscape(navController: NavHostController) {
                     OutlinedTextField(
                         value = nombre,
                         onValueChange = { nombre = it },
-                        label = { Text("Nombre") },
+                        label = { Text(stringResource(R.string.nombre)) },
                         modifier = Modifier.fillMaxWidth()
                     )
 
@@ -244,14 +251,14 @@ fun RegisterScreenLandscape(navController: NavHostController) {
                             email = it
                             isEmailEmpty = email.isEmpty()
                         },
-                        label = { Text("Email") },
+                        label = { Text(stringResource(R.string.email)) },
                         isError = isEmailEmpty,
                         modifier = Modifier.fillMaxWidth()
                     )
 
                     if (isEmailEmpty) {
                         Text(
-                            text = "El campo de correo es obligatorio",
+                            text = stringResource(R.string.el_campo_de_correo_es_obligatorio),
                             color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.bodySmall
                         )
@@ -265,26 +272,26 @@ fun RegisterScreenLandscape(navController: NavHostController) {
                             password = it
                             isPasswordEmpty = password.isEmpty()
                         },
-                        label = { Text("Password") },
+                        label = { Text(stringResource(R.string.password)) },
                         isError = isPasswordEmpty,
                         visualTransformation = PasswordVisualTransformation(),
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    if (isPasswordEmpty) {
-                        Text(
-                            text = "El campo de contraseña es obligatorio",
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
+//                    if (isPasswordEmpty) {
+//                        Text(
+//                            text = stringResource(R.string.el_campo_de_contrase_a_es_obligatorio),
+//                            color = MaterialTheme.colorScheme.error,
+//                            style = MaterialTheme.typography.bodySmall
+//                        )
+//                    }
 
                     Spacer(modifier = Modifier.height(8.dp))
 
                     OutlinedTextField(
                         value = confirmPassword,
                         onValueChange = { confirmPassword = it },
-                        label = { Text("Confirm Password") },
+                        label = { Text(stringResource(R.string.confirmar_password)) },
                         visualTransformation = PasswordVisualTransformation(),
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -306,7 +313,7 @@ fun RegisterScreenLandscape(navController: NavHostController) {
                                         rol = rol,
                                         onSuccess = {
                                             scope.launch {
-                                                scaffoldState.showSnackbar("Registro exitoso")
+                                                scaffoldState.showSnackbar(context.getString(R.string.registro_exitoso))
                                             }
                                         },
                                         onError = { errorMessage ->
@@ -319,21 +326,21 @@ fun RegisterScreenLandscape(navController: NavHostController) {
                                 }
                             } else if (isEmailEmpty) {
                                 scope.launch {
-                                    scaffoldState.showSnackbar("El campo de correo es obligatorio")
+                                    scaffoldState.showSnackbar(context.getString(R.string.el_campo_de_correo_es_obligatorio))
                                 }
                             } else if (isPasswordEmpty) {
                                 scope.launch {
-                                    scaffoldState.showSnackbar("El campo de contraseña es obligatorio")
+                                    scaffoldState.showSnackbar(context.getString(R.string.el_campo_de_contrase_a_es_obligatorio))
                                 }
                             } else {
                                 scope.launch {
-                                    scaffoldState.showSnackbar("Las contraseñas no coinciden")
+                                    scaffoldState.showSnackbar(context.getString(R.string.las_contrase_as_no_coinciden))
                                 }
                             }
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Registrar")
+                        Text(stringResource(R.string.registro))
                     }
                     Spacer(modifier = Modifier.height(8.dp))
 
@@ -343,7 +350,7 @@ fun RegisterScreenLandscape(navController: NavHostController) {
                         },
                         modifier = Modifier.fillMaxWidth()
                     ){
-                        Text("Volver")
+                        Text(stringResource(R.string.volver))
                     }
                 }
             }
@@ -400,10 +407,4 @@ private fun registerUser(
         .addOnFailureListener { e ->
             onError("Failed to check username availability: ${e.message}")
         }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun RegisterScreenPreview() {
-    RegisterScreen(navController = rememberNavController())
 }

@@ -1,6 +1,6 @@
 package com.example.quizec.ui.screens
 
-import android.net.Uri
+
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -17,16 +17,18 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
+import com.example.quizec.R
 import com.example.quizec.data.model.Pregunta
 import com.example.quizec.data.model.TipoPregunta
 import com.example.quizec.ui.viewmodel.QuestionsViewModel
@@ -139,11 +141,11 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         item {
-            Text("Modificar Pregunta", style = MaterialTheme.typography.titleLarge)
+            Text(stringResource(R.string.modificar_pregunta), style = MaterialTheme.typography.titleLarge)
         }
 
         item {
-            Text("Título de la Pregunta", style = MaterialTheme.typography.bodyMedium)
+            Text(stringResource(R.string.t_tulo_de_la_pregunta), style = MaterialTheme.typography.bodyMedium)
             BasicTextField(
                 value = titulo,
                 onValueChange = { titulo = it },
@@ -157,35 +159,76 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
         }
 
         item {
-            // Botón para elegir imagen
-            Text("Subir Imagen (Opcional)", style = MaterialTheme.typography.bodyMedium)
-            Button(
-                onClick = {
-                    pickPicture.launch(
-                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                    )
-                },
-            ) {
-                Text("Seleccionar Imagen")
+            // Texto explicativo
+            Text(stringResource(R.string.subir_imagen_opcional), style = MaterialTheme.typography.bodyMedium)
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Si no hay imagen seleccionada, centramos el botón de seleccionar imagen
+            if (imageUri == null) {
+                Button(
+                    onClick = {
+                        pickPicture.launch(
+                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                        )
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth() // Ocupa tdo el ancho disponible
+                        .padding(horizontal = 50.dp) // Márgenes laterales para que no esté pegado a los bordes
+                ) {
+                    Text(stringResource(R.string.seleccionar_imagen))
+                }
+            } else {
+                // Si hay una imagen, alineamos los botones horizontalmente
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center, // Centrar los botones
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Botón para seleccionar imagen
+                    Button(
+                        onClick = {
+                            pickPicture.launch(
+                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                            )
+                        },
+                    ) {
+                        Text(stringResource(R.string.seleccionar_imagen))
+                    }
+
+                    Spacer(modifier = Modifier.width(16.dp)) // Espacio entre los botones
+
+                    // Botón para eliminar imagen
+                    Button(
+                        onClick = {
+                            // Eliminar la imagen
+                            imageUri = null
+                        }
+                    ) {
+                        Text(
+                            text = stringResource(R.string.eliminar_imagen),
+                            color = Color.White // Texto blanco para mayor visibilidad
+                        )
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Mostrar la imagen seleccionada si existe
             if (imageUri != null) {
                 AsyncImage(
-                    model = imageUri, // Now using a String (imageUrl) instead of Uri
+                    model = imageUri, // Ahora usando un String (imageUrl) en lugar de Uri
                     contentDescription = "Imagen cargada del servidor",
-                    modifier = Modifier.size(200.dp)
+                    contentScale = ContentScale.Crop, // Ajusta la imagen para que aproveche tdo el tamaño
+                    modifier = Modifier.size(100.dp)
                 )
-            } else {
-                Text(text = "No hay imagen para mostrar.")
             }
-
         }
 
 
         item {
-            Text("Tipo de Pregunta", style = MaterialTheme.typography.bodyMedium)
+            Text(context.getString(R.string.tipo_de_pregunta), style = MaterialTheme.typography.bodyMedium)
             DropdownMenuQuestionType2(tipoPregunta) { selectedTipo ->
                 tipoPregunta = selectedTipo
                 opciones = when (selectedTipo) {
@@ -203,7 +246,7 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
             when (tipoPregunta) {
                 TipoPregunta.VERDADERO_FALSO -> {
                     Text(
-                        "Seleccione la respuesta correcta:",
+                        stringResource(R.string.seleccione_la_respuesta_correcta),
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -211,18 +254,18 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                             selected = respuestaCorrectaVF,
                             onClick = { respuestaCorrectaVF = true }
                         )
-                        Text("Verdadero")
+                        Text(context.getString(R.string.verdadero))
                         Spacer(modifier = Modifier.width(16.dp))
                         RadioButton(
                             selected = !respuestaCorrectaVF,
                             onClick = { respuestaCorrectaVF = false }
                         )
-                        Text("Falso")
+                        stringResource(R.string.falso)
                     }
                 }
 
                 TipoPregunta.OPCION_MULTIPLE_UNA -> {
-                    Text("Opciones de Respuesta", style = MaterialTheme.typography.bodyMedium)
+                    Text(stringResource(R.string.opciones_de_respuesta), style = MaterialTheme.typography.bodyMedium)
 
                     // Iterar sobre las opciones con índice para mostrar los campos de texto y el botón de eliminar
                     opciones.forEachIndexed { index, option ->
@@ -233,8 +276,14 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                                     // Actualizar la opción al cambiar el texto
                                     opciones = opciones.toMutableList().apply { this[index] = newOption }
                                 },
-                                label = { Text("Opción ${index + 1}") },
-                                modifier = Modifier.weight(1f).padding(vertical = 4.dp)
+                                label = { Text(
+                                    stringResource(
+                                        R.string.opcionCreateQuestion,
+                                        index + 1
+                                    )) },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(vertical = 4.dp)
                             )
 
                             // Botón para eliminar la opción
@@ -242,19 +291,19 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                                 // Eliminar la opción de la lista
                                 opciones = opciones.toMutableList().apply { removeAt(index) }
                             }) {
-                                Icon(imageVector = Icons.Default.Delete, contentDescription = "Eliminar Opción")
+                                Icon(imageVector = Icons.Default.Delete, contentDescription = stringResource(R.string.eliminar_opcion_createQuestions))
                             }
                         }
                     }
 
                     // Botón para agregar una nueva opción
                     Button(onClick = { opciones = opciones + "" }) {
-                        Text("Agregar Opción")
+                        Text(stringResource(R.string.agregar_opcion))
                     }
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    Text("Seleccione la respuesta correcta:", style = MaterialTheme.typography.bodyMedium)
+                    Text(stringResource(R.string.seleccione_la_respuesta_correcta), style = MaterialTheme.typography.bodyMedium)
 
                     // Mostrar las opciones y permitir seleccionar la respuesta correcta
                     opciones.forEachIndexed { index, option ->
@@ -263,14 +312,16 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                                 selected = respuestaCorrectaOpcionMultiple == index,
                                 onClick = { respuestaCorrectaOpcionMultiple = index }
                             )
-                            Text("Opción ${index + 1}: $option")
+                            Text(stringResource(R.string.opcionCreateQuesitons2, index + 1, option))
                         }
                     }
                 }
 
                 TipoPregunta.OPCION_MULTIPLE_MULTIPLES -> {
-                    Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-                        Text("Opciones de Respuesta", style = MaterialTheme.typography.bodyMedium)
+                    Column(modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)) {
+                        Text(stringResource(R.string.opciones_de_respuesta), style = MaterialTheme.typography.bodyMedium)
 
                         // Mostrar las opciones de respuesta
                         opciones.forEachIndexed { index, option ->
@@ -280,8 +331,13 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                                     onValueChange = { newOption ->
                                         opciones = opciones.toMutableList().apply { this[index] = newOption }
                                     },
-                                    label = { Text("Opción ${index + 1}") },
-                                    modifier = Modifier.weight(1f).padding(vertical = 4.dp)
+                                    label = { Text(stringResource(
+                                        R.string.opcionCreateQuestion,
+                                        index + 1
+                                    )) },
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .padding(vertical = 4.dp)
                                 )
 
                                 // Botón de eliminar opción
@@ -290,19 +346,24 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                                     opciones = opciones.toMutableList().apply { removeAt(index) }
                                     respuestasCorrectasMultipleMultiples = respuestasCorrectasMultipleMultiples.filter { it in opciones }
                                 }) {
-                                    Icon(imageVector = Icons.Default.Delete, contentDescription = "Eliminar Opción")
+                                    Icon(imageVector = Icons.Default.Delete, contentDescription = stringResource(
+                                        R.string.eliminar_opcion_createQuestions)
+                                    )
                                 }
                             }
                         }
 
                         // Botón para agregar más opciones
                         Button(onClick = { opciones = opciones + "" }) {
-                            Text("Agregar Opción")
+                            Text(stringResource(R.string.agregar_opcion))
                         }
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        Text("Seleccione las respuestas correctas:", style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            stringResource(R.string.seleccione_las_respuestas_correctas),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
 
                         // Lista de opciones con múltiples respuestas correctas
                         opciones.forEachIndexed { index, option ->
@@ -319,7 +380,13 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                                         }
                                     }
                                 )
-                                Text("Opción ${index + 1}: $option") // Mostrar la opción como texto
+                                Text(
+                                    stringResource(
+                                        R.string.opcion_CreateQuestions3,
+                                        index + 1,
+                                        option
+                                    )
+                                ) // Mostrar la opción como texto
                             }
                         }
                     }
@@ -330,7 +397,7 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                 TipoPregunta.EMPAREJAR -> {
                     // Columna Izquierda
                     Text(
-                        "Ingresa los ítems de la columna izquierda:",
+                        stringResource(R.string.ingresa_los_tems_de_la_columna_izquierda),
                         style = MaterialTheme.typography.bodyMedium
                     )
                     leftItems.forEachIndexed { index, item ->
@@ -346,7 +413,7 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                                     leftItems =
                                         leftItems.toMutableList().apply { this[index] = newValue }
                                 },
-                                label = { Text("Ítem ${index + 1}") },
+                                label = { Text(stringResource(R.string.tem, index + 1)) },
                                 modifier = Modifier.weight(1f)
                             )
                             // Botón de eliminar
@@ -357,7 +424,7 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Delete,
-                                    contentDescription = "Eliminar ítem"
+                                    contentDescription = stringResource(R.string.eliminar_tem)
                                 )
                             }
                         }
@@ -368,14 +435,14 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                             .fillMaxWidth(0.8f)
                             .padding(vertical = 8.dp)
                     ) {
-                        Text("Agregar Ítem a la Columna Izquierda")
+                        Text(stringResource(R.string.agregar_tem_a_la_columna_izquierda))
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
 
                     // Columna Derecha
                     Text(
-                        "Ingresa los ítems de la columna derecha:",
+                        stringResource(R.string.ingresa_los_tems_de_la_columna_derecha),
                         style = MaterialTheme.typography.bodyMedium
                     )
                     rightItems.forEachIndexed { index, item ->
@@ -391,7 +458,7 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                                     rightItems =
                                         rightItems.toMutableList().apply { this[index] = newValue }
                                 },
-                                label = { Text("Ítem ${index + 1}") },
+                                label = { Text(stringResource(R.string.tem, index + 1)) },
                                 modifier = Modifier.weight(1f)
                             )
                             // Botón de eliminar
@@ -403,7 +470,7 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Delete,
-                                    contentDescription = "Eliminar ítem"
+                                    contentDescription = stringResource(R.string.eliminar_tem)
                                 )
                             }
                         }
@@ -414,7 +481,7 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                             .fillMaxWidth(0.8f)
                             .padding(vertical = 8.dp)
                     ) {
-                        Text("Agregar Ítem a la Columna Derecha")
+                        Text(stringResource(R.string.agregar_tem_a_la_columna_derecha))
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -423,7 +490,7 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
 
                 TipoPregunta.ORDENAR -> {
                     Text(
-                        "Ingresa los ítems en el orden correcto, siendo el 1er elemento el mayor o el primero:",
+                        stringResource(R.string.ingresa_los_tems_en_el_orden_correcto),
                         style = MaterialTheme.typography.bodyMedium
                     )
                     itemsOrdenados.forEachIndexed { index, item ->
@@ -439,7 +506,7 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                                     itemsOrdenados = itemsOrdenados.toMutableList()
                                         .apply { this[index] = newValue }
                                 },
-                                label = { Text("Ítem ${index + 1}") },
+                                label = { Text(stringResource(R.string.tem, index + 1)) },
                                 modifier = Modifier.weight(1f)
                             )
                             // Botón de eliminar
@@ -459,9 +526,11 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                     // Botón para agregar más ítems
                     Button(
                         onClick = { itemsOrdenados = itemsOrdenados + "" },
-                        modifier = Modifier.fillMaxWidth(0.8f).padding(vertical = 8.dp)
+                        modifier = Modifier
+                            .fillMaxWidth(0.8f)
+                            .padding(vertical = 8.dp)
                     ) {
-                        Text("Agregar ítem")
+                        Text(stringResource(R.string.agregar_tem))
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -469,7 +538,7 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
 
                 TipoPregunta.COMPLETAR_ESPACIOS -> {
                     // Paso 1: Campo para que el usuario introduzca la frase completa
-                    Text("Escribe la frase completa:", style = MaterialTheme.typography.bodyMedium)
+                    Text(stringResource(R.string.escribe_la_frase_completa), style = MaterialTheme.typography.bodyMedium)
                     OutlinedTextField(
                         value = fraseCompletar,
                         onValueChange = { nuevaFrase ->
@@ -484,7 +553,7 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
 
                     // Paso 2: Seleccionar la palabra en la frase que será el espacio en blanco
                     Text(
-                        "Escriba la palabra que será el espacio en blanco:",
+                        stringResource(R.string.escriba_la_palabra_que_ser_el_espacio_en_blanco),
                         style = MaterialTheme.typography.bodyMedium
                     )
                     OutlinedTextField(
@@ -492,7 +561,7 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                         onValueChange = { nuevaPalabra ->
                             opcionCorrecta = nuevaPalabra
                         },
-                        label = { Text("Palabra en blanco") },
+                        label = { Text(stringResource(R.string.palabra_en_blanco)) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 8.dp)
@@ -502,7 +571,7 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
 
                     // Paso 3: Agregar opciones de palabras para completar el espacio en blanco seleccionado
                     Text(
-                        "Opciones para completar el espacio en blanco:",
+                        stringResource(R.string.opciones_para_completar_el_espacio_en_blanco),
                         style = MaterialTheme.typography.bodyMedium
                     )
                     // Si ya hay opciones, mostrarlas en campos de texto
@@ -519,7 +588,7 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                                     opciones = opciones.toMutableList()
                                         .apply { this[opcionIndex] = nuevaOpcion }
                                 },
-                                label = { Text("Opción ${opcionIndex + 1}") },
+                                label = { Text(stringResource(R.string.opci_n, opcionIndex + 1)) },
                                 modifier = Modifier.weight(1f)
                             )
                             // Botón de eliminar
@@ -531,7 +600,7 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Delete,
-                                    contentDescription = "Eliminar opción"
+                                    contentDescription = stringResource(R.string.eliminar_opcion_createQuestions)
                                 )
                             }
                         }
@@ -540,9 +609,11 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                     // Botón para agregar más opciones
                     Button(
                         onClick = { opciones = opciones + "" },
-                        modifier = Modifier.fillMaxWidth(0.8f).padding(vertical = 8.dp)
+                        modifier = Modifier
+                            .fillMaxWidth(0.8f)
+                            .padding(vertical = 8.dp)
                     ) {
-                        Text("Agregar opción")
+                        Text(stringResource(R.string.agregar_opcion))
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -551,7 +622,7 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
 
                 TipoPregunta.ASOCIACION -> {
 
-                    Text("Conceptos y definiciones:", style = MaterialTheme.typography.bodyMedium)
+                    Text(stringResource(R.string.conceptos_y_definiciones), style = MaterialTheme.typography.bodyMedium)
 
                     conceptosYDefiniciones.forEach { (concepto, definicion) ->
 
@@ -570,10 +641,11 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                                     AsyncImage(
                                         model = concepto,
                                         contentDescription = "Imagen del concepto",
+                                        contentScale = ContentScale.Crop, // Ajusta la imagen para q aproveche tdo el tam
                                         modifier = Modifier
-                                            .size(50.dp)
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .background(Color.Gray)
+                                            .size(80.dp)
+                                        //.clip(RoundedCornerShape(8.dp))
+                                        //.background(Color.Gray)
                                     )
 
                                     Spacer(modifier = Modifier.width(8.dp))
@@ -586,7 +658,7 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                                             }
                                         }
                                     ) {
-                                        Text("Eliminar imagen")
+                                        Text(stringResource(R.string.eliminar_imagen))
                                     }
                                 } else {
                                     // Campo de texto para el concepto, si no hay imagen
@@ -601,7 +673,7 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                                                 }
                                             }
                                         },
-                                        label = { Text("Concepto") },
+                                        label = { Text(stringResource(R.string.concepto)) },
                                         modifier = Modifier.weight(1f),
                                         enabled = !concepto.startsWith("content://")
                                     )
@@ -619,7 +691,7 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                                         },
                                         enabled = concepto.isEmpty()
                                     ) {
-                                        Text("Subir imagen")
+                                        Text(stringResource(R.string.subir_imagen))
                                     }
                                 }
                             }
@@ -634,7 +706,7 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                                         this[concepto] = nuevaDefinicion // Actualizamos la definición correspondiente
                                     }
                                 },
-                                label = { Text("Definición") },
+                                label = { Text(stringResource(R.string.definicion)) },
                                 modifier = Modifier.fillMaxWidth()
                             )
 
@@ -648,7 +720,7 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Delete,
-                                    contentDescription = "Eliminar par concepto/definición"
+                                    contentDescription = stringResource(R.string.eliminar_par_concepto_definici_n)
                                 )
                             }
                         }
@@ -661,9 +733,11 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                                 this[""] = "" // Agregar un nuevo par vacío
                             }
                         },
-                        modifier = Modifier.fillMaxWidth(0.8f).padding(vertical = 8.dp)
+                        modifier = Modifier
+                            .fillMaxWidth(0.8f)
+                            .padding(vertical = 8.dp)
                     ) {
-                        Text("Agregar concepto y definición")
+                        Text(stringResource(R.string.agregar_concepto_y_definici_n))
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -673,7 +747,7 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
 
                 TipoPregunta.COMPLETAR_PALABRAS -> {
                     // Paso 1: Campo para que el usuario introduzca la frase completa
-                    Text("Escribe la frase completa:", style = MaterialTheme.typography.bodyMedium)
+                    Text(stringResource(R.string.escribe_la_frase_completa), style = MaterialTheme.typography.bodyMedium)
                     OutlinedTextField(
                         value = fraseCompletar,
                         onValueChange = { nuevoValor ->
@@ -688,22 +762,47 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                     Spacer(modifier = Modifier.height(16.dp))
 
                     // Paso 2: Seleccionar las palabras que serán completadas
-                    Text("Escriba las palabras que serán el espacio en blanco:", style = MaterialTheme.typography.bodyMedium)
+                    Text(stringResource(R.string.escriba_las_palabras_que_ser_n_el_espacio_en_blanco), style = MaterialTheme.typography.bodyMedium)
 
                     // Iteramos sobre la lista de palabras que se deben completar
-                    opcionesCorrectasCompletarPalabras.forEachIndexed { index, palabra ->
-                        OutlinedTextField(
-                            value = palabra,
-                            onValueChange = { nuevaPalabra ->
-                                opcionesCorrectasCompletarPalabras = opcionesCorrectasCompletarPalabras.toMutableList().apply {
-                                    set(index, nuevaPalabra)  // Actualizamos la palabra en la posición correspondiente
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        opcionesCorrectasCompletarPalabras.forEachIndexed { index, palabra ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                OutlinedTextField(
+                                    value = palabra,
+                                    onValueChange = { nuevaPalabra ->
+                                        opcionesCorrectasCompletarPalabras = opcionesCorrectasCompletarPalabras.toMutableList().apply {
+                                            set(index, nuevaPalabra) // Actualizamos la palabra en la posición correspondiente
+                                        }
+                                    },
+                                    label = { Text(
+                                        stringResource(
+                                            R.string.palabra_en_blanco_index1,
+                                            index + 1
+                                        )) },
+                                    modifier = Modifier.weight(1f)
+                                )
+
+                                // Agregar botón de eliminación excepto para la primera opción
+                                if (index > 0) {
+                                    IconButton(
+                                        onClick = {
+                                            opcionesCorrectasCompletarPalabras = opcionesCorrectasCompletarPalabras.toMutableList().apply {
+                                                removeAt(index) // Eliminamos la palabra en la posición correspondiente
+                                            }
+                                        }
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Delete,
+                                            contentDescription = "Eliminar palabra"
+                                        )
+                                    }
                                 }
-                            },
-                            label = { Text("Palabra en blanco #${index + 1}") },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 8.dp)
-                        )
+                            }
+                        }
                     }
 
                     // Agregar un botón para permitir agregar más palabras a completar
@@ -713,19 +812,26 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                         },
                         modifier = Modifier.padding(vertical = 8.dp)
                     ) {
-                        Text("Añadir palabra")
+                        Text(stringResource(R.string.a_adir_palabra))
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
 
                     // Mostrar las opciones correctas si es necesario
                     if (opcionesCorrectasCompletarPalabras.isNotEmpty()) {
-                        Text("Opciones correctas: ${opcionesCorrectasCompletarPalabras.joinToString()}", style = MaterialTheme.typography.bodySmall)
+                        Text(
+                            text = stringResource(
+                                R.string.opciones_correctas_CompletarPalabras,
+                                opcionesCorrectasCompletarPalabras.joinToString()
+                            ),
+                            style = MaterialTheme.typography.bodySmall
+                        )
                     }
                 }
 
-            }
 
+
+            }
         }
 
         item {
@@ -737,7 +843,7 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                 onClick = {
                     // Verificar si el título está vacío
                     if (titulo.isEmpty()) {
-                        errorMessage = "Por favor, ingrese el título de la pregunta."
+                        errorMessage = context.getString(R.string.por_favor_ingrese_el_t_tulo_de_la_pregunta)
                     } else {
                         errorMessage = "" //ya hay titulo
                         // Dependiendo del tipo de pregunta, realizar las validaciones
@@ -747,11 +853,14 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                             }
                             TipoPregunta.OPCION_MULTIPLE_MULTIPLES ->{
                                 if (opciones.size !in 2..6) {
-                                    errorMessage = "Por favor, ingrese entre 2 y 6 opciones."
+                                    errorMessage =
+                                        context.getString(R.string.por_favor_ingrese_entre_2_y_6_opciones)
                                 }else if (opciones.any { it.isEmpty() }) {
-                                    errorMessage = "Por favor, complete todas las opciones."
+                                    errorMessage =
+                                        context.getString(R.string.por_favor_complete_todas_las_opciones)
                                 } else if (respuestasCorrectasMultipleMultiples.isEmpty()) {
-                                    errorMessage = "Por favor, seleccione la respuesta correcta."
+                                    errorMessage =
+                                        context.getString(R.string.por_favor_seleccione_la_respuesta_correcta)
                                 }else{
                                     errorMessage = ""
                                 }
@@ -759,24 +868,26 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
 
                             TipoPregunta.OPCION_MULTIPLE_UNA -> {
                                 if (opciones.size !in 2..6) {
-                                    errorMessage = "Por favor, ingrese entre 2 y 6 opciones."
+                                    errorMessage = context.getString(R.string.por_favor_ingrese_entre_2_y_6_opciones)
                                 }else if (opciones.any { it.isEmpty() }) {
-                                    errorMessage = "Por favor, complete todas las opciones."
+                                    errorMessage = context.getString(R.string.por_favor_complete_todas_las_opciones)
                                 } else if (respuestaCorrectaOpcionMultiple == -1) {
-                                    errorMessage = "Por favor, seleccione la respuesta correcta."
+                                    errorMessage = context.getString(R.string.por_favor_seleccione_la_respuesta_correcta)
                                 }else{
                                     errorMessage = ""
                                 }
                             }
 
-
                             TipoPregunta.EMPAREJAR -> {
                                 if (leftItems.size !in 2..6 || rightItems.size !in 2..6) {
-                                    errorMessage = "Por favor, ingrese entre 2 y 6 ítems en ambas columnas."
+                                    errorMessage =
+                                        context.getString(R.string.por_favor_ingrese_entre_2_y_6_tems_en_ambas_columnas)
                                 } else if (leftItems.size != rightItems.size) {
-                                    errorMessage = "Por favor, complete ambas columnas con el mismo número de ítems."
+                                    errorMessage =
+                                        context.getString(R.string.por_favor_complete_ambas_columnas_con_el_mismo_n_mero_de_tems)
                                 } else if (leftItems.any { it.isBlank() } || rightItems.any { it.isBlank() }) {
-                                    errorMessage = "Por favor, asegúrese de que todos los ítems contengan texto válido."
+                                    errorMessage =
+                                        context.getString(R.string.por_favor_aseg_rese_de_que_todos_los_tems_contengan_texto_v_lido)
                                 } else {
                                     errorMessage = ""
                                     // Emparejar los ítems si las validaciones son correctas
@@ -785,25 +896,43 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                             }
 
                             TipoPregunta.ORDENAR -> {
-                                if (itemsOrdenados.size !in 2..6 ) {
-                                    errorMessage = "Por favor, ingrese entre 2 y 6 ítems."
-                                }else {
+                                if (itemsOrdenados.size !in 2..6) {
+                                    errorMessage = context.getString(R.string.por_favor_ingrese_entre_2_y_6_tems)
+                                } else if (itemsOrdenados.any { it.isBlank() }) { // Verifica si algún elemento está en blanco
+                                    errorMessage = context.getString(R.string.los_items_no_pueden_estar_vacios) // Mensaje de error adecuado
+                                } else {
                                     errorMessage = ""
                                 }
                             }
 
                             TipoPregunta.COMPLETAR_ESPACIOS -> {
-                                if (fraseCompletar.isEmpty()){
-                                    errorMessage = "Por favor, ingrese la frase para completar."
-                                    //NO COGE LA PALABRA SI VA SEGUIDA DE CARACTERES ESPECIALES (SYMBOLS) '¡?()
-                                }else if (!fraseCompletar.split(" ").contains(opcionCorrecta)) {  // Verificar si la palabra a completar está en la frase
-                                    errorMessage = "La palabra no está en la frase."
-                                }else if (opciones.isEmpty()) {
-                                    errorMessage = "Por favor, ingrese al menos una opción."
-                                }else if(opciones.any { it.isEmpty() }){
-                                    errorMessage = "Por favor, no deje opciones en blanco."
-                                }else {
-                                    errorMessage = ""
+                                if (fraseCompletar.isEmpty()) {
+                                    errorMessage =
+                                        context.getString(R.string.por_favor_ingrese_la_frase_para_completar)
+                                } else {
+                                    // Eliminar caracteres especiales de la frase
+                                    val fraseSinCaracteresEspeciales = fraseCompletar.replace(
+                                        Regex("[^\\w\\s]"),
+                                        ""
+                                    )
+                                    val palabrasFrase = fraseSinCaracteresEspeciales.split(" ")
+
+                                    // Verificar si la palabra a completar está en la frase
+                                    if (!palabrasFrase.contains(opcionCorrecta)) {
+                                        errorMessage =
+                                            context.getString(
+                                                R.string.la_palabra_no_est_en_la_frase,
+                                                opcionCorrecta
+                                            )
+                                    } else if (opciones.size < 1) {
+                                        errorMessage =
+                                            context.getString(R.string.por_favor_ingrese_al_menos_una_opci_n)
+                                    } else if (opciones.any { it.isEmpty() }) {
+                                        errorMessage =
+                                            context.getString(R.string.por_favor_no_deje_opciones_en_blanco)
+                                    } else {
+                                        errorMessage = ""
+                                    }
                                 }
                             }
 
@@ -811,20 +940,25 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                             TipoPregunta.ASOCIACION -> {
                                 // Comprobar si hay al menos dos conceptos y definiciones
                                 if (conceptosYDefiniciones.size < 2) {
-                                    errorMessage = "Por favor, ingrese al menos 2 conceptos y definiciones."
+                                    errorMessage =
+                                        context.getString(R.string.por_favor_ingrese_al_menos_2_conceptos_y_definiciones)
                                 } else if (conceptosYDefiniciones.any { (concepto, definicion) ->
                                         // Comprobar si algún concepto o definición está vacío o nulo
-                                        concepto.isNullOrBlank() || definicion.isNullOrBlank()
+                                        concepto.isBlank() || definicion.isBlank()
                                     }) {
-                                    errorMessage = "Por favor, asegúrese de que todos los conceptos y definiciones no estén vacíos."
+                                    errorMessage =
+                                        context.getString(R.string.por_favor_aseg_rese_de_que_todos_los_conceptos_y_definiciones_no_est_n_vac_os)
                                 } else {
-                                    errorMessage = ""
+                                    errorMessage = "" // No hay error si tdo está lleno
                                 }
                             }
 
+
                             TipoPregunta.COMPLETAR_PALABRAS -> {
                                 if (fraseCompletar.isEmpty()) {
-                                    errorMessage = "Por favor, ingrese la frase para completar."
+                                    errorMessage = context.getString(R.string.por_favor_ingrese_la_frase_para_completar)
+                                } else if (opcionesCorrectasCompletarPalabras.isEmpty() || opcionesCorrectasCompletarPalabras.any { it.isBlank() }) {
+                                    errorMessage = context.getString(R.string.por_favor_ingrese_al_menos_una_palabra_a_completar)
                                 } else {
                                     // Verificar que todas las palabras a completar están en la frase
                                     val fraseSinCaracteresEspeciales = fraseCompletar.replace(Regex("[^\\w\\s]"), "") // Eliminar caracteres especiales
@@ -836,25 +970,32 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                                     }
 
                                     if (palabrasNoEncontradas.isNotEmpty()) {
-                                        errorMessage = "Las siguientes palabras no están en la frase: ${palabrasNoEncontradas.joinToString()}"
+                                        errorMessage = context.getString(
+                                            R.string.las_siguientes_palabras_no_est_n_en_la_frase,
+                                            palabrasNoEncontradas.joinToString()
+                                        )
                                     } else {
                                         errorMessage = ""
                                     }
                                 }
                             }
+
+
+
+
                         }
+
 
                         // Si no hay errores, proceder a guardar la pregunta en Firebase y navegar
                         if (errorMessage.isEmpty()) {
                             // Establecer las respuestas correctas dependiendo del tipo de pregunta
                             respuestasCorrectas = when (tipoPregunta) {
-                                TipoPregunta.VERDADERO_FALSO -> listOf(if (respuestaCorrectaVF) "Verdadero" else "Falso")
+                                TipoPregunta.VERDADERO_FALSO -> listOf(if (respuestaCorrectaVF) context.getString(R.string.verdadero) else context.getString(R.string.falso))
                                 TipoPregunta.OPCION_MULTIPLE_UNA -> listOfNotNull(
                                     opciones.getOrNull(respuestaCorrectaOpcionMultiple)
                                 )
                                 TipoPregunta.OPCION_MULTIPLE_MULTIPLES -> respuestasCorrectasMultipleMultiples
                                 TipoPregunta.COMPLETAR_ESPACIOS -> listOf(opcionCorrecta)
-                                //TipoPregunta.EMPAREJAR -> itemPairs.map { it.values.first() }
 
                                 else -> listOf()
                             }
@@ -879,7 +1020,8 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                                 )
                             )
 
-                            Toast.makeText(context, "Pregunta actualizada exitosamente!", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context,
+                                context.getString(R.string.pregunta_guardada_exitosamente), Toast.LENGTH_SHORT).show()
                             // Navegar a la pantalla de quizzes
                             navController.navigate("select_questions/${user_id}")
                         }
@@ -887,7 +1029,7 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                 },
                 modifier = Modifier.fillMaxWidth(0.8f)
             ) {
-                Text("Guardar Pregunta", color = Color.White)
+                Text(stringResource(R.string.guardar_pregunta), color = Color.White)
             }
 
         }
@@ -903,7 +1045,7 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                 onClick = { navController.navigate("select_questions/${user_id}") },
                 modifier = Modifier.fillMaxWidth(0.4f)
             ) {
-                Text("Volver")
+                Text(stringResource(R.string.volver))
             }
         }
     }

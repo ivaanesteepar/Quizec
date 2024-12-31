@@ -28,6 +28,7 @@ class AMovServer {
                 ?: "application/octet-stream"
 
             try {
+                Log.d("UploadImage", "Starting image upload with filename: $filename and MIME type: $mimeType")
                 val url = URL(SERVER_UPLOAD)
                 val connection = url.openConnection() as HttpURLConnection
                 connection.doInput = true
@@ -59,9 +60,10 @@ class AMovServer {
                 outputStream.close()
 
                 val responseCode = connection.responseCode
-                //val responseMessage = connection.responseMessage
-                //println("Response Code: $responseCode")
-                //println("Response Message: $responseMessage")
+                Log.d("AmovServer", "Response Code: $responseCode")
+                val responseMessage = connection.responseMessage
+                println("AmovServer Response Code: $responseCode")
+                println("AmovServer Response Message: $responseMessage")
 
                 if (responseCode == HttpURLConnection.HTTP_OK) {
                     val response = connection.inputStream.bufferedReader().use { it.readText() }

@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -15,32 +14,28 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
 import com.example.quizec.R
-import com.example.quizec.data.model.TipoPregunta
 
 @Composable
-fun MatchingAssociationResults(
+fun OrderingResults(
     respuestasUsuarioPregunta: List<Map<String, Any>>,
-    tipoPregunta: TipoPregunta,
-    conceptosYDefiniciones: Map<String, String>,
-    emparejamientos: Map<String, String>
+    itemsOrdenados: List<String>
 ) {
-    // Mapa para contar las asociaciones o emparejamientos concepto-definición
+    // Mapa para contar la frecuencia de cada orden seleccionado
     val conteoResultados = mutableMapOf<String, Int>()
 
     // Procesar las respuestas de todos los usuarios
     respuestasUsuarioPregunta.forEach { respuestaUsuario ->
-        // Obtener el mapa de respuestas (concepto -> definición)
-        val respuestas = respuestaUsuario["respuesta"] as? Map<String, String>
+        // Obtener la lista de respuestas del usuario (orden seleccionado)
+        val respuestas = respuestaUsuario["respuesta"] as? List<String>
+        Log.d("OrderingResults", "Respuestas del usuario: $respuestas")
 
-        respuestas?.forEach { (concepto, definicion) ->
-            // Crear clave única para la asociación o emparejamiento
-            val resultado = "$concepto - $definicion"
+        respuestas?.let {
+            // Crear una representación única del orden seleccionado
+            val resultado = it.joinToString(" -> ")
             conteoResultados[resultado] = conteoResultados.getOrDefault(resultado, 0) + 1
         }
     }
@@ -50,34 +45,28 @@ fun MatchingAssociationResults(
         .sortedByDescending { it.value }
         .map { Pair(it.key, it.value) }
 
-    Log.d("MatchingAssociationResults", "Resultados ordenados $tipoPregunta: $resultadosOrdenados")
+    // Representación del orden correcto como texto
+    val ordenCorrectoTexto = itemsOrdenados.joinToString(" -> ")
 
-    // Mostrar los resultados en una UI profesional
+    // Mostrar los resultados en la UI
     Column(
         modifier = Modifier
             .padding(16.dp)
             .fillMaxWidth()
     ) {
         Text(
-            text = "",
+            text = stringResource(R.string.resultados),
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.padding(bottom = 16.dp)
         )
 
-        resultadosOrdenados.forEach { (resultado, cont) ->
-            val partes = resultado.split(" - ")
-            val concepto = partes[0]
-            val definicion = partes[1]
-
-            // Verificar si el emparejamiento es correcto
-            val esCorrecto = (conceptosYDefiniciones[concepto] == definicion || emparejamientos[concepto] == definicion )
-
-            // Cambiar el color de fondo a verde si es correcto
-            val backgroundColor = if (esCorrecto) {
-                Color.Green // Fondo verde si la respuesta es correcta
+        resultadosOrdenados.forEach { (orden, cont) ->
+            // Determinar el color de fondo: verde si es correcto, variante estándar si no lo es
+            val backgroundColor = if (orden == ordenCorrectoTexto) {
+                Color.Green // Fondo verde para correcto
             } else {
-                MaterialTheme.colorScheme.surfaceVariant // Fondo estándar si es incorrecta
+                MaterialTheme.colorScheme.surfaceVariant // Fondo estándar para incorrecto
             }
 
             // Cada fila con fondo diferenciado
@@ -95,46 +84,18 @@ fun MatchingAssociationResults(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    // Concepto: manejar imagen solo si es de tipo Asociación
+                    // Orden como texto
                     Box(
                         modifier = Modifier
-                            .weight(1f)
+                            .weight(2f)
                             .padding(end = 8.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        if (tipoPregunta == TipoPregunta.ASOCIACION && concepto.startsWith("http")) {
-                            // Si es de tipo Asociación y el concepto es una URL, mostramos la imagen
-                            AsyncImage(
-                                model = concepto,
-                                contentDescription = "Concepto como imagen",
-                                contentScale = ContentScale.Crop, // Ajusta la imagen para q aproveche tdo el tam
-                                modifier = Modifier
-                                    .size(80.dp) // Aseguramos que la imagen tenga un tamaño fijo
-                                    .align(Alignment.Center)
-                            )
-                        } else {
-                            // Si no tiene img, mostramos solo texto
-                            Text(
-                                text = concepto,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                    }
-
-                    // Definición: siempre como texto
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(horizontal = 8.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
                         Text(
-                            text = definicion,
+                            text = orden,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface,
-                            textAlign = TextAlign.Center
+                            textAlign = TextAlign.Start
                         )
                     }
 

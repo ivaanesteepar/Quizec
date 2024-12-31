@@ -16,8 +16,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -39,6 +41,7 @@ fun LoginScreen(navController: NavHostController) {
     var errorMessage by remember { mutableStateOf("") }
     val auth = if (LocalInspectionMode.current) null else FirebaseAuth.getInstance()
     val viewModel: QuizViewModel = viewModel()
+    val context = LocalContext.current
 
     Box(
         modifier = Modifier.fillMaxSize()
@@ -62,7 +65,7 @@ fun LoginScreen(navController: NavHostController) {
             verticalArrangement = Arrangement.Center
         ) {
             Text(
-                text = "Login",
+                text = stringResource(R.string.login),
                 style = androidx.compose.material3.MaterialTheme.typography.headlineMedium,
                 color = Color.White
             )
@@ -70,7 +73,7 @@ fun LoginScreen(navController: NavHostController) {
             Spacer(modifier = Modifier.height(32.dp))
 
             Text(
-                text = "Nombre de usuario",
+                text = stringResource(R.string.nombre_de_usuario),
                 style = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
                 color = Color.White
             )
@@ -93,7 +96,7 @@ fun LoginScreen(navController: NavHostController) {
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Password",
+                text = stringResource(R.string.password),
                 style = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
                 color = Color.White
             )
@@ -127,7 +130,8 @@ fun LoginScreen(navController: NavHostController) {
             Button(
                 onClick = {
                     if (username.isEmpty() || password.isEmpty()) {
-                        errorMessage = "Por favor, ingresa todos los campos."
+                        errorMessage =
+                            context.getString(R.string.por_favor_ingresa_todos_los_campos)
                     } else {
                         if (auth != null) {
                             loginUser(username, password, auth, navController, { message ->
@@ -144,7 +148,7 @@ fun LoginScreen(navController: NavHostController) {
                     .fillMaxWidth(0.8f)
                     .padding(horizontal = 16.dp)
             ) {
-                Text(text = "Login", color = Color.White)
+                Text(text = stringResource(R.string.login), color = Color.White)
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -159,7 +163,7 @@ fun LoginScreen(navController: NavHostController) {
                     .fillMaxWidth(0.8f)
                     .padding(horizontal = 16.dp)
             ) {
-                Text(text = "Registro", color = Color.White)
+                Text(text = stringResource(R.string.registro), color = Color.White)
             }
         }
     }
@@ -179,7 +183,7 @@ private fun loginUser(
         .get()
         .addOnSuccessListener { result ->
             if (result.isEmpty) {
-                onError("Usuario no encontrado.")
+                onError("User not found.")
             } else {
                 val userDocument = result.documents.firstOrNull()
                 val userEmail = userDocument?.getString("correo") // Obtenemos el correo del usuario
@@ -218,17 +222,11 @@ private fun loginUser(
                             }
                         }
                 } else {
-                    onError("Correo del usuario no encontrado.")
+                    onError("Email not found.")
                 }
             }
         }
         .addOnFailureListener { e ->
             onError("Error al obtener el correo del usuario: ${e.message}")
         }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun LoginScreenPreview() {
-    LoginScreen(navController = rememberNavController())
 }
