@@ -2,6 +2,7 @@ package com.example.quizec.ui.screens
 
 import android.util.Log
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -9,6 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
@@ -21,6 +23,7 @@ import com.example.quizec.ui.screens.CreatorResults.MissingWordsResults
 import com.example.quizec.ui.screens.CreatorResults.MultiAnswerBarChart
 import com.example.quizec.ui.screens.CreatorResults.MultiChoiceBarChart
 import com.example.quizec.ui.screens.CreatorResults.OrderingResults
+import com.example.quizec.ui.theme.buttonColor
 
 import com.example.quizec.ui.viewmodel.QuizViewModel
 import com.example.quizec.ui.viewmodel.UsersViewModel
@@ -72,6 +75,8 @@ fun CreatorQuizzesScreen(
 
     Column(
         modifier = Modifier
+            .background(colorResource(id = R.color.background_color))
+            .fillMaxSize() // Esto hace que la columna ocupe tdo el tamaño de la pantalla
             .fillMaxWidth()
             .padding(top = 32.dp, start = 16.dp, end = 16.dp)
             .verticalScroll(rememberScrollState()),
@@ -138,9 +143,9 @@ fun CreatorQuizzesScreen(
                                 val respuestaUsuarioTrim = it.toString().trim()
 
                                 // Contar "Verdadero" y "Falso"
-                                if (respuestaUsuarioTrim.equals("Verdadero", ignoreCase = true)) {
+                                if (respuestaUsuarioTrim.equals(stringResource(id = R.string.verdadero), ignoreCase = true)) {
                                     correctAnswersCount++
-                                } else if (respuestaUsuarioTrim.equals("Falso", ignoreCase = true)) {
+                                } else if (respuestaUsuarioTrim.equals(stringResource(id = R.string.falso), ignoreCase = true)) {
                                     incorrectAnswersCount++
                                 }
                             }
@@ -219,6 +224,9 @@ fun CreatorQuizzesScreen(
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Button(
                     onClick = { currentIndex-- },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = buttonColor // Aplicamos el color de fondo del botón
+                    ),
                     enabled = currentIndex > 0, // Deshabilitar si es la primera pregunta
                     modifier = Modifier.padding(bottom = 16.dp)
                 ) {
@@ -231,6 +239,9 @@ fun CreatorQuizzesScreen(
                         onClick = {
                             currentIndex++ // Pasar al siguiente gráfico
                         },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = buttonColor // Aplicamos el color de fondo del botón
+                        ),
                         modifier = Modifier.padding(bottom = 16.dp)
                     ) {
                         Text(stringResource(R.string.siguiente_pregunta))
@@ -265,6 +276,9 @@ fun CreatorQuizzesScreen(
                             // Marcar que el quiz ha terminado
                             isQuizFinished = true
                         },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = colorResource(id = R.color.logo_pink) // Aplicamos el color de fondo del botón
+                        ),
 
                         modifier = Modifier.padding(bottom = 16.dp)
                     ) {

@@ -10,7 +10,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -19,10 +18,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -32,6 +31,7 @@ import com.example.quizec.R
 import com.example.quizec.data.model.Pregunta
 import com.example.quizec.data.model.TipoPregunta
 import com.example.quizec.data.model.toLocalizedString
+import com.example.quizec.ui.theme.buttonColor
 import com.example.quizec.ui.viewmodel.QuizViewModel
 import com.example.quizec.utils.AMovServer
 import com.google.firebase.auth.FirebaseAuth
@@ -135,6 +135,7 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
 
     LazyColumn(
         modifier = Modifier
+            .background(colorResource(id = R.color.background_color))
             .fillMaxSize()
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -172,6 +173,9 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                             PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                         )
                     },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = buttonColor // Aplicamos el color de fondo del botón
+                    ),
                     modifier = Modifier
                         .fillMaxWidth() // Ocupa tdo el ancho disponible
                         .padding(horizontal = 50.dp) // Márgenes laterales para que no esté pegado a los bordes
@@ -192,6 +196,9 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                             )
                         },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = buttonColor // Aplicamos el color de fondo del botón
+                        ),
                     ) {
                         Text(stringResource(R.string.seleccionar_imagen))
                     }
@@ -204,7 +211,10 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                             // Eliminar la imagen
                             imageUri = null
                             quizViewModel.imageUri = null // Actualizar también en el ViewModel
-                        }
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.Red // Aplicamos el color de fondo del botón
+                        ),
                     ) {
                         Text(
                             text = stringResource(R.string.eliminar_imagen),
@@ -308,7 +318,12 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                     }
 
                     // Botón para agregar una nueva opción
-                    Button(onClick = { opciones = opciones + "" }) {
+                    Button(
+                        onClick = { opciones = opciones + "" },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = buttonColor // Aplicamos el color de fondo del botón
+                        ),
+                        ) {
                         Text(stringResource(R.string.agregar_opcion))
                     }
 
@@ -376,7 +391,12 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                         }
 
                         // Botón para agregar más opciones
-                        Button(onClick = { opciones = opciones + "" }) {
+                        Button(
+                            onClick = { opciones = opciones + "" },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = buttonColor // Aplicamos el color de fondo del botón
+                            ),
+                        ) {
                             Text(stringResource(R.string.agregar_opcion))
                         }
 
@@ -452,6 +472,9 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                     }
                     Button(
                         onClick = { leftItems = leftItems + "" },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = buttonColor // Aplicamos el color de fondo del botón
+                        ),
                         modifier = Modifier
                             .fillMaxWidth(0.8f)
                             .padding(vertical = 8.dp)
@@ -498,6 +521,9 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                     }
                     Button(
                         onClick = { rightItems = rightItems + "" },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = buttonColor // Aplicamos el color de fondo del botón
+                        ),
                         modifier = Modifier
                             .fillMaxWidth(0.8f)
                             .padding(vertical = 8.dp)
@@ -546,6 +572,9 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                     // Botón para agregar más ítems
                     Button(
                         onClick = { itemsOrdenados = itemsOrdenados + "" },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = buttonColor // Aplicamos el color de fondo del botón
+                        ),
                         modifier = Modifier
                             .fillMaxWidth(0.8f)
                             .padding(vertical = 8.dp)
@@ -629,6 +658,9 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                     // Botón para agregar más opciones
                     Button(
                         onClick = { opciones = opciones + "" },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = buttonColor // Aplicamos el color de fondo del botón
+                        ),
                         modifier = Modifier
                             .fillMaxWidth(0.8f)
                             .padding(vertical = 8.dp)
@@ -677,7 +709,10 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                                             conceptosYDefiniciones = conceptosYDefiniciones.toMutableMap().apply {
                                                 this[concepto] = "" // Eliminar el valor de la imagen
                                             }
-                                        }
+                                        },
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = Color.Red // Aplicamos el color de fondo del botón
+                                        ),
                                     ) {
                                         Text(stringResource(R.string.eliminar_imagen))
                                     }
@@ -710,6 +745,9 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                                                 )
                                             }
                                         },
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = buttonColor // Aplicamos el color de fondo del botón
+                                        ),
                                         enabled = concepto.isEmpty()
                                     ) {
                                         Text(stringResource(R.string.subir_imagen))
@@ -754,6 +792,9 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                                 this[""] = "" // Agregar un nuevo par vacío
                             }
                         },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = buttonColor // Aplicamos el color de fondo del botón
+                        ),
                         modifier = Modifier
                             .fillMaxWidth(0.8f)
                             .padding(vertical = 8.dp)
@@ -829,6 +870,9 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                         onClick = {
                             opcionesCorrectasCompletarPalabras = opcionesCorrectasCompletarPalabras + "" // Agrega una caja de texto vacía
                         },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = buttonColor // Aplicamos el color de fondo del botón
+                        ),
                         modifier = Modifier.padding(vertical = 8.dp)
                     ) {
                         Text(stringResource(R.string.a_adir_palabra))
@@ -1048,7 +1092,10 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
                         }
                     }
                 },
-                modifier = Modifier.fillMaxWidth(0.8f)
+                modifier = Modifier.fillMaxWidth(0.8f),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = colorResource(id = R.color.logo_pink) // Aplicamos el color de fondo del botón
+                ),
             ) {
                 Text(stringResource(R.string.guardar_pregunta), color = Color.White)
             }
@@ -1064,6 +1111,9 @@ fun CreateQuestionsScreen(navController: NavHostController, quizViewModel: QuizV
         item {
             Button(
                 onClick = { navController.navigate("createQuiz") },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = buttonColor // Aplicamos el color de fondo del botón
+                ),
                 modifier = Modifier.fillMaxWidth(0.4f)
             ) {
                 Text(stringResource(R.string.volver))

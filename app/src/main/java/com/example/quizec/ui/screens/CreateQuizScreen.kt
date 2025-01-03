@@ -21,8 +21,10 @@ import androidx.lifecycle.viewModelScope
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.result.PickVisualMediaRequest
+import androidx.compose.foundation.background
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.navigation.NavHostController
@@ -30,6 +32,7 @@ import coil.compose.AsyncImage
 import com.example.quizec.R
 import com.example.quizec.data.model.Cuestionario
 import com.example.quizec.data.model.Rol
+import com.example.quizec.ui.theme.buttonColor
 import com.example.quizec.ui.viewmodel.QuizViewModel
 import com.example.quizec.utils.AMovServer
 import com.google.firebase.auth.FirebaseAuth
@@ -103,6 +106,7 @@ fun CreateQuizScreen(
 
     Column(
         modifier = Modifier
+            .background(colorResource(id = R.color.background_color))
             .fillMaxSize()
             .padding(16.dp)
             .verticalScroll(rememberScrollState()),
@@ -171,6 +175,9 @@ fun CreateQuizScreen(
                         PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                     )
                 },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = buttonColor // Aplicamos el color de fondo del botón
+                ),
                 modifier = Modifier
                     .fillMaxWidth() // Ocupa todo el ancho disponible
                     .padding(horizontal = 50.dp) // Márgenes laterales para que no esté pegado a los bordes
@@ -191,6 +198,9 @@ fun CreateQuizScreen(
                             PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                         )
                     },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = buttonColor // Aplicamos el color de fondo del botón
+                    ),
                 ) {
                     Text(stringResource(R.string.seleccionar_imagen))
                 }
@@ -203,7 +213,10 @@ fun CreateQuizScreen(
                         // Eliminar la imagen
                         imageUri = null
                         quizViewModel.imageUri = null // Actualizar también en el ViewModel
-                    }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.Red // Aplicamos el color de fondo del botón
+                    ),
                 ) {
                     Text(
                         text = stringResource(R.string.eliminar_imagen),
@@ -239,6 +252,9 @@ fun CreateQuizScreen(
         // Botones para otras acciones
         Button(
             onClick = { navController.navigate("make_questions") },
+            colors = ButtonDefaults.buttonColors(
+                containerColor = buttonColor // Aplicamos el color de fondo del botón
+            ),
             modifier = Modifier.fillMaxWidth(0.8f)
         ) {
             Text(stringResource(R.string.crear_preguntas))
@@ -253,6 +269,9 @@ fun CreateQuizScreen(
         // Boton para seleccionar preguntas
         Button(
             onClick = { navController.navigate("select_questions/$userUid") },
+            colors = ButtonDefaults.buttonColors(
+                containerColor = buttonColor // Aplicamos el color de fondo del botón
+            ),
             modifier = Modifier.fillMaxWidth(0.8f)
         ) {
             Text(stringResource(R.string.seleccionar_preguntas))
@@ -436,6 +455,9 @@ fun CreateQuizScreen(
                     }
                 }
             },
+            colors = ButtonDefaults.buttonColors(
+                containerColor = colorResource(id = R.color.logo_pink) // Aplicamos el color de fondo del botón
+            ),
             modifier = Modifier.fillMaxWidth(0.8f)
         ) {
             Text(stringResource(R.string.crear_cuestionario), color = Color.White)
@@ -447,6 +469,9 @@ fun CreateQuizScreen(
                 reset = true
                 navController.navigate("home")
             },
+            colors = ButtonDefaults.buttonColors(
+                containerColor = buttonColor // Aplicamos el color de fondo del botón
+            ),
             modifier = Modifier.fillMaxWidth(0.8f)
         ) {
             Text(stringResource(R.string.volver), color = Color.White)

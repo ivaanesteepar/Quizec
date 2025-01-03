@@ -9,11 +9,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.quizec.R
 import com.example.quizec.data.model.Rol
+import com.example.quizec.ui.theme.buttonColor
 import com.example.quizec.ui.viewmodel.QuizViewModel
 import com.example.quizec.ui.viewmodel.UsersViewModel
 import com.google.firebase.auth.FirebaseAuth
@@ -76,6 +78,7 @@ fun ResultsScreen(
     // Interfaz de usuario
     Column(
         modifier = Modifier
+            .background(colorResource(id = R.color.background_color))
             .fillMaxSize()
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -105,9 +108,9 @@ fun ResultsScreen(
                     val (nombre, respuestasCorrectas) = usuariosOrdenados[index]
 
                     val backgroundColor = when (index) {
-                        0 -> MaterialTheme.colorScheme.primary
-                        1 -> MaterialTheme.colorScheme.secondary
-                        2 -> MaterialTheme.colorScheme.tertiary
+                        0 -> colorResource(id = R.color.logo_pink)
+                        1 -> colorResource(id = R.color.logo_purple)
+                        2 -> colorResource(id = R.color.logo_darkpurple)
                         else -> Color.LightGray
                     }
 
@@ -134,6 +137,9 @@ fun ResultsScreen(
                 onClick = {
                     navController.navigate("answers/$codigoQuiz")
                 },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = colorResource(id = R.color.logo_pink) // Aplicamos el color de fondo del botón
+                ),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 16.dp),
@@ -155,6 +161,9 @@ fun ResultsScreen(
                 }
                 navController.navigate("home")
             },
+            colors = ButtonDefaults.buttonColors(
+                containerColor = buttonColor // Aplicamos el color de fondo del botón
+            ),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 16.dp),

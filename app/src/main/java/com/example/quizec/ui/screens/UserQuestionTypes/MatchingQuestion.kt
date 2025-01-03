@@ -1,7 +1,6 @@
 package com.example.quizec.ui.screens.UserQuestionTypes
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,14 +15,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.quizec.data.model.Pregunta
 
@@ -31,7 +28,9 @@ import com.example.quizec.data.model.Pregunta
 fun MatchingQuestionScreen(
     currentQuestion: Pregunta,
     userSelections: MutableMap<String, String>,
-    isAcceptButtonClicked: Boolean
+    isAcceptButtonClicked: Boolean,
+    immediateResults: Boolean,
+    quizTerminado: Boolean
 ) {
     var selectedLeftItem by remember { mutableStateOf<String?>(null) }
     val shuffledRightItems = remember(currentQuestion) { currentQuestion.rightItems.shuffled() }
@@ -57,7 +56,7 @@ fun MatchingQuestionScreen(
     }
 
     // Resaltar pares correctos si el botón de aceptar es pulsado
-    if (isAcceptButtonClicked) {
+    if (isAcceptButtonClicked && immediateResults || (!immediateResults && quizTerminado)) {
         pairColors.clear()
         colorIndex = 0
 

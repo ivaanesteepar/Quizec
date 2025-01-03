@@ -2,16 +2,26 @@ package com.example.quizec.ui.screens
 
 import android.annotation.SuppressLint
 import android.content.res.Configuration
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
+import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
@@ -21,6 +31,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.quizec.R
 import com.example.quizec.data.model.Rol
 import com.example.quizec.data.model.Usuario
+import com.example.quizec.ui.theme.buttonColor
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
@@ -60,78 +71,199 @@ fun RegisterScreenPortrait(navController: NavHostController) {
     Scaffold(
         snackbarHost = { SnackbarHost(scaffoldState) },
         content = {
+            Box(
+                modifier = Modifier.fillMaxSize()
+            ){
+                Image(
+                    painter = painterResource(id = R.drawable.fondo_login),
+                    contentDescription = "Login Background",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+
+                )
+            }
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(16.dp),
+                    .padding(16.dp)
+                    .background(Color.Black.copy(alpha = 0.6f)), // Pantalla oscura
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(stringResource(R.string.registro), style = MaterialTheme.typography.titleLarge)
+                Image( // Imagen del título QUIZEC
+                    painter = painterResource(id = R.drawable.quizec_title),
+                    contentDescription = "QUIZEC Title",
+                    modifier = Modifier
+                        .fillMaxWidth(0.8f)
+                        .height(100.dp)
+                        .padding(bottom = 8.dp),
+                    contentScale = ContentScale.Fit
+                )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                OutlinedTextField(
-                    value = nombre,
-                    onValueChange = { nombre = it },
-                    label = { Text(stringResource(R.string.nombre)) },
-                    modifier = Modifier.fillMaxWidth()
+                Text(
+                    stringResource(R.string.registro),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = Color.White
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(55.dp))
 
-                OutlinedTextField(
-                    value = email,
-                    onValueChange = {
-                        email = it
-                        isEmailEmpty = email.isEmpty()
-                    },
-                    label = { Text(stringResource(R.string.email)) },
-                    isError = isEmailEmpty,
-                    modifier = Modifier.fillMaxWidth()
+                Text(
+                    text = stringResource(R.string.nombre),
+                    style = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
+                    color = Color.White
                 )
 
-                if (isEmailEmpty) {
-                    Text(
-                        text = stringResource(R.string.el_campo_de_correo_es_obligatorio),
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodySmall
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(0.8f)
+                        .clip(RoundedCornerShape(8.dp)) // Bordes redondeados
+                        .border(
+                            width = 1.dp,
+                            color = Color.Gray,
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                        .background(Color.White)
+                        .padding(8.dp) // Espaciado interno
+                ) {
+                    BasicTextField(
+                        value = nombre,
+                        onValueChange = { nombre = it },
+                        textStyle = LocalTextStyle.current.copy(color = Color.Black),
+                        modifier = Modifier.fillMaxWidth(),
+                        decorationBox = { innerTextField ->
+                            if (nombre.isEmpty()) {
+                                Text(
+                                    text = stringResource(R.string.nombre), // Texto de etiqueta
+                                    style = LocalTextStyle.current.copy(color = Color.Gray)
+                                )
+                            }
+                        }
                     )
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                OutlinedTextField(
-                    value = password,
-                    onValueChange = {
-                        password = it
-                        isPasswordEmpty = password.isEmpty()
-                    },
-                    label = { Text(stringResource(R.string.password)) },
-                    isError = isPasswordEmpty,
-                    visualTransformation = PasswordVisualTransformation(),
-                    modifier = Modifier.fillMaxWidth()
+                Text(
+                    text = stringResource(R.string.email),
+                    style = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
+                    color = Color.White
                 )
 
-//                if (isPasswordEmpty) {
-//                    Text(
-//                        text = stringResource(R.string.el_campo_de_contrase_a_es_obligatorio),
-//                        color = MaterialTheme.colorScheme.error,
-//                        style = MaterialTheme.typography.bodySmall
-//                    )
-//                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                OutlinedTextField(
-                    value = confirmPassword,
-                    onValueChange = { confirmPassword = it },
-                    label = { Text(stringResource(R.string.confirmar_password)) },
-                    visualTransformation = PasswordVisualTransformation(),
-                    modifier = Modifier.fillMaxWidth()
-                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(0.8f)
+                        .clip(RoundedCornerShape(8.dp)) // Bordes redondeados
+                        .border(
+                            width = 1.dp,
+                            color = if (isEmailEmpty) MaterialTheme.colorScheme.error else Color.Gray, // Color del borde según error
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                        .background(Color.White)
+                        .padding(8.dp) // Espaciado interno
+                ) {
+                    BasicTextField(
+                        value = email,
+                        onValueChange = {
+                            email = it
+                            isEmailEmpty = email.isEmpty()
+                        },
+                        textStyle = LocalTextStyle.current.copy(color = Color.Black),
+                        modifier = Modifier.fillMaxWidth(),
+                        decorationBox = { innerTextField ->
+                            if (email.isEmpty()) {
+                                Text(
+                                    text = stringResource(R.string.email), // Texto de etiqueta
+                                    style = LocalTextStyle.current.copy(color = Color.Gray)
+                                )
+                            }
+                            innerTextField() // Renderizamos el campo de texto
+                        }
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = stringResource(R.string.password),
+                    style = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
+                    color = Color.White
+                )
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(0.8f)
+                        .clip(RoundedCornerShape(8.dp)) // Bordes redondeados
+                        .border(
+                            width = 1.dp,
+                            color = Color.Gray,
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                        .background(Color.White)
+                        .padding(8.dp) // Espaciado interno
+                ) {
+                    BasicTextField(
+                        value = password,
+                        onValueChange = {
+                            password = it
+                            isPasswordEmpty = password.isEmpty()
+                        },
+                        textStyle = LocalTextStyle.current.copy(color = Color.Black),
+                        visualTransformation = PasswordVisualTransformation(), // Ocultar la contraseña
+                        modifier = Modifier.fillMaxWidth(),
+                        decorationBox = { innerTextField ->
+                            if (password.isEmpty()) {
+                                Text(
+                                    text = stringResource(R.string.password), // Texto de etiqueta
+                                    style = LocalTextStyle.current.copy(color = Color.Gray)
+                                )
+                            }
+                            innerTextField() // Renderizamos el campo de texto
+                        }
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = stringResource(R.string.confirmar_password),
+                    style = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
+                    color = Color.White
+                )
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(0.8f)
+                        .clip(RoundedCornerShape(8.dp)) // Bordes redondeados
+                        .border(
+                            width = 1.dp,
+                            color = Color.Gray,
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                        .background(Color.White)
+                        .padding(8.dp) // Espaciado interno
+                ) {
+                    BasicTextField(
+                        value = confirmPassword,
+                        onValueChange = { confirmPassword = it },
+                        textStyle = LocalTextStyle.current.copy(color = Color.Black),
+                        visualTransformation = PasswordVisualTransformation(), // Ocultar la contraseña
+                        modifier = Modifier.fillMaxWidth(),
+                        decorationBox = { innerTextField ->
+                            if (confirmPassword.isEmpty()) {
+                                Text(
+                                    text = stringResource(R.string.confirmar_password), // Texto de etiqueta
+                                    style = LocalTextStyle.current.copy(color = Color.Gray)
+                                )
+                            }
+                            innerTextField() // Renderizamos el campo de texto
+                        }
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(46.dp))
 
                 Button(
                     onClick = {
@@ -173,7 +305,10 @@ fun RegisterScreenPortrait(navController: NavHostController) {
                             }
                         }
                     },
-                    modifier = Modifier.fillMaxWidth()
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = colorResource(id = R.color.logo_pink) // Aplicamos el color de fondo del botón
+                    ),
+                    modifier = Modifier.fillMaxWidth(0.8f)
                 ) {
                     Text(stringResource(R.string.registro))
                 }
@@ -184,7 +319,10 @@ fun RegisterScreenPortrait(navController: NavHostController) {
                     onClick = {
                         navController.navigate("login")
                     },
-                    modifier = Modifier.fillMaxWidth()
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = buttonColor // Aplicamos el color de fondo del botón
+                    ),
+                    modifier = Modifier.fillMaxWidth(0.8f)
                 ){
                     Text(stringResource(R.string.volver))
                 }
@@ -196,7 +334,7 @@ fun RegisterScreenPortrait(navController: NavHostController) {
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun RegisterScreenLandscape(navController: NavHostController) {
-    // Implementación para la orientación landscape
+    // Aquí va la implementación para la orientación landscape
     val auth = if (LocalInspectionMode.current) null else FirebaseAuth.getInstance()
     val db = if (LocalInspectionMode.current) null else FirebaseFirestore.getInstance()
 
@@ -215,89 +353,194 @@ fun RegisterScreenLandscape(navController: NavHostController) {
     Scaffold(
         snackbarHost = { SnackbarHost(scaffoldState) },
         content = {
-            // En Landscape, se usa un Row para mostrar los elementos horizontalmente
-            Row(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+
             ) {
-                // Column con los campos y botones
+                Image(
+                    painter = painterResource(id = R.drawable.fondo_login),
+                    contentDescription = "Login Background",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            }
+            Row(
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(16.dp)
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.6f))
+                    .verticalScroll(rememberScrollState())
+            ) {
+                // Imagen a la izquierda
+                Image(
+                    painter = painterResource(id = R.drawable.quizec_title),
+                    contentDescription = "QUIZEC Title",
+                    modifier = Modifier
+                        .width(200.dp)  // Ajusta el tamaño de la imagen
+                        .height(200.dp)
+                        .padding(start = 16.dp, end = 16.dp), // Espaciado entre la imagen y el contenido
+                    contentScale = ContentScale.Fit
+                )
+
+                // Columna derecha con los campos de texto y botones
                 Column(
                     modifier = Modifier
-                        .fillMaxHeight()
-                        .padding(horizontal = 16.dp)
-                        .verticalScroll(rememberScrollState()),
+                        .weight(1f)
+                        .fillMaxHeight(),
                     verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally,
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text("Register", style = MaterialTheme.typography.titleLarge)
+                    Text(
+                        stringResource(R.string.registro),
+                        style = MaterialTheme.typography.titleLarge,
+                        color = Color.White
+                    )
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    OutlinedTextField(
-                        value = nombre,
-                        onValueChange = { nombre = it },
-                        label = { Text(stringResource(R.string.nombre)) },
-                        modifier = Modifier.fillMaxWidth()
+                    // Nombre
+                    Text(
+                        text = stringResource(R.string.nombre),
+                        style = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
+                        color = Color.White
                     )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    OutlinedTextField(
-                        value = email,
-                        onValueChange = {
-                            email = it
-                            isEmailEmpty = email.isEmpty()
-                        },
-                        label = { Text(stringResource(R.string.email)) },
-                        isError = isEmailEmpty,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    if (isEmailEmpty) {
-                        Text(
-                            text = stringResource(R.string.el_campo_de_correo_es_obligatorio),
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(0.8f)
+                            .clip(RoundedCornerShape(8.dp))
+                            .border(width = 1.dp, color = Color.Gray, shape = RoundedCornerShape(8.dp))
+                            .background(Color.White)
+                            .padding(8.dp)
+                    ) {
+                        BasicTextField(
+                            value = nombre,
+                            onValueChange = { nombre = it },
+                            textStyle = LocalTextStyle.current.copy(color = Color.Black),
+                            modifier = Modifier.fillMaxWidth(),
+                            decorationBox = { innerTextField ->
+                                if (nombre.isEmpty()) {
+                                    Text(
+                                        text = stringResource(R.string.nombre),
+                                        style = LocalTextStyle.current.copy(color = Color.Gray)
+                                    )
+                                }
+                                innerTextField()
+                            }
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                    OutlinedTextField(
-                        value = password,
-                        onValueChange = {
-                            password = it
-                            isPasswordEmpty = password.isEmpty()
-                        },
-                        label = { Text(stringResource(R.string.password)) },
-                        isError = isPasswordEmpty,
-                        visualTransformation = PasswordVisualTransformation(),
-                        modifier = Modifier.fillMaxWidth()
+                    // Email
+                    Text(
+                        text = stringResource(R.string.email),
+                        style = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
+                        color = Color.White
                     )
-
-//                    if (isPasswordEmpty) {
-//                        Text(
-//                            text = stringResource(R.string.el_campo_de_contrase_a_es_obligatorio),
-//                            color = MaterialTheme.colorScheme.error,
-//                            style = MaterialTheme.typography.bodySmall
-//                        )
-//                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    OutlinedTextField(
-                        value = confirmPassword,
-                        onValueChange = { confirmPassword = it },
-                        label = { Text(stringResource(R.string.confirmar_password)) },
-                        visualTransformation = PasswordVisualTransformation(),
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(0.8f)
+                            .clip(RoundedCornerShape(8.dp))
+                            .border(width = 1.dp, color = if (isEmailEmpty) MaterialTheme.colorScheme.error else Color.Gray, shape = RoundedCornerShape(8.dp))
+                            .background(Color.White)
+                            .padding(8.dp)
+                    ) {
+                        BasicTextField(
+                            value = email,
+                            onValueChange = {
+                                email = it
+                                isEmailEmpty = email.isEmpty()
+                            },
+                            textStyle = LocalTextStyle.current.copy(color = Color.Black),
+                            modifier = Modifier.fillMaxWidth(),
+                            decorationBox = { innerTextField ->
+                                if (email.isEmpty()) {
+                                    Text(
+                                        text = stringResource(R.string.email),
+                                        style = LocalTextStyle.current.copy(color = Color.Gray)
+                                    )
+                                }
+                                innerTextField()
+                            }
+                        )
+                    }
 
                     Spacer(modifier = Modifier.height(16.dp))
 
+                    // Password
+                    Text(
+                        text = stringResource(R.string.password),
+                        style = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
+                        color = Color.White
+                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(0.8f)
+                            .clip(RoundedCornerShape(8.dp))
+                            .border(width = 1.dp, color = Color.Gray, shape = RoundedCornerShape(8.dp))
+                            .background(Color.White)
+                            .padding(8.dp)
+                    ) {
+                        BasicTextField(
+                            value = password,
+                            onValueChange = {
+                                password = it
+                                isPasswordEmpty = password.isEmpty()
+                            },
+                            textStyle = LocalTextStyle.current.copy(color = Color.Black),
+                            visualTransformation = PasswordVisualTransformation(),
+                            modifier = Modifier.fillMaxWidth(),
+                            decorationBox = { innerTextField ->
+                                if (password.isEmpty()) {
+                                    Text(
+                                        text = stringResource(R.string.password),
+                                        style = LocalTextStyle.current.copy(color = Color.Gray)
+                                    )
+                                }
+                                innerTextField()
+                            }
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Confirm Password
+                    Text(
+                        text = stringResource(R.string.confirmar_password),
+                        style = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
+                        color = Color.White
+                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(0.8f)
+                            .clip(RoundedCornerShape(8.dp))
+                            .border(width = 1.dp, color = Color.Gray, shape = RoundedCornerShape(8.dp))
+                            .background(Color.White)
+                            .padding(8.dp)
+                    ) {
+                        BasicTextField(
+                            value = confirmPassword,
+                            onValueChange = { confirmPassword = it },
+                            textStyle = LocalTextStyle.current.copy(color = Color.Black),
+                            visualTransformation = PasswordVisualTransformation(),
+                            modifier = Modifier.fillMaxWidth(),
+                            decorationBox = { innerTextField ->
+                                if (confirmPassword.isEmpty()) {
+                                    Text(
+                                        text = stringResource(R.string.confirmar_password),
+                                        style = LocalTextStyle.current.copy(color = Color.Gray)
+                                    )
+                                }
+                                innerTextField()
+                            }
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(46.dp))
+
+                    // Register Button
                     Button(
                         onClick = {
                             isEmailEmpty = email.isEmpty()
@@ -338,18 +581,26 @@ fun RegisterScreenLandscape(navController: NavHostController) {
                                 }
                             }
                         },
-                        modifier = Modifier.fillMaxWidth()
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = colorResource(id = R.color.logo_pink)
+                        ),
+                        modifier = Modifier.fillMaxWidth(0.8f)
                     ) {
                         Text(stringResource(R.string.registro))
                     }
+
                     Spacer(modifier = Modifier.height(8.dp))
 
+                    // Back Button
                     Button(
                         onClick = {
                             navController.navigate("login")
                         },
-                        modifier = Modifier.fillMaxWidth()
-                    ){
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = buttonColor
+                        ),
+                        modifier = Modifier.fillMaxWidth(0.8f)
+                    ) {
                         Text(stringResource(R.string.volver))
                     }
                 }
@@ -357,6 +608,7 @@ fun RegisterScreenLandscape(navController: NavHostController) {
         }
     )
 }
+
 
 
 private fun registerUser(

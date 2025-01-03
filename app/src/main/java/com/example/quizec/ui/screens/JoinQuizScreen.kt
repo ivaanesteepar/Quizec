@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.BasicTextField
@@ -16,12 +17,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavHostController
 import com.example.quizec.R
 import com.example.quizec.data.model.Rol
+import com.example.quizec.ui.theme.buttonColor
 import com.example.quizec.ui.viewmodel.QuizViewModel
 import com.example.quizec.ui.viewmodel.UsersViewModel
 import com.example.quizec.utils.LocationUtils
@@ -172,9 +175,9 @@ fun JoinQuizScreen(
     // Interfaz de usuario
     Box(
         modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-            .wrapContentSize(Alignment.Center)
+            .fillMaxSize()  // Asegura que el Box ocupe toda la pantalla
+            .background(colorResource(id = R.color.background_color))  // Establecer el color de fondo
+            .wrapContentSize(Alignment.Center)  // Centrar el contenido
     ) {
         Column(
             modifier = Modifier
@@ -206,7 +209,10 @@ fun JoinQuizScreen(
                     } else {
                         Log.e("Permisos", "Permisos de ubicación no concedidos.")
                     }
-                }
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = colorResource(id = R.color.logo_pink) // Aplicamos el color de fondo del botón
+                )
             ) {
                 Text(stringResource(R.string.unirse_al_quiz))
             }
@@ -221,6 +227,9 @@ fun JoinQuizScreen(
 
             Button(
                 onClick = { navController.navigate("home") },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = buttonColor // Aplicamos el color de fondo del botón
+                ),
                 modifier = Modifier.padding(top = 8.dp)
             ) {
                 Text(stringResource(R.string.volver))

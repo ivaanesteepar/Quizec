@@ -2,6 +2,7 @@ package com.example.quizec.ui.screens
 
 import android.util.Log
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -19,6 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -129,6 +131,9 @@ fun HomeScreenPortrait(navController: NavHostController, quizViewModel: QuizView
                         0 to 0 -> {
                             Button(
                                 onClick = { navController.navigate("joinQuiz") },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = colorResource(id = R.color.logo_pink)
+                                ), // Color de fondo del botón
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .aspectRatio(1f) // Hace que el botón sea cuadrado
@@ -146,6 +151,9 @@ fun HomeScreenPortrait(navController: NavHostController, quizViewModel: QuizView
 //                                    quizViewModel.contadorPreguntas.value = 0 // Limpia el contador de preguntas seleccionadas
                                     navController.navigate("createQuiz") // Navega a la pantalla de creación de cuestionarios
                                 },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = colorResource(id = R.color.logo_darkpurple)
+                                ), // Color de fondo del botón
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .aspectRatio(1f) // Hace que el botón sea cuadrado
@@ -164,6 +172,9 @@ fun HomeScreenPortrait(navController: NavHostController, quizViewModel: QuizView
                                     }
                                     navController.navigate("select_cuestionario")
                                 },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = colorResource(id = R.color.logo_darkpurple)
+                                ), // Color de fondo del botón
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .aspectRatio(1f) // Hace que el botón sea cuadrado
@@ -183,6 +194,9 @@ fun HomeScreenPortrait(navController: NavHostController, quizViewModel: QuizView
                                     val userId = user?.uid ?: ""
                                     navController.navigate("historial/$userId")
                                 },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = colorResource(id = R.color.logo_pink)
+                                ), // Color de fondo del botón
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .aspectRatio(1f) // Hace que el botón sea cuadrado
@@ -326,7 +340,7 @@ fun HomeScreenLandscape(navController: NavHostController, quizViewModel: QuizVie
                 } else {
                     // Saludo de bienvenida con el nombre del usuario
                     Text(
-                        text = stringResource(R.string.bienvenido),
+                        text = stringResource(R.string.bienvenido, userName),
                         style = androidx.compose.material3.MaterialTheme.typography.headlineMedium,
                         color = Color.White,
                         modifier = Modifier.padding(bottom = 16.dp)
@@ -334,12 +348,13 @@ fun HomeScreenLandscape(navController: NavHostController, quizViewModel: QuizVie
 
                     // Botón para unirse a un quiz
                     Button(
-                        onClick = {
-                            navController.navigate("joinQuiz")
-                        },
+                        onClick = { navController.navigate("joinQuiz") },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = colorResource(id = R.color.logo_pink)
+                        ), // Color de fondo del botón
                         modifier = Modifier
-                            .fillMaxWidth(0.8f)  // Botón más ancho
-                            .padding(bottom = 4.dp) // Espaciado reducido entre los botones
+                            .fillMaxWidth(0.9f)
+                            .padding(4.dp) // Espaciado adicional
                     ) {
                         Text(text = stringResource(R.string.unirse))
                     }
@@ -391,7 +406,7 @@ fun HomeScreenLandscape(navController: NavHostController, quizViewModel: QuizVie
                             navController.navigate("login") // Cambia "newFeature" por el destino adecuado
                         },
                         modifier = Modifier
-                            .fillMaxWidth(0.8f)  // Botón más ancho
+                            .fillMaxWidth(0.9f)  // Botón más ancho
                             .padding(top = 4.dp), // Espaciado superior para separar del contenido anterior
                         colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
                     ) {

@@ -9,6 +9,7 @@ import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -21,6 +22,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -35,6 +37,7 @@ import com.example.quizec.ui.viewmodel.QuestionsViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.example.quizec.data.model.Cuestionario
 import com.example.quizec.data.model.Rol
+import com.example.quizec.ui.theme.buttonColor
 import com.example.quizec.utils.AMovServer
 import com.example.quizec.utils.LocationUtils
 import com.google.android.gms.location.LocationCallback
@@ -164,7 +167,10 @@ fun SelectCuestionarioScreenPortrait(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = Modifier
+        .background(colorResource(id = R.color.background_color))
+        .fillMaxSize()
+    ) {
         if (cuestionariosState.value.isEmpty()) {
             CircularProgressIndicator(modifier = Modifier.padding(16.dp))
         } else {
@@ -188,37 +194,64 @@ fun SelectCuestionarioScreenPortrait(
                         val isUsed = estadosIsUsed.value[cuestionario.id] ?: false
                         val isSelected = questionsViewModel.selectedCuestionario == cuestionario.id
 
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 8.dp)) {
-                            Checkbox(
-                                checked = isSelected,
-                                enabled = !isUsed, // Deshabilitar si isUsed es true
-                                onCheckedChange = {
-                                    questionsViewModel.toggleCuestionarioSelection(cuestionario.id)
-                                },
-                                modifier = Modifier.size(20.dp)
-                            )
-
-                            Column(modifier = Modifier
-                                .weight(1f)
-                                .padding(start = 8.dp)) {
-                                Text(
-                                    text = cuestionario.titulo,
-                                    style = MaterialTheme.typography.bodySmall
-                                )
-                                Text(
-                                    text = "ID: ${cuestionario.id}",
-                                    style = MaterialTheme.typography.labelSmall
+                        Column(modifier = Modifier.padding(vertical = 8.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(
+                                    checked = isSelected,
+                                    enabled = !isUsed, // Deshabilitar si isUsed es true
+                                    onCheckedChange = {
+                                        questionsViewModel.toggleCuestionarioSelection(cuestionario.id)
+                                    },
+                                    modifier = Modifier.size(20.dp)
                                 )
 
-                                Spacer(modifier = Modifier.height(16.dp))
+                                Column(modifier = Modifier
+                                    .weight(1f)
+                                    .padding(start = 8.dp)
+                                ) {
+                                    Text(
+                                        text = cuestionario.titulo,
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                    Text(
+                                        text = "ID: ${cuestionario.id}",
+                                        style = MaterialTheme.typography.labelSmall
+                                    )
+
+                                    Spacer(modifier = Modifier.height(5.dp))
+                                }
+
+                                // Si está usado, mostramos Duplicar al lado
+                                if (isUsed) {
+                                    Button(
+                                        onClick = {
+                                            showDuplicateConfirmationDialog = true
+                                            cuestionarioToDuplicate = cuestionario
+                                        },
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = buttonColor // Aplicamos el color de fondo del botón
+                                        ),
+                                        modifier = Modifier.padding(start = 8.dp)
+                                    ) {
+                                        Text(text = stringResource(R.string.duplicar))
+                                    }
+                                }
                             }
+
+                            // Si el cuestionario no está usado, botones Editar y Eliminar y Duplicar se ponen debajo
                             if (!isUsed) {
-                                Row {
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp), // Espacio entre los botones
+                                    modifier = Modifier.padding(start = 8.dp, top = 5.dp) // Un poco de espacio desde la información
+                                ) {
                                     Button(
                                         onClick = {
                                             navController.navigate("editCuestionario/${cuestionario.id}")
                                         },
-                                        modifier = Modifier.padding(start = 8.dp)
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = buttonColor // Aplicamos el color de fondo del botón
+                                        ),
+                                        modifier = Modifier.weight(1f) // Hace que los botones ocupen el mismo espacio
                                     ) {
                                         Text(text = stringResource(R.string.editar))
                                     }
@@ -228,27 +261,38 @@ fun SelectCuestionarioScreenPortrait(
                                             showDeleteConfirmationDialog = true
                                             cuestionarioToDelete = cuestionario
                                         },
-                                        modifier = Modifier.padding(start = 8.dp),
-                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                                        modifier = Modifier
+                                            .weight(1f) // Hace que los botones ocupen el mismo espacio
+                                            .padding(start = 8.dp),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = Color.Red // Aplicamos el color de fondo del botón
+                                        ),
                                     ) {
                                         Text(text = stringResource(R.string.eliminar))
                                     }
+
+                                    Button(
+                                        onClick = {
+                                            showDuplicateConfirmationDialog = true
+                                            cuestionarioToDuplicate = cuestionario
+                                        },
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = buttonColor // Aplicamos el color de fondo del botón
+                                        ),
+                                        modifier = Modifier
+                                            .weight(1f) // Hace que los botones ocupen el mismo espacio
+                                            .padding(start = 8.dp)
+                                    ) {
+                                        Text(text = stringResource(R.string.duplicar))
+                                    }
                                 }
-                            }
-                            Button(
-                                onClick = {
-                                    showDuplicateConfirmationDialog = true
-                                    cuestionarioToDuplicate = cuestionario
-                                },
-                                modifier = Modifier.padding(start = 8.dp)
-                            ){
-                                Text(text = stringResource(R.string.duplicar))
                             }
                         }
                     }
                 }
             }
         }
+
 
         Column(
             modifier = Modifier
@@ -342,6 +386,9 @@ fun SelectCuestionarioScreenPortrait(
                         }
                     }
                 },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = colorResource(id = R.color.logo_pink) // Aplicamos el color de fondo del botón
+                ),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 8.dp)
@@ -351,6 +398,9 @@ fun SelectCuestionarioScreenPortrait(
 
             Button(
                 onClick = { navController.navigate("home") },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = buttonColor // Aplicamos el color de fondo del botón
+                ),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(text = stringResource(R.string.volver))
@@ -595,15 +645,19 @@ fun SelectCuestionarioScreenLandscape(
                         }
 
                         // La estructura Row para los botones debajo del primer Row (con título y ID)
-                        if (!isUsed) {
-                            Row(
-                                modifier = Modifier
-                                    .padding(start = 8.dp, top = 8.dp) // Espacio adicional entre el ID y los botones
-                            ) {
+                        Row(
+                            modifier = Modifier
+                                .padding(start = 8.dp, top = 5.dp) // Espacio adicional entre el ID y los botones
+                        ) {
+                            // Botones solo visibles si no está usado
+                            if (!isUsed) {
                                 Button(
                                     onClick = {
                                         navController.navigate("editCuestionario/${cuestionario.id}")
                                     },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = buttonColor // Aplicamos el color de fondo del botón
+                                    ),
                                     modifier = Modifier.padding(end = 4.dp)
                                 ) {
                                     Text(text = stringResource(R.string.editar))
@@ -615,24 +669,31 @@ fun SelectCuestionarioScreenLandscape(
                                         cuestionarioToDelete = cuestionario
                                     },
                                     modifier = Modifier.padding(end = 4.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color.Red // Aplicamos el color de fondo del botón
+                                    ),
                                 ) {
                                     Text(text = stringResource(R.string.eliminar))
                                 }
+                            }
 
-                                Button(
-                                    onClick = {
-                                        showDuplicateConfirmationDialog = true
-                                        cuestionarioToDuplicate = cuestionario
-                                    },
-                                    modifier = Modifier.padding(end = 4.dp)
-                                ) {
-                                    Text(text = stringResource(R.string.duplicar))
-                                }
+                            // Botón de duplicar visible siempre
+                            Button(
+                                onClick = {
+                                    showDuplicateConfirmationDialog = true
+                                    cuestionarioToDuplicate = cuestionario
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = buttonColor // Aplicamos el color de fondo del botón
+                                ),
+                                modifier = Modifier.padding(end = 4.dp)
+                            ) {
+                                Text(text = stringResource(R.string.duplicar))
                             }
                         }
                     }
                 }
+
             }
         }
 
@@ -710,6 +771,9 @@ fun SelectCuestionarioScreenLandscape(
                         }
                     }
                 },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = colorResource(id = R.color.logo_pink) // Aplicamos el color de fondo del botón
+                ),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 8.dp)
@@ -719,6 +783,9 @@ fun SelectCuestionarioScreenLandscape(
 
             Button(
                 onClick = { navController.navigate("home") },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = buttonColor // Aplicamos el color de fondo del botón
+                ),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(text = stringResource(R.string.volver))

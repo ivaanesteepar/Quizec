@@ -10,4 +10,18 @@
     <color name="correct">#FFC0C0C0</color>
     <color name="lime">#FF32CD32</color>
 
+    <color name="morado_claro">#FFBB86FC</color>
+    <color name="background_color">#E6E6FA</color>
+
+    <color name="pastel">#debdff</color>
+
+
+    //logo
+    <color name="logo_pink">#FFFE1EBD</color>
+    <color name="logo_purple">#FFB41EE9</color>
+    <color name="logo_darkpurple">#FF7700E3</color>
+
+
+
+
 </resources>

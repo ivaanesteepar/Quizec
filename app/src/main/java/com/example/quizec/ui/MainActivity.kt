@@ -9,16 +9,19 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.Scaffold
 import androidx.core.content.ContextCompat
+import com.example.quizec.ui.theme.JetpackComposePracTheme
 
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
+            JetpackComposePracTheme {
             Scaffold { padding ->
                 QuizecApp()
             }
         }
+    }
 
         // Solicitar permisos necesarios
         requestNecessaryPermissions()

@@ -1,12 +1,12 @@
 package com.example.quizec.ui.screens
 
-import android.net.Uri
+
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -33,13 +34,14 @@ import com.example.quizec.ui.screens.UserQuestionTypes.MultChoicesQuestionScreen
 import com.example.quizec.ui.screens.UserQuestionTypes.OneMultChoicesQuestionScreen
 import com.example.quizec.ui.screens.UserQuestionTypes.OrderingQuestionScreen
 import com.example.quizec.ui.screens.UserQuestionTypes.TrueFalseQuestionScreen
+import com.example.quizec.ui.theme.buttonColor
 import com.example.quizec.ui.theme.selectedButtonColor
 import com.example.quizec.ui.viewmodel.QuizViewModel
 import com.example.quizec.ui.viewmodel.UsersViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.delay
-import java.io.File
+
 
 @Composable
 fun UserQuizzesScreen(
@@ -69,17 +71,14 @@ fun UserQuizzesScreen(
     println("totalTime fuera del launch: $totalTime")
     var remainingTime by remember { mutableStateOf(30) } // Tiempo por pregunta
     var timerActive by remember { mutableStateOf(true) }
-    // Estado global desde el ViewModel
-    val _remainingTime = quizViewModel.remainingTime // Obtenido desde el ViewModel
-    val remainingTimeState: State<Int> = _remainingTime
-
     var immediateResults by remember { mutableStateOf(false) }
-
     val context = LocalContext.current
 
     var userInputs = remember { mutableStateListOf<String>() }
 
     var isTimeLoaded by remember { mutableStateOf(false) }
+
+
 
     LaunchedEffect(codigoQuiz) {
         if (codigoQuiz != null) {
@@ -95,6 +94,7 @@ fun UserQuizzesScreen(
             quizViewModel.setQuestionsTime(codigoQuiz)
             // Cambiar el estado cuando el tiempo esté cargado, ya q si no, sale 60
             isTimeLoaded = true
+
         }
     }
 
@@ -185,6 +185,7 @@ fun UserQuizzesScreen(
     preguntas = quizViewModel.preguntas
     Box(
         modifier = Modifier
+            .background(colorResource(id = R.color.background_color))
             .fillMaxSize() // Llena toda la pantalla
             .padding(16.dp) // Agrega un pequeño padding a los lados
     ) {
@@ -222,7 +223,7 @@ fun UserQuizzesScreen(
                 Spacer(modifier = Modifier.width(50.dp)) // Ajusta el valor según lo necesites
 
                 Text(
-                    text = LocalContext.current.getString(R.string.tiempo_restante, remainingTime, totalTime),
+                    text = LocalContext.current.getString(R.string.tiempo_restante, remainingTime),
                     style = MaterialTheme.typography.bodyMedium,
                     fontSize = 16.sp
                 )
@@ -261,11 +262,13 @@ fun UserQuizzesScreen(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
+                val quizTerminado = false
+
                 // Opciones de respuesta dependiendo del tipo de pregunta
                 if (currentQuestion.tipo == TipoPregunta.VERDADERO_FALSO) {
                     val correctAnswer = currentQuestion.respuestasCorrectas.firstOrNull() ?: ""
-
                     var context = LocalContext.current
+
                     TrueFalseQuestionScreen(
                         onSelectedAnswerChange = { newAnswer ->
                             selectedAnswer = newAnswer
@@ -280,7 +283,9 @@ fun UserQuizzesScreen(
                         falseButtonColor = falseButtonColor,
                         trueButtonColor = trueButtonColor,
                         isAcceptButtonClicked = isAcceptButtonClicked,
-                        correctAnswer = correctAnswer
+                        correctAnswer = correctAnswer,
+                        immediateResults = immediateResults,
+                        quizTerminado = quizTerminado
                     )
 
                     if (selectedAnswer != null && remainingTime > 0) enableAcept = true else enableAcept = false
@@ -288,6 +293,7 @@ fun UserQuizzesScreen(
                 } else if (currentQuestion.tipo == TipoPregunta.OPCION_MULTIPLE_UNA) {
                     val correctAnswer = currentQuestion.respuestasCorrectas.firstOrNull() ?: ""
 
+                    //println("UserQuizzes quizTerminado: $quizTerminado")
                     OneMultChoicesQuestionScreen(
                         currentQuestion = currentQuestion,
                         selectedAnswer = selectedAnswer,
@@ -295,7 +301,9 @@ fun UserQuizzesScreen(
                             selectedAnswer = newAnswer
                         },
                         isAcceptButtonClicked = isAcceptButtonClicked,
-                        correctAnswer = correctAnswer
+                        correctAnswer = correctAnswer,
+                        immediateResults = immediateResults,
+                        quizTerminado = quizTerminado
 
                     )
                     enableAcept = if (!selectedAnswer.isNullOrEmpty() && remainingTime > 0) true else false
@@ -309,7 +317,9 @@ fun UserQuizzesScreen(
                             selectedAnswer = newAnswers
                         },
                         isAcceptButtonClicked = isAcceptButtonClicked,
-                        correctAnswers = currentQuestion.respuestasCorrectas
+                        correctAnswers = currentQuestion.respuestasCorrectas,
+                        immediateResults = immediateResults,
+                        quizTerminado = quizTerminado
                     )
                     println("selectedAnswer: $selectedAnswer")
                     enableAcept = if (!selectedAnswer.isNullOrEmpty() && remainingTime > 0) true else false
@@ -323,6 +333,8 @@ fun UserQuizzesScreen(
                             selectedOption = newOption
                         },
                         isAcceptButtonClicked = isAcceptButtonClicked,
+                        immediateResults = immediateResults,
+                        quizTerminado = quizTerminado,
 
                         )
                     //habilitar o no el boton de aceptar
@@ -339,7 +351,9 @@ fun UserQuizzesScreen(
                         userOrderedItems = { newOrderedItems ->
                             userOrderedItems = newOrderedItems // Actualiza la lista en el estado
                         },
-                        isAcceptButtonClicked = isAcceptButtonClicked
+                        isAcceptButtonClicked = isAcceptButtonClicked,
+                        immediateResults = immediateResults,
+                        quizTerminado = quizTerminado
                     )
                     enableAcept = if (remainingTime > 0) true else false
 
@@ -349,7 +363,9 @@ fun UserQuizzesScreen(
                     MatchingQuestionScreen(
                         currentQuestion = currentQuestion,
                         userSelections = userSelections,
-                        isAcceptButtonClicked = isAcceptButtonClicked
+                        isAcceptButtonClicked = isAcceptButtonClicked,
+                        immediateResults = immediateResults,
+                        quizTerminado = quizTerminado
                     )
                     println("userSelections: $userSelections")
                     enableAcept = if (userSelections.size == currentQuestion.emparejamientos.size && remainingTime > 0) true else false
@@ -361,7 +377,9 @@ fun UserQuizzesScreen(
                         currentQuestion = currentQuestion,
                         opcionesCorrectas = opcionesCorrectas,
                         userInputs = userInputs,
-                        isAcceptButtonClicked = isAcceptButtonClicked
+                        isAcceptButtonClicked = isAcceptButtonClicked,
+                        immediateResults = immediateResults,
+                        quizTerminado = quizTerminado
                     )
                     if (userInputs.all { it.isNotBlank() } &&
                          userInputs.size == currentQuestion.opcionesCorrectasCompletarPalabras.size
@@ -377,7 +395,9 @@ fun UserQuizzesScreen(
                     AssociationQuestionScreen(
                         currentQuestion = currentQuestion,
                         userSelections = userSelections,
-                        isAcceptButtonClicked = isAcceptButtonClicked
+                        isAcceptButtonClicked = isAcceptButtonClicked,
+                        immediateResults = immediateResults,
+                        quizTerminado = quizTerminado
                     )
                     println("userSelections: $userSelections")
                     if (userSelections.size == currentQuestion.conceptosYDefiniciones.size && remainingTime > 0) {
@@ -569,8 +589,12 @@ fun UserQuizzesScreen(
                                 userInputs.clear()  // Esto no afectará a las respuestas almacenadas en la base de datos
                                 userSelections.clear()
                             }
+
                         }
                     },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = colorResource(id = R.color.logo_pink) // Aplicamos el color de fondo del botón
+                    ),
                     enabled = !isAcceptButtonClicked && enableAcept
                 ) {
                     Text(text = stringResource(R.string.aceptar))
@@ -614,9 +638,13 @@ fun UserQuizzesScreen(
                                 // Avanzar a la siguiente pregunta
                                 currentQuestionIndex++
                             } else {
-                                // Navegar a la pantalla de resultados si es la última pregunta
+
+
                             }
                         },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = buttonColor // Aplicamos el color de fondo del botón
+                        ),
                         enabled = isAcceptButtonClicked && (currentQuestionIndex < preguntas.size - 1), // Habilitar solo si se presionó "Aceptar"
                         modifier = Modifier.padding(bottom = 10.dp)
                     ) {

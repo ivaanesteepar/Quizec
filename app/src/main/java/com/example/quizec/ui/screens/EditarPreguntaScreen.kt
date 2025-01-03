@@ -23,6 +23,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -31,6 +32,7 @@ import coil.compose.AsyncImage
 import com.example.quizec.R
 import com.example.quizec.data.model.Pregunta
 import com.example.quizec.data.model.TipoPregunta
+import com.example.quizec.ui.theme.buttonColor
 import com.example.quizec.ui.viewmodel.QuestionsViewModel
 import com.example.quizec.utils.AMovServer
 import com.google.firebase.auth.FirebaseAuth
@@ -135,6 +137,7 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
 
     LazyColumn(
         modifier = Modifier
+            .background(colorResource(id = R.color.background_color))
             .fillMaxSize()
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -172,6 +175,9 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                             PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                         )
                     },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = buttonColor // Aplicamos el color de fondo del botón
+                    ),
                     modifier = Modifier
                         .fillMaxWidth() // Ocupa tdo el ancho disponible
                         .padding(horizontal = 50.dp) // Márgenes laterales para que no esté pegado a los bordes
@@ -192,6 +198,9 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                             )
                         },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = buttonColor // Aplicamos el color de fondo del botón
+                        )
                     ) {
                         Text(stringResource(R.string.seleccionar_imagen))
                     }
@@ -203,7 +212,10 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                         onClick = {
                             // Eliminar la imagen
                             imageUri = null
-                        }
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.Red // Aplicamos el color de fondo del botón
+                        )
                     ) {
                         Text(
                             text = stringResource(R.string.eliminar_imagen),
@@ -297,7 +309,12 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                     }
 
                     // Botón para agregar una nueva opción
-                    Button(onClick = { opciones = opciones + "" }) {
+                    Button(
+                        onClick = { opciones = opciones + "" },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = buttonColor // Aplicamos el color de fondo del botón
+                        )
+                    ) {
                         Text(stringResource(R.string.agregar_opcion))
                     }
 
@@ -354,7 +371,12 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                         }
 
                         // Botón para agregar más opciones
-                        Button(onClick = { opciones = opciones + "" }) {
+                        Button(
+                            onClick = { opciones = opciones + "" },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = buttonColor // Aplicamos el color de fondo del botón
+                            )
+                        ) {
                             Text(stringResource(R.string.agregar_opcion))
                         }
 
@@ -431,6 +453,9 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                     }
                     Button(
                         onClick = { leftItems = leftItems + "" },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = buttonColor // Aplicamos el color de fondo del botón
+                        ),
                         modifier = Modifier
                             .fillMaxWidth(0.8f)
                             .padding(vertical = 8.dp)
@@ -477,6 +502,9 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                     }
                     Button(
                         onClick = { rightItems = rightItems + "" },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = buttonColor // Aplicamos el color de fondo del botón
+                        ),
                         modifier = Modifier
                             .fillMaxWidth(0.8f)
                             .padding(vertical = 8.dp)
@@ -526,6 +554,9 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                     // Botón para agregar más ítems
                     Button(
                         onClick = { itemsOrdenados = itemsOrdenados + "" },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = buttonColor // Aplicamos el color de fondo del botón
+                        ),
                         modifier = Modifier
                             .fillMaxWidth(0.8f)
                             .padding(vertical = 8.dp)
@@ -609,6 +640,9 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                     // Botón para agregar más opciones
                     Button(
                         onClick = { opciones = opciones + "" },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = buttonColor // Aplicamos el color de fondo del botón
+                        ),
                         modifier = Modifier
                             .fillMaxWidth(0.8f)
                             .padding(vertical = 8.dp)
@@ -656,7 +690,10 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                                             conceptosYDefiniciones = conceptosYDefiniciones.toMutableMap().apply {
                                                 this[concepto] = "" // Eliminar el valor de la imagen
                                             }
-                                        }
+                                        },
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = Color.Red // Aplicamos el color de fondo del botón
+                                        )
                                     ) {
                                         Text(stringResource(R.string.eliminar_imagen))
                                     }
@@ -689,6 +726,9 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                                                 )
                                             }
                                         },
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = buttonColor // Aplicamos el color de fondo del botón
+                                        ),
                                         enabled = concepto.isEmpty()
                                     ) {
                                         Text(stringResource(R.string.subir_imagen))
@@ -733,6 +773,9 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                                 this[""] = "" // Agregar un nuevo par vacío
                             }
                         },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = buttonColor // Aplicamos el color de fondo del botón
+                        ),
                         modifier = Modifier
                             .fillMaxWidth(0.8f)
                             .padding(vertical = 8.dp)
@@ -810,6 +853,9 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                         onClick = {
                             opcionesCorrectasCompletarPalabras = opcionesCorrectasCompletarPalabras + "" // Agrega una caja de texto vacía
                         },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = buttonColor // Aplicamos el color de fondo del botón
+                        ),
                         modifier = Modifier.padding(vertical = 8.dp)
                     ) {
                         Text(stringResource(R.string.a_adir_palabra))
@@ -981,11 +1027,7 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                             }
 
 
-
-
                         }
-
-
                         // Si no hay errores, proceder a guardar la pregunta en Firebase y navegar
                         if (errorMessage.isEmpty()) {
                             // Establecer las respuestas correctas dependiendo del tipo de pregunta
@@ -1027,6 +1069,9 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
                         }
                     }
                 },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = colorResource(id = R.color.logo_pink) // Aplicamos el color de fondo del botón
+                ),
                 modifier = Modifier.fillMaxWidth(0.8f)
             ) {
                 Text(stringResource(R.string.guardar_pregunta), color = Color.White)
@@ -1043,6 +1088,9 @@ fun EditarPreguntaScreen(preguntaMod: Pregunta, navController: NavHostController
         item {
             Button(
                 onClick = { navController.navigate("select_questions/${user_id}") },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = buttonColor // Aplicamos el color de fondo del botón
+                ),
                 modifier = Modifier.fillMaxWidth(0.4f)
             ) {
                 Text(stringResource(R.string.volver))

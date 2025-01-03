@@ -33,7 +33,9 @@ fun FillBlankQuestionScreen(
     currentQuestion: Pregunta,
     selectedOption: String?, // Esto será de solo lectura, se actualizará con la función
     onOptionSelected: (String) -> Unit, // Función para actualizar el estado
-    isAcceptButtonClicked: Boolean
+    isAcceptButtonClicked: Boolean,
+    immediateResults: Boolean,
+    quizTerminado: Boolean
 ) {
     val fraseCompletar = currentQuestion.fraseCompletar // La frase completa
     val palabraCorrecta = currentQuestion.opcionCorrecta // La palabra correcta
@@ -82,10 +84,12 @@ fun FillBlankQuestionScreen(
                     enabled = !isAcceptButtonClicked
                 ) {
                     Text(
-                        text = if (isAcceptButtonClicked) currentQuestion.opcionCorrecta else selectedOption ?: stringResource(
+                        text = if (isAcceptButtonClicked && immediateResults || (!immediateResults && quizTerminado))
+                            currentQuestion.opcionCorrecta else selectedOption ?: stringResource(
                             R.string.opcion
                         ),
-                        color = if (isAcceptButtonClicked) Color.Green else MaterialTheme.colorScheme.onSurface
+                        color = if (isAcceptButtonClicked&& immediateResults
+                            || (!immediateResults && quizTerminado)) Color.Green else MaterialTheme.colorScheme.onSurface
                     )
                 }
 

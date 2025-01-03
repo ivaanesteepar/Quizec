@@ -23,7 +23,9 @@ import com.example.quizec.data.model.Pregunta
 fun AssociationQuestionScreen(
     currentQuestion: Pregunta,
     userSelections: MutableMap<String, String>,
-    isAcceptButtonClicked: Boolean
+    isAcceptButtonClicked: Boolean,
+    immediateResults: Boolean,
+    quizTerminado: Boolean
 ) {
     var selectedConcept by remember { mutableStateOf<String?>(null) }
 
@@ -59,7 +61,7 @@ fun AssociationQuestionScreen(
     }
 
     // Resaltar pares correctos si el botón de aceptar es pulsado
-    if (isAcceptButtonClicked) {
+    if (isAcceptButtonClicked && immediateResults || (quizTerminado && !immediateResults) ) {
         pairColors.clear()
         colorIndex = 0
 
