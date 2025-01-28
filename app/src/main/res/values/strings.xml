@@ -165,7 +165,7 @@
     <string name="guardar">Save</string>
     <string name="no_puedes_retroceder_durante_el_quiz">You cannot go back during the quiz.</string>
     <string name="pregunta_texto">Question %1$d of %2$d</string>
-    <string name="tiempo_restante">Time remaining: %1$d seconds (Total: %2$d)</string>
+    <string name="tiempo_restante">Time remaining: %1$d seconds</string>
     <string name="no_hay_imagen_para_mostrar">There is no image to display.</string>
     <string name="respuesta_incorrecta">Incorrect Answer!</string>
     <string name="aceptar">Accept</string>

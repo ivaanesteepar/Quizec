@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -76,7 +77,7 @@ fun MissingWordsResults(
                         .fillMaxWidth()
                         .padding(vertical = 4.dp)
                         .background(
-                            color = if (isCorrect) Color.Green else MaterialTheme.colorScheme.surfaceVariant,
+                            color = if (isCorrect) Color.Green else colorResource(id = R.color.pastel),
                             shape = RoundedCornerShape(8.dp)
                         )
                         .padding(16.dp)
@@ -110,7 +111,7 @@ fun MissingWordsResults(
                             Text(
                                 text = "$cont ${if (cont == 1) stringResource(R.string.eleccion) else stringResource(R.string.elecciones)}",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.secondary,
+                                color = MaterialTheme.colorScheme.onSurface,
                                 textAlign = TextAlign.Center
                             )
                         }

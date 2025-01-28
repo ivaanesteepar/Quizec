@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,8 +17,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -33,9 +36,20 @@ import com.example.quizec.data.model.Rol
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
-
 @Composable
 fun LoginScreen(navController: NavHostController) {
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+    if (isLandscape) {
+        // Si está en modo Landscape, usamos la función para pantalla Landscape
+        LoginScreenLandscape(navController)
+    } else {
+        // Si está en modo Portrait, usamos la función para pantalla Portrait
+        LoginScreenPortrait(navController)
+    }
+}
+@Composable
+fun LoginScreenPortrait(navController: NavHostController) {
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
@@ -64,6 +78,20 @@ fun LoginScreen(navController: NavHostController) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
+
+            // Imagen del título QUIZEC
+            Image(
+                painter = painterResource(id = R.drawable.quizec_title),
+                contentDescription = "QUIZEC Title",
+                modifier = Modifier
+                    .fillMaxWidth(0.8f)
+                    .height(100.dp)
+                    .padding(bottom = 8.dp),
+                contentScale = ContentScale.Fit
+            )
+
+            Spacer(modifier = Modifier.height(60.dp))
+
             Text(
                 text = stringResource(R.string.login),
                 style = androidx.compose.material3.MaterialTheme.typography.headlineMedium,
@@ -144,6 +172,9 @@ fun LoginScreen(navController: NavHostController) {
                         }
                     }
                 },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = colorResource(id = R.color.logo_pink)
+                ), // Color de fondo del botón
                 modifier = Modifier
                     .fillMaxWidth(0.8f)
                     .padding(horizontal = 16.dp)
@@ -159,6 +190,9 @@ fun LoginScreen(navController: NavHostController) {
                     // Navegar a la pantalla de registro
                     navController.navigate("register")
                 },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = colorResource(id = R.color.logo_darkpurple)
+                ), // Color de fondo del botón
                 modifier = Modifier
                     .fillMaxWidth(0.8f)
                     .padding(horizontal = 16.dp)
@@ -168,6 +202,165 @@ fun LoginScreen(navController: NavHostController) {
         }
     }
 }
+
+@Composable
+fun LoginScreenLandscape(navController: NavHostController) {
+    var username by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var errorMessage by remember { mutableStateOf("") }
+    val auth = if (LocalInspectionMode.current) null else FirebaseAuth.getInstance()
+    val viewModel: QuizViewModel = viewModel()
+    val context = LocalContext.current
+
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        // Fondo de pantalla
+        Image(
+            painter = painterResource(id = R.drawable.fondo_login),
+            contentDescription = "Login Background",
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop
+        )
+
+        // Contenido para la pantalla en orientación landscape
+        Row(
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(16.dp).fillMaxSize().background(Color.Black.copy(alpha = 0.6f)),
+
+        ) {
+            // Imagen a la izquierda
+            Image(
+                painter = painterResource(id = R.drawable.quizec_title),
+                contentDescription = "QUIZEC Title",
+                modifier = Modifier
+                    .width(200.dp)  // Ajusta el tamaño de la imagen
+                    .height(200.dp)
+                    .padding(end = 32.dp), // Espaciado entre la imagen y el contenido
+                contentScale = ContentScale.Fit
+            )
+
+            // Contenido a la derecha (formulario de login y botones)
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally, // Centra los elementos
+                verticalArrangement = Arrangement.Top, // Alinea los elementos hacia la parte superior
+                modifier = Modifier
+                    .fillMaxWidth(0.6f) // Ajusta el ancho para que los elementos quepan correctamente
+                    .fillMaxHeight() // Asegura que la columna llene toda la altura disponible
+                    .padding(top = 16.dp)
+            ){
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = stringResource(R.string.login),
+                    style = androidx.compose.material3.MaterialTheme.typography.headlineMedium,
+                    color = Color.White
+                )
+
+                Spacer(modifier = Modifier.height(28.dp))
+
+                // Nombre de usuario
+                Text(
+                    text = stringResource(R.string.nombre_de_usuario),
+                    style = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
+                    color = Color.White
+                )
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(0.8f)
+                        .clip(RoundedCornerShape(12.dp))
+                        .border(1.dp, Color(0xFF8A2BE2))
+                        .background(Color.White)
+                        .padding(8.dp)
+                ) {
+                    BasicTextField(
+                        value = username,
+                        onValueChange = { username = it },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp)) // Reducido el espaciado
+
+                // Contraseña
+                Text(
+                    text = stringResource(R.string.password),
+                    style = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
+                    color = Color.White
+                )
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(0.8f)
+                        .clip(RoundedCornerShape(12.dp))
+                        .border(1.dp, Color(0xFF8A2BE2))
+                        .background(Color.White)
+                        .padding(8.dp)
+                ) {
+                    BasicTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        visualTransformation = PasswordVisualTransformation(),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                // Mensaje de error
+                if (errorMessage.isNotEmpty()) {
+                    Text(
+                        text = errorMessage,
+                        color = Color.Red,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp)) // Reducido el espaciado
+
+                // Botón de login
+                Button(
+                    onClick = {
+                        if (username.isEmpty() || password.isEmpty()) {
+                            errorMessage =
+                                context.getString(R.string.por_favor_ingresa_todos_los_campos)
+                        } else {
+                            if (auth != null) {
+                                loginUser(username, password, auth, navController, { message ->
+                                    errorMessage = message
+                                }, viewModel)
+                            }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = colorResource(id = R.color.logo_pink)
+                    ), // Color de fondo del botón
+                    modifier = Modifier
+                        .fillMaxWidth(0.8f)
+                        .padding(4.dp) // Espaciado adicional
+                ) {
+                    Text(text = stringResource(R.string.login), color = Color.White)
+                }
+
+                // Botón de registro
+                Button(
+                    onClick = {
+                        navController.navigate("register")
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = colorResource(id = R.color.logo_darkpurple)
+                    ), // Color de fondo del botón
+                    modifier = Modifier
+                        .fillMaxWidth(0.8f)
+                        .padding(bottom = 4.dp) // Espaciado reducido entre los botones
+                ) {
+                    Text(text = stringResource(R.string.registro), color = Color.White)
+                }
+            }
+        }
+    }
+}
+
 
 private fun loginUser(
     username: String,
@@ -218,7 +411,7 @@ private fun loginUser(
                                     popUpTo("login") { inclusive = true }
                                 }
                             } else {
-                                onError("Error en el login: ${task.exception?.message ?: "Error desconocido"}")
+                                onError("Error: ${task.exception?.message ?: "Unknown error"}")
                             }
                         }
                 } else {
@@ -227,6 +420,6 @@ private fun loginUser(
             }
         }
         .addOnFailureListener { e ->
-            onError("Error al obtener el correo del usuario: ${e.message}")
+            onError("Error: ${e.message}")
         }
 }

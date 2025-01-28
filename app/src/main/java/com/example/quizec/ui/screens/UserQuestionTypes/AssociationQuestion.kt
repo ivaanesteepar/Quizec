@@ -23,7 +23,9 @@ import com.example.quizec.data.model.Pregunta
 fun AssociationQuestionScreen(
     currentQuestion: Pregunta,
     userSelections: MutableMap<String, String>,
-    isAcceptButtonClicked: Boolean
+    isAcceptButtonClicked: Boolean,
+    immediateResults: Boolean,
+    quizTerminado: Boolean
 ) {
     var selectedConcept by remember { mutableStateOf<String?>(null) }
 
@@ -60,9 +62,10 @@ fun AssociationQuestionScreen(
 
     // Resaltar pares correctos si el botón de aceptar es pulsado
     if (isAcceptButtonClicked) {
-        pairColors.clear()
+        pairColors.clear() // Limpiar los colores previos
         colorIndex = 0
 
+        // Asignar colores a cada par
         currentQuestion.conceptosYDefiniciones.forEach { (concept, definition) ->
             pairColors[concept to definition] = getNextColor()
         }
@@ -74,7 +77,7 @@ fun AssociationQuestionScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text(
+        Text( // Instrucciones para el usuario
             text = stringResource(R.string.associationQuestion_instrucc),
             style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier.padding(bottom = 16.dp),
@@ -87,15 +90,29 @@ fun AssociationQuestionScreen(
         ) {
             // Columna izquierda: Conceptos
             Column(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(0.8f),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 concepts.forEach { concept ->
-                    val isDisabled = userSelections.containsKey(concept)
-                    val conceptColor = userSelections[concept]?.let { definition ->
-                        pairColors[concept to definition] ?: Color.Transparent
-                    } ?: Color.Transparent
+                    val isDisabled = userSelections.containsKey(concept) // Verificar si el concepto ya fue seleccionado
+//                    val conceptColor = userSelections[concept]?.let { definition ->
+//                        pairColors[concept to definition] ?: Color.Transparent
+//                    } ?: Color.Transparent
+
+                    // Determinar el color que debe tener el concepto
+                    val conceptColor = if (isAcceptButtonClicked && immediateResults) {
+                        // Color de los pares correctos basados en pairColors
+                        currentQuestion.conceptosYDefiniciones[concept]?.let { definition ->
+                            pairColors[concept to definition] ?: Color.Transparent
+                        } ?: Color.Transparent
+                    } else {
+                        // Color basado en las selecciones del usuario
+                        userSelections[concept]?.let { definition ->
+                            pairColors[concept to definition] ?: Color.Transparent
+                        } ?: Color.Transparent
+                    }
+
 
                     Box(
                         modifier = Modifier
@@ -106,7 +123,7 @@ fun AssociationQuestionScreen(
                                 shape = RoundedCornerShape(8.dp)
                             )
                             .clickable {
-                                if (!isDisabled) {
+                                if (!isDisabled) { //si esta habilitado, se puede hacer click en el concepto
                                     selectedConcept =
                                         if (selectedConcept == concept) null else concept
                                 }
@@ -114,11 +131,12 @@ fun AssociationQuestionScreen(
                             .padding(16.dp),
                         contentAlignment = Alignment.Center
                     ) {
+                        // Si el concepto es una URL, mostramos una imagen en lugar de texto
                         if (concept.startsWith("http://") || concept.startsWith("https://")) {
                             AsyncImage(
                                 model = concept,
                                 contentDescription = "Imagen del concepto",
-                                contentScale = ContentScale.Crop, // Ajusta la imagen para q aproveche tdo el tam
+                                contentScale = ContentScale.Crop, // Ajusta la imagen para que aproveche todo el tamaño
                                 modifier = Modifier
                                     .size(80.dp) // Aseguramos que la imagen tenga un tamaño fijo
                                     .align(Alignment.Center)
@@ -127,7 +145,10 @@ fun AssociationQuestionScreen(
                             Text(
                                 text = concept,
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = Color.Unspecified // Mantener color original
+                                color = Color.Unspecified, // Mantener color original
+                                modifier = Modifier
+                                    .widthIn(min = 100.dp, max = 180.dp) // Controla el ancho de los conceptos
+                                    .wrapContentWidth() // Ajusta el ancho según el contenido
                             )
                         }
                     }
@@ -143,33 +164,49 @@ fun AssociationQuestionScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 shuffledDefinitions.forEach { definition ->
-                    val isUsed = userSelections.containsValue(definition)
-                    val definitionColor = userSelections.entries.firstOrNull { it.value == definition }?.let {
-                        pairColors[it.key to definition] ?: Color.Transparent
-                    } ?: Color.Transparent
+                    val isUsed = userSelections.containsValue(definition) // Verificar si la definición ya fue seleccionada y asociada
+//                    val definitionColor = userSelections.entries.firstOrNull { it.value == definition }?.let {
+//                        pairColors[it.key to definition] ?: Color.Transparent
+//                    } ?: Color.Transparent
 
-                    Box(
+                    // Determinar el color que debe tener la definición
+                    val definitionColor = if (isAcceptButtonClicked && immediateResults) {
+                        // Color de los pares correctos basados en pairColors
+                        currentQuestion.conceptosYDefiniciones.entries.firstOrNull { it.value == definition }?.let { (concept, _) ->
+                            pairColors[concept to definition] ?: Color.Transparent
+                        } ?: Color.Transparent
+                    } else {
+                        // Color basado en las selecciones del usuario
+                        userSelections.entries.firstOrNull { it.value == definition }?.let {
+                            pairColors[it.key to definition] ?: Color.Transparent
+                        } ?: Color.Transparent
+                    }
+
+                    Box( //lo q envuelve la def
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(100.dp) // Aseguramos una altura consistente para las definiciones
+                            .heightIn(min = 100.dp) // Altura adaptable para evitar corte del texto
                             .background(
                                 if (isUsed) definitionColor else Color.Transparent,
                                 shape = RoundedCornerShape(8.dp)
                             )
                             .clickable {
-                                if (isUsed) {
-                                    // Si la definición ya está emparejada, eliminar la asociación
-                                    val conceptToRemove =
-                                        userSelections.entries.firstOrNull { it.value == definition }?.key
-                                    conceptToRemove?.let { userSelections.remove(it) }
-                                    pairColors.remove(conceptToRemove to definition)
-                                } else if (selectedConcept != null) {
-                                    // Asociar el concepto seleccionado con la definición
-                                    userSelections[selectedConcept!!] = definition
-                                    // Asignar un color fijo al par formado
-                                    pairColors[selectedConcept!! to definition] = getNextColor()
-                                    selectedConcept = null
+                                if (!isAcceptButtonClicked) {
+                                    if (isUsed) { //Si la definición ya ha sido utilizada
+                                        // Eliminar la asociación existente
+                                        val conceptToRemove =
+                                            userSelections.entries.firstOrNull { it.value == definition }?.key
+                                        conceptToRemove?.let { userSelections.remove(it) }
+                                        pairColors.remove(conceptToRemove to definition)
+                                    } else if (selectedConcept != null) { //si un concepto ha sido ya seleccionado
+                                        // Asociar el concepto seleccionado con la definición
+                                        userSelections[selectedConcept!!] = definition
+                                        //Se agrega un color único para el par
+                                        pairColors[selectedConcept!! to definition] = getNextColor()
+                                        selectedConcept = null
+                                    }
                                 }
+
                             }
                             .padding(16.dp),
                         contentAlignment = Alignment.Center
@@ -177,11 +214,16 @@ fun AssociationQuestionScreen(
                         Text(
                             text = definition,
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Unspecified // Mantener color original
+                            color = Color.Unspecified, // Mantener color original
+                            modifier = Modifier
+                                .fillMaxWidth() // El texto ocupa tdo el ancho disponible
+                                .padding(horizontal = 8.dp) // Un poco de padding horizontal para evitar que el texto quede pegado a los bordes
+                                .wrapContentWidth() // Ajusta el ancho del texto al contenido
                         )
                     }
                 }
             }
+
         }
     }
 }

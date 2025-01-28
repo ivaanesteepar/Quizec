@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -59,7 +60,7 @@ fun MatchingAssociationResults(
             .fillMaxWidth()
     ) {
         Text(
-            text = "",
+            text = stringResource(R.string.resultados),
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.padding(bottom = 16.dp)
@@ -77,7 +78,7 @@ fun MatchingAssociationResults(
             val backgroundColor = if (esCorrecto) {
                 Color.Green // Fondo verde si la respuesta es correcta
             } else {
-                MaterialTheme.colorScheme.surfaceVariant // Fondo estándar si es incorrecta
+                colorResource(id = R.color.pastel) // Fondo estándar si es incorrecta
             }
 
             // Cada fila con fondo diferenciado
@@ -126,7 +127,7 @@ fun MatchingAssociationResults(
                     // Definición: siempre como texto
                     Box(
                         modifier = Modifier
-                            .weight(1f)
+                            .weight(1.1f)
                             .padding(horizontal = 8.dp),
                         contentAlignment = Alignment.Center
                     ) {
@@ -141,7 +142,7 @@ fun MatchingAssociationResults(
                     // Contador de elecciones
                     Box(
                         modifier = Modifier
-                            .weight(1f)
+                            .weight(0.6f)
                             .padding(start = 8.dp),
                         contentAlignment = Alignment.Center
                     ) {

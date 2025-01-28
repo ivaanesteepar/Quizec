@@ -27,7 +27,9 @@ fun MissingWordsQuestionScreen(
     currentQuestion: Pregunta,
     opcionesCorrectas: List<String>,
     userInputs: MutableList<String>,
-    isAcceptButtonClicked: Boolean
+    isAcceptButtonClicked: Boolean,
+    immediateResults: Boolean,
+    quizTerminado: Boolean
 ) {
     val fraseCompletar = currentQuestion.fraseCompletar
 
@@ -90,7 +92,7 @@ fun MissingWordsQuestionScreen(
                     modifier = Modifier.width(24.dp) // Espacio fijo para el número
                 )
 
-                if (isAcceptButtonClicked) {
+                if (isAcceptButtonClicked && immediateResults || (!immediateResults && quizTerminado) ) {
                     TextField(
                         value = opcionesCorrectas[index], // Muestra la respuesta correcta
                         onValueChange = { newValue -> userInputs[index] = newValue },

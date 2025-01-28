@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -66,7 +67,7 @@ fun OrderingResults(
             val backgroundColor = if (orden == ordenCorrectoTexto) {
                 Color.Green // Fondo verde para correcto
             } else {
-                MaterialTheme.colorScheme.surfaceVariant // Fondo estándar para incorrecto
+                colorResource(id = R.color.pastel)  // Fondo estándar para incorrecto
             }
 
             // Cada fila con fondo diferenciado
@@ -87,7 +88,7 @@ fun OrderingResults(
                     // Orden como texto
                     Box(
                         modifier = Modifier
-                            .weight(2f)
+                            .weight(2.1f)
                             .padding(end = 8.dp),
                         contentAlignment = Alignment.Center
                     ) {

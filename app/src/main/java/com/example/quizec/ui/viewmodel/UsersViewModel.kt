@@ -13,16 +13,17 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 
-class UsersViewModel : ViewModel() {
+class UsersViewModel : ViewModel() { //lógica relacionada con la gestión de usuarios en un quiz.
     private val db = FirebaseFirestore.getInstance()
 
-    private val _usuariosEnEspera = MutableStateFlow<List<String>>(emptyList())
+    private val _usuariosEnEspera = MutableStateFlow<List<String>>(emptyList()) // Lista de usuarios en espera (viewmodel actualiza el estado)
+    //StateFlow para observar la lista de usuarios en espera.
     val usuariosEnEspera: StateFlow<List<String>> = _usuariosEnEspera
-
+    // Lista de pares (nombre, respuestas correctas).
     private val _usuariosConRespuestas = MutableStateFlow<List<Pair<String, Int>>>(emptyList())
     val usuariosConRespuestas: StateFlow<List<Pair<String, Int>>> = _usuariosConRespuestas
 
-
+   // Escuchar los cambios en los usuarios en espera
     fun contarUsuariosEnEsperaTiempoReal(
         codigoQuiz: String,
         callback: (Int?, Exception?) -> Unit

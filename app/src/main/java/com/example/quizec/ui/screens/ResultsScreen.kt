@@ -9,11 +9,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.quizec.R
 import com.example.quizec.data.model.Rol
+import com.example.quizec.ui.theme.buttonColor
 import com.example.quizec.ui.viewmodel.QuizViewModel
 import com.example.quizec.ui.viewmodel.UsersViewModel
 import com.google.firebase.auth.FirebaseAuth
@@ -25,7 +27,7 @@ fun ResultsScreen(
     codigoQuiz: String?
 ) {
 
-    // Estado para almacenar la lista de usuarios y sus respuestas correctas
+    // Estado para almacenar la lista de usuarios y sus respuestas correctas.  Lista de pares (nombre, respuestas correctas)
     val (usuariosConRespuestas, setUsuariosConRespuestas) = remember { mutableStateOf<List<Pair<String, Int>>>(emptyList()) }
 
     // Usuario autenticado
@@ -68,7 +70,7 @@ fun ResultsScreen(
     LaunchedEffect(codigoQuiz) {
         if (codigoQuiz != null) {
             usersViewModel.escucharNombreYRespuestasCorrectas(codigoQuiz) { usuarios ->
-                setUsuariosConRespuestas(usuarios)
+                setUsuariosConRespuestas(usuarios) // Actualizar la lista de usuarios con respuestas correctas
             }
         }
     }
@@ -76,6 +78,7 @@ fun ResultsScreen(
     // Interfaz de usuario
     Column(
         modifier = Modifier
+            .background(colorResource(id = R.color.background_color))
             .fillMaxSize()
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -94,8 +97,7 @@ fun ResultsScreen(
                     .fillMaxWidth()
                     .fillMaxHeight(0.6f)
             ) {
-                // Ordenar usuarios por respuestas correctas (second) en orden descendente
-                //val usuariosOrdenados = usuariosConRespuestas.sortedByDescending { it.second }
+
                 // Filtrar y ordenar usuarios: excluir al creador y ordenar por respuestas correctas
                 val usuariosOrdenados = usuariosConRespuestas
                     .filter { it.first != userName || userRole != Rol.CREADOR.toString() }
@@ -104,10 +106,10 @@ fun ResultsScreen(
                 items(usuariosOrdenados.size) { index ->
                     val (nombre, respuestasCorrectas) = usuariosOrdenados[index]
 
-                    val backgroundColor = when (index) {
-                        0 -> MaterialTheme.colorScheme.primary
-                        1 -> MaterialTheme.colorScheme.secondary
-                        2 -> MaterialTheme.colorScheme.tertiary
+                    val backgroundColor = when (index) { // Cambiar el color de fondo según la posición
+                        0 -> colorResource(id = R.color.logo_pink)
+                        1 -> colorResource(id = R.color.logo_purple)
+                        2 -> colorResource(id = R.color.logo_darkpurple)
                         else -> Color.LightGray
                     }
 
@@ -118,7 +120,7 @@ fun ResultsScreen(
                             .background(backgroundColor, shape = MaterialTheme.shapes.medium)
                             .padding(16.dp)
                     ) {
-                        Text(
+                        Text( // Mostrar el nombre del usuario y sus respuestas correctas
                             text = "${index + 1}. $nombre - $respuestasCorrectas",
                             style = MaterialTheme.typography.bodyLarge,
                             color = if (index < 3) Color.White else Color.Black
@@ -134,6 +136,9 @@ fun ResultsScreen(
                 onClick = {
                     navController.navigate("answers/$codigoQuiz")
                 },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = colorResource(id = R.color.logo_pink) // Aplicamos el color de fondo del botón
+                ),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 16.dp),
@@ -145,7 +150,7 @@ fun ResultsScreen(
 
         BackHandler {} //no hace nada si da atrás
 
-        // Botón para regresar
+        // Botón para regresar, elimina los usuarios de la lista del quiz y vuelve al home
         Button(
             onClick = {
                 if (userRole == Rol.CREADOR.toString()){
@@ -155,6 +160,9 @@ fun ResultsScreen(
                 }
                 navController.navigate("home")
             },
+            colors = ButtonDefaults.buttonColors(
+                containerColor = buttonColor // Aplicamos el color de fondo del botón
+            ),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 16.dp),

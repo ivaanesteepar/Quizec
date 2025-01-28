@@ -1,5 +1,6 @@
 package com.example.quizec.ui.screens.UserQuestionTypes
 
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,7 +20,9 @@ fun OneMultChoicesQuestionScreen(
     selectedAnswer: List<String>?,
     onSelectedAnswerChange: (List<String>) -> Unit,
     isAcceptButtonClicked: Boolean,
-    correctAnswer: String // Este es el parámetro para la respuesta correcta
+    correctAnswer: String, // Este es el parámetro para la respuesta correcta
+    immediateResults: Boolean,
+    quizTerminado: Boolean
 ) {
     val selectedButtonColor = Color(0xFFFF9800) // Naranja
     val defaultButtonColor = Color.Unspecified
@@ -36,7 +39,11 @@ fun OneMultChoicesQuestionScreen(
         currentQuestion.opciones.forEach { opcion ->
             val isSelected = selectedAnswer?.contains(opcion) == true
             val isCorrect = opcion == correctAnswer
-            val isDisabled = isAcceptButtonClicked && !isCorrect
+
+            val isDisabled = (isAcceptButtonClicked && !isCorrect && immediateResults)
+                    || (!immediateResults && quizTerminado && !isCorrect)
+
+            Log.d("OneMultChoicesQuestionScreen", "isDisabled: $isDisabled; isAcceptButtonClicked: $isAcceptButtonClicked; immediateResults: $immediateResults; quizTerminado: $quizTerminado; isCorrect: $isCorrect")
 
             Button(
                 onClick = {
@@ -47,7 +54,7 @@ fun OneMultChoicesQuestionScreen(
                 },
                 colors = ButtonDefaults.buttonColors(
                     containerColor = when {
-                        isAcceptButtonClicked && isCorrect -> correctButtonColor // Opción correcta se pone verde
+                        (isAcceptButtonClicked && immediateResults && isCorrect) || (!immediateResults && quizTerminado && isCorrect) -> correctButtonColor // Opción correcta se pone verde
                         isSelected -> selectedButtonColor // Respuesta seleccionada en naranja
                         else -> defaultButtonColor // Color por defecto
                     }

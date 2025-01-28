@@ -18,9 +18,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.activity.result.PickVisualMediaRequest
+import androidx.compose.foundation.background
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -30,6 +32,7 @@ import coil.compose.rememberAsyncImagePainter
 import com.example.quizec.R
 import com.example.quizec.data.model.Cuestionario
 import com.example.quizec.data.model.Pregunta
+import com.example.quizec.ui.theme.buttonColor
 import com.example.quizec.ui.viewmodel.QuestionsViewModel
 import com.example.quizec.ui.viewmodel.QuizViewModel
 import com.example.quizec.utils.AMovServer
@@ -109,6 +112,7 @@ fun EditarCuestionarioScreen(
 
     Column(
         modifier = Modifier
+            .background(colorResource(id = R.color.background_color))
             .fillMaxSize()
             .padding(16.dp)
             .verticalScroll(rememberScrollState()),
@@ -173,6 +177,9 @@ fun EditarCuestionarioScreen(
                             PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                         )
                     },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = buttonColor // Aplicamos el color de fondo del botón
+                    ),
                     modifier = Modifier
                         .fillMaxWidth() // Ocupa tdo el ancho disponible
                         .padding(horizontal = 50.dp) // Márgenes laterales para que no esté pegado a los bordes
@@ -193,6 +200,9 @@ fun EditarCuestionarioScreen(
                                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                             )
                         },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = buttonColor // Aplicamos el color de fondo del botón
+                        ),
                     ) {
                         Text(stringResource(R.string.seleccionar_imagen))
                     }
@@ -204,7 +214,10 @@ fun EditarCuestionarioScreen(
                         onClick = {
                             // Eliminar la imagen
                             imageUri = null
-                        }
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.Red // Aplicamos el color de fondo del botón
+                        ),
                     ) {
                         Text(
                             text = stringResource(R.string.eliminar_imagen),
@@ -244,6 +257,9 @@ fun EditarCuestionarioScreen(
         // Boton para seleccionar preguntas
         Button(
             onClick = { navController.navigate("select_questions_edit/$creadorId/$cuestionarioId") },
+            colors = ButtonDefaults.buttonColors(
+                containerColor = buttonColor // Aplicamos el color de fondo del botón
+            ),
             modifier = Modifier.fillMaxWidth(0.8f)
         ) {
             Text(stringResource(R.string.seleccionar_preguntas))
@@ -256,6 +272,9 @@ fun EditarCuestionarioScreen(
             onClick = {
                 navController.navigate("delete_questions/$cuestionarioId")
             },
+            colors = ButtonDefaults.buttonColors(
+                containerColor = buttonColor // Aplicamos el color de fondo del botón
+            ),
             modifier = Modifier.fillMaxWidth(0.8f)
         ) {
             Text(stringResource(R.string.eliminar_preguntas_boton))
@@ -426,6 +445,9 @@ fun EditarCuestionarioScreen(
                     }
                 }
             },
+            colors = ButtonDefaults.buttonColors(
+                containerColor = colorResource(id = R.color.logo_pink) // Aplicamos el color de fondo del botón
+            ),
             modifier = Modifier.fillMaxWidth(0.8f)
         ) {
             Text(stringResource(R.string.actualizar_cuestionario), color = Color.White)
@@ -462,6 +484,9 @@ fun EditarCuestionarioScreen(
                 quizViewModel.resetearPreguntas()
                 navController.navigate("select_cuestionario")
             },
+            colors = ButtonDefaults.buttonColors(
+                containerColor = buttonColor // Aplicamos el color de fondo del botón
+            ),
             modifier = Modifier.fillMaxWidth(0.8f)
         ) {
             Text(stringResource(R.string.volver), color = Color.White)

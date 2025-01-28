@@ -29,14 +29,16 @@ import com.example.quizec.data.model.Pregunta
 fun OrderingQuestionScreen(
     currentQuestion: Pregunta,
     userOrderedItems: (List<String>) -> Unit,
-    isAcceptButtonClicked: Boolean // Agregar el estado de si el botón de aceptar ha sido presionado
+    isAcceptButtonClicked: Boolean, // Agregar el estado de si el botón de aceptar ha sido presionado
+    immediateResults: Boolean,
+    quizTerminado: Boolean
 ) {
     // Estado para los ítems desordenados, reiniciado si currentQuestion cambia
     var disorderedItems by remember(currentQuestion) {
         mutableStateOf(currentQuestion.itemsOrdenados.shuffled().toMutableList())
     }
     // Mostrar los ítems ordenados si se presionó el botón de aceptar
-    val itemsToDisplay = if (isAcceptButtonClicked) {
+    val itemsToDisplay = if (isAcceptButtonClicked && immediateResults || (!immediateResults && quizTerminado) ) {
         currentQuestion.itemsOrdenados // Muestra el orden correcto
     } else {
         disorderedItems // Muestra los ítems desordenados
@@ -49,19 +51,19 @@ fun OrderingQuestionScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(8.dp)
-                    .background(Color.LightGray, shape = RoundedCornerShape(8.dp))
+                    .background(
+                        if (isAcceptButtonClicked && immediateResults
+                            || (!immediateResults && quizTerminado) ) Color.Green else Color.LightGray, // Fondo verde si se ha aceptado el orden, de lo contrario gris
+                        shape = RoundedCornerShape(8.dp) // Bordes redondeados
+                    )
             ) {
-                // Mostrar el texto del ítem con color verde si se ha aceptado el orden
+                // Mostrar el texto del ítem con color negro, pero el fondo cambia según la condición
                 Text(
                     text = item,
                     modifier = Modifier
                         .weight(1f)
                         .padding(16.dp),
-                    style = if (isAcceptButtonClicked) {
-                        TextStyle(color = Color.Green) // Cambiar color a verde cuando se muestra el orden correcto
-                    } else {
-                        TextStyle(color = Color.Black) // Color negro para cuando no se ha aceptado el orden
-                    }
+                    style = TextStyle(color = Color.Black) // El texto siempre será negro
                 )
 
                 // Si no se ha aceptado, se pueden mover los ítems

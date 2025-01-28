@@ -13,3 +13,5 @@ val Pink40 = Color(0xFF7D5260)
 //preguntas VF, opcionMult
 val selectedButtonColor = Color(0xFFFFA500)
 val defaultButtonColor = Color(0xFF2196F3)
+
+val buttonColor = Color(0xFF7700E3)

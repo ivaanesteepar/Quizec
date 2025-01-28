@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.BasicTextField
@@ -16,12 +17,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavHostController
 import com.example.quizec.R
 import com.example.quizec.data.model.Rol
+import com.example.quizec.ui.theme.buttonColor
 import com.example.quizec.ui.viewmodel.QuizViewModel
 import com.example.quizec.ui.viewmodel.UsersViewModel
 import com.example.quizec.utils.LocationUtils
@@ -81,100 +84,119 @@ fun JoinQuizScreen(
         val userLng = userLocation[1].substringAfter("Lng: ").toDouble()
 
         val earthRadius = 6371 // Radio de la tierra en km
-        val dLat = Math.toRadians(quizLat - userLat)
+        val dLat = Math.toRadians(quizLat - userLat) // Convertir a radianes
         val dLng = Math.toRadians(quizLng - userLng)
         val a = sin(dLat / 2).pow(2) + cos(Math.toRadians(userLat)) * cos(Math.toRadians(quizLat)) * sin(dLng / 2).pow(2)
         val c = 2 * atan2(sqrt(a), sqrt(1 - a))
         val distance = earthRadius * c // Distancia en km
 
-        val distanceInMeters = (distance * 1000).toFloat() // Convertir a metros
+        //val distanceInMeters = (distance * 1000).toFloat() // Convertir a metros
 
         // Imprimir la distancia en consola para depuración
-        println("Distancia entre el usuario y el quiz: $distanceInMeters metros")
+        println("Distancia entre el usuario y el quiz: $distance km")
+        //return distanceInMeters
 
-        return distanceInMeters
+        return distance.toFloat() // Devolver la distancia en km
     }
 
-
+    // Función para unirse al quiz, incluye la lógica de validación de código y distancia
     fun unirseAlQuiz() {
         if (codigoQuiz.isEmpty()) {
             errorMessage = context.getString(R.string.por_favor_ingrese_el_c_digo_del_quiz)
-        } else {
-            loading = true
+            return
+        }
 
-            // Ejecutar la lógica en una corrutina
-            coroutineScope.launch {
-                try {
-                    val datosQuiz = quizViewModel.obtenerDatosDelQuiz(codigoQuiz)
-                    Log.d("JoinQuizScreen", "Datos del quiz: $datosQuiz")
+        loading = true // Mostrar indicador de carga
 
-                    if (datosQuiz == null) {
-                        errorMessage =
-                            context.getString(R.string.error_al_obtener_los_datos_del_quiz)
-                        loading = false
-                        return@launch
-                    }
-                    // Agregar el usuario al quiz
+        // Ejecutar la lógica en una corrutina
+        coroutineScope.launch {
+            try {
+                // devuelve (lat, lng, radius)
+                val datosQuiz = quizViewModel.obtenerDatosDelQuiz(codigoQuiz)
+                Log.d("JoinQuizScreen", "Datos del quiz: $datosQuiz")
+
+                if (datosQuiz == null) {
+                    errorMessage = context.getString(R.string.error_al_obtener_los_datos_del_quiz)
+                    loading = false
+                    return@launch
+                }
+
+                val immediateAccess = quizViewModel.obtenerImmediateAccess(codigoQuiz)
+                Log.d("JoinQuizScreen", "Modo Inmediato: $immediateAccess")
+
+                // Obtener datos del quiz (lat, lng, radius)
+                val (quizLat, quizLng, quizRadius) = datosQuiz
+
+                // Si la latitud y longitud son 0, no comprobar ubicación
+                if (quizLat == 0.0 && quizLng == 0.0) {
+                    //se grega al user directamente y se le convierte en participante
                     usersViewModel.agregarUsuarioAQuiz(codigoQuiz)
-
                     quizViewModel.actualizarRolUsuario(Rol.PARTICIPANTE.toString()) { errorMessage ->
                         if (errorMessage == null) {
-                            // Si no hay error, la actualización fue exitosa
                             Log.d("JoinQuizScreen", "Rol actualizado a 'Participante'.")
                         } else {
-                            // Si hay un error, se muestra el mensaje de error
                             Log.e("JoinQuizScreen", "Error al actualizar el rol: $errorMessage")
                         }
                     }
-                    val immediateAccess = quizViewModel.obtenerImmediateAccess(codigoQuiz)
-                    Log.d("JoinQuizScreen", "Modo Inmediato: $immediateAccess")
+                    // Si el acceso inmediato es verdadero, navegar al quiz
+                    if (immediateAccess == true) {
+                        navController.navigate("user_quiz/$codigoQuiz")
+                    } else {
+                        navController.navigate("waiting_screen/$codigoQuiz")
+                    }
+                    loading = false
+                    return@launch
 
-                    // Obtener datos del quiz
-                    val (quizLat, quizLng, quizRadius) = datosQuiz
+                }else {
+                // Obtener la ubicación del usuario y calcular la distancia
+                fetchLocation(context, fusedLocationClient) { location ->
+                    Log.d("Geolocalización", "Ubicación actual: $location")
 
-                    // Si la latitud y longitud son 0, no comprobar ubicación
-                    if (quizLat == 0.0 && quizLng == 0.0) {
+                    // Calcular la distancia entre el usuario y el quiz
+                    val distance = calculateDistance(location, quizLat, quizLng)
+                    Log.d("JoinQuizScreen", "Distancia al quiz: $distance")
+
+                    // Verificar si el usuario está dentro del radio del quiz
+                    if (distance <= quizRadius) {
+                        // Agregar usuario al quiz solo si la ubicación es válida
+                        usersViewModel.agregarUsuarioAQuiz(codigoQuiz)
+
+                        quizViewModel.actualizarRolUsuario(Rol.PARTICIPANTE.toString()) { errorMessage ->
+                            if (errorMessage == null) {
+                                Log.d("JoinQuizScreen", "Rol actualizado a 'Participante'.")
+                            } else {
+                                Log.e("JoinQuizScreen", "Error al actualizar el rol: $errorMessage")
+                            }
+                        }
+
+                        // Si el acceso inmediato es verdadero, navegar direct al quiz
                         if (immediateAccess == true) {
                             navController.navigate("user_quiz/$codigoQuiz")
                         } else {
                             navController.navigate("waiting_screen/$codigoQuiz")
                         }
-                        loading = false
-                        return@launch
+                    } else { // Si el usuario está fuera del radio, mostrar mensaje de error
+                        errorMessage =
+                            context.getString(R.string.no_est_s_dentro_del_radio_del_quiz)
                     }
-
-                    // Obtener la ubicación del usuario y calcular la distancia
-                    fetchLocation(context, fusedLocationClient) { location ->
-                        Log.d("Geolocalización", "Ubicación actual: $location")
-
-                        val distance = calculateDistance(location, quizLat, quizLng)
-                        if (distance <= quizRadius) {
-                            if (immediateAccess == true) {
-                                navController.navigate("user_quiz/$codigoQuiz")
-                            } else {
-                                navController.navigate("waiting_screen/$codigoQuiz")
-                            }
-                        } else {
-                            errorMessage =
-                                context.getString(R.string.no_est_s_dentro_del_radio_del_quiz)
-                        }
-                        loading = false
-                    }
-                } catch (e: Exception) {
                     loading = false
-                    errorMessage = context.getString(R.string.hubo_un_error_al_verificar_el_acceso)
                 }
+            }
+            } catch (e: Exception) {
+                loading = false
+                errorMessage = context.getString(R.string.hubo_un_error_al_verificar_el_acceso)
             }
         }
     }
 
 
+
     // Interfaz de usuario
     Box(
         modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-            .wrapContentSize(Alignment.Center)
+            .fillMaxSize()  // Asegura que el Box ocupe toda la pantalla
+            .background(colorResource(id = R.color.background_color))  // Establecer el color de fondo
+            .wrapContentSize(Alignment.Center)  // Centrar el contenido
     ) {
         Column(
             modifier = Modifier
@@ -198,6 +220,7 @@ fun JoinQuizScreen(
 
             Button(
                 onClick = {
+                    // Si se tiene permiso de ubicación, obtener la ubicación y unirse al quiz
                     if (locationPermissionGranted) {
                         fetchLocation(context, fusedLocationClient) { location ->
                             Log.d("Geolocalización", "Ubicación actual: $location")
@@ -206,7 +229,10 @@ fun JoinQuizScreen(
                     } else {
                         Log.e("Permisos", "Permisos de ubicación no concedidos.")
                     }
-                }
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = colorResource(id = R.color.logo_pink) // Aplicamos el color de fondo del botón
+                )
             ) {
                 Text(stringResource(R.string.unirse_al_quiz))
             }
@@ -214,13 +240,16 @@ fun JoinQuizScreen(
             if (errorMessage.isNotEmpty()) {
                 Text(text = errorMessage, color = Color.Red, modifier = Modifier.padding(top = 4.dp))
             }
-
+            // Mostrar indicador de carga si se está esperando
             if (loading) {
                 CircularProgressIndicator(modifier = Modifier.padding(top = 8.dp))
             }
 
             Button(
                 onClick = { navController.navigate("home") },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = buttonColor // Aplicamos el color de fondo del botón
+                ),
                 modifier = Modifier.padding(top = 8.dp)
             ) {
                 Text(stringResource(R.string.volver))

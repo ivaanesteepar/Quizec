@@ -132,9 +132,9 @@
     <string name="unirse_a_un_quiz">Juntar-se a um Quiz</string>
     <string name="c_digo_del_quiz">Código do Quiz</string>
     <string name="unirse_al_quiz">Juntar-se ao Quiz</string>
-    <string name="login">Login</string>
-    <string name="nombre_de_usuario">Username</string>
-    <string name="password">Password</string>
+    <string name="login">Conecte-se</string>
+    <string name="nombre_de_usuario">Nome de usuário</string>
+    <string name="password">Contrasenha</string>
     <string name="por_favor_ingresa_todos_los_campos">Por favor, preencha todos os campos.</string>
     <string name="registro">Registrar</string>
     <string name="nombre">Nome</string>
@@ -164,7 +164,7 @@
     <string name="guardar">Salvar</string>
     <string name="no_puedes_retroceder_durante_el_quiz">Você não pode voltar durante o quiz.</string>
     <string name="pregunta_texto">Pergunta %1$d de %2$d</string>
-    <string name="tiempo_restante">Tempo restante: %1$d segundos (Total: %2$d)</string>
+    <string name="tiempo_restante">Tempo restante: %1$d segundos</string>
     <string name="no_hay_imagen_para_mostrar">Não há imagem para exibir.</string>
     <string name="respuesta_incorrecta">Resposta incorreta!</string>
     <string name="aceptar">Aceitar</string>

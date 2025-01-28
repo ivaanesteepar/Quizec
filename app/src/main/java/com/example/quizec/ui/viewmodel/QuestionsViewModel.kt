@@ -19,10 +19,8 @@ import java.util.UUID
 class QuestionsViewModel : ViewModel() {
     private val db = FirebaseFirestore.getInstance()
     val quizViewModel = QuizViewModel()
-
     val _preguntas = mutableStateListOf<Pregunta>()
     val preguntas: List<Pregunta> get() = _preguntas
-
     private val _preguntasSeleccionadas = mutableStateOf<List<Pregunta>>(emptyList())
     val preguntasSeleccionadas get() = _preguntasSeleccionadas
 
@@ -416,27 +414,6 @@ class QuestionsViewModel : ViewModel() {
     }
 
 
-    fun borrarCuestionarioHistorial(nombreUsuario: String, cuestionarioId: String) {
-        // Obtén una instancia de Firestore
-        val db = FirebaseFirestore.getInstance()
-
-        // Accede al documento del usuario y a la colección de cuestionarios
-        val usuarioRef = db.collection("usuarioHistorial")
-            .document(nombreUsuario) // Nombre del usuario
-            .collection("cuestionarios") // Colección de cuestionarios
-
-        // Borrar el cuestionario especificado por su ID
-        usuarioRef.document(cuestionarioId).delete()
-            .addOnSuccessListener {
-                // Operación exitosa, el cuestionario ha sido borrado
-                println("Cuestionario con ID $cuestionarioId borrado correctamente")
-            }
-            .addOnFailureListener { exception ->
-                // Ocurrió un error al borrar el cuestionario
-                println("Error al borrar el cuestionario: ${exception.message}")
-            }
-    }
-
     fun actualizarPregunta(pregunta: Pregunta) {
         // Obtener una instancia de Firebase Firestore
         val firestore = FirebaseFirestore.getInstance()
@@ -471,6 +448,8 @@ class QuestionsViewModel : ViewModel() {
                                 "tipo" to pregunta.tipo.name,
                                 "opciones" to pregunta.opciones,
                                 "respuestasCorrectas" to pregunta.respuestasCorrectas,
+                                "emparejamientos" to pregunta.emparejamientos,
+                                "itemsOrdenados" to pregunta.itemsOrdenados,
                                 "imagen" to pregunta.imagen,
                                 "user_id" to pregunta.user_id,
                                 "isSelected" to pregunta.isSelected,
@@ -609,15 +588,15 @@ class QuestionsViewModel : ViewModel() {
 
 
 
-    private val _preguntasParaEliminar = mutableStateListOf<Pregunta>()
-
-    fun marcarPreguntasParaEliminar(codigoQuiz: String, preguntas: List<Pregunta>) {
-        _preguntasParaEliminar.clear()
-        _preguntasParaEliminar.addAll(preguntas)
-    }
-
-    fun cancelarEliminacion() {
-        _preguntasParaEliminar.clear()
-    }
+//    private val _preguntasParaEliminar = mutableStateListOf<Pregunta>()
+//
+//    fun marcarPreguntasParaEliminar(codigoQuiz: String, preguntas: List<Pregunta>) {
+//        _preguntasParaEliminar.clear()
+//        _preguntasParaEliminar.addAll(preguntas)
+//    }
+//
+//    fun cancelarEliminacion() {
+//        _preguntasParaEliminar.clear()
+//    }
 
 }

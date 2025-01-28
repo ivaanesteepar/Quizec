@@ -1,6 +1,7 @@
 package com.example.quizec.ui.screens
 
 import android.util.Log
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -8,6 +9,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -16,6 +19,7 @@ import com.example.quizec.R
 import com.example.quizec.ui.viewmodel.QuestionsViewModel
 import com.example.quizec.data.model.Pregunta
 import com.example.quizec.data.model.TipoPregunta
+import com.example.quizec.ui.theme.buttonColor
 import com.example.quizec.ui.viewmodel.QuizViewModel
 import com.example.quizec.utils.AMovServer
 
@@ -44,14 +48,18 @@ fun SelectQuestionsScreen(
     var questionToDuplicate by remember { mutableStateOf<Pregunta?>(null) }
 
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = Modifier
+        .background(colorResource(id = R.color.background_color))
+        .fillMaxSize()
+    ) {
         if (preguntasState.value.isEmpty()) {
             CircularProgressIndicator(modifier = Modifier.padding(16.dp)) // Indicador de carga
         } else {
             Text(
                 text = stringResource(R.string.seleccionar_preguntas_titulo),
                 style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier
+                    .padding(16.dp)
             )
 
             LazyColumn(
@@ -197,6 +205,9 @@ fun SelectQuestionsScreen(
                     questionsViewModel.guardarPreguntasSeleccionadas(quizViewModel)
                     navController.popBackStack()
                 },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = colorResource(id = R.color.logo_pink) // Aplicamos el color de fondo del botón
+                ),
                 modifier = Modifier.fillMaxWidth(0.4f)  // Menos ancho para que no ocupe toda la pantalla
             ) {
                 Text(text = stringResource(R.string.guardar)) // Emoji para guardar
@@ -208,6 +219,9 @@ fun SelectQuestionsScreen(
                 onClick = {
                     navController.navigate("createQuiz")
                 },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = buttonColor // Aplicamos el color de fondo del botón
+                ),
                 modifier = Modifier.fillMaxWidth(0.4f)
             ) {
                 Text(text = stringResource(R.string.volver)) // Emoji para volver
@@ -280,6 +294,9 @@ fun PreguntaItem(
         ) {
             Button(
                 onClick = { onEdit(pregunta) },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = buttonColor // Aplicamos el color de fondo del botón
+                ),
                 modifier = Modifier.weight(1f)
             ) {
                 Text(text = "✏️") // Emoji para editar
@@ -287,7 +304,9 @@ fun PreguntaItem(
 
             Button(
                 onClick = { onDelete(pregunta) },
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.Red // Aplicamos el color de fondo del botón
+                ),
                 modifier = Modifier.weight(1f)
             ) {
                 Text(text = "🗑️") // Emoji para eliminar
@@ -295,6 +314,9 @@ fun PreguntaItem(
 
             Button(
                 onClick = { onDuplicate(pregunta) },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = buttonColor // Aplicamos el color de fondo del botón
+                ),
                 modifier = Modifier.weight(1f)
             ) {
                 Text(text = "🔁") // Emoji para duplicar

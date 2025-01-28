@@ -14,18 +14,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import com.example.quizec.R
 import com.example.quizec.data.model.Rol
+import com.example.quizec.ui.theme.buttonColor
 import com.example.quizec.ui.viewmodel.QuizViewModel
 import com.example.quizec.ui.viewmodel.UsersViewModel
 
 @Composable
 fun WaitingScreen(navController: NavHostController, codigoQuiz: String?, usersViewModel: UsersViewModel) {
     val quizViewModel = remember { QuizViewModel() }
+    //observa el rol del usuario y actualiza la UI de manera reactiva cuando el rol cambia
     val userRole by quizViewModel.userRole.collectAsState()
 
     val isQuizIniciado by quizViewModel.isQuizIniciado.collectAsState()
@@ -41,7 +44,7 @@ fun WaitingScreen(navController: NavHostController, codigoQuiz: String?, usersVi
     // Cuando cambia el código del quiz, agregamos el usuario y comenzamos a escuchar la lista
     LaunchedEffect(codigoQuiz) {
         if (codigoQuiz != null) {
-            usersViewModel.escucharUsuariosEnEspera(codigoQuiz)
+            usersViewModel.escucharUsuariosEnEspera(codigoQuiz) //lista de usuarios en espera sincronizada en tiempo real con la base de datos
         }
     }
 
@@ -53,6 +56,7 @@ fun WaitingScreen(navController: NavHostController, codigoQuiz: String?, usersVi
     // Tdo dentro de una sola columna
     Column(
         modifier = Modifier
+            .background(colorResource(id = R.color.background_color))
             .fillMaxSize()
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -98,16 +102,9 @@ fun WaitingScreen(navController: NavHostController, codigoQuiz: String?, usersVi
                     .size(100.dp)
                     //.background(Color.Gray, RoundedCornerShape(8.dp))
             )
-        } else {
-            Text(
-                text = stringResource(R.string.no_hay_imagen_para_mostrar),
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(top = 16.dp)
-            )
         }
 
-
-        LazyColumn(
+        LazyColumn( //muestra los usuarios en espera en una lista vertical
             modifier = Modifier
                 .width(250.dp)
                 .height(250.dp) // Ajustar el tamaño de la lista para que no ocupe demasiado espacio
@@ -153,21 +150,29 @@ fun WaitingScreen(navController: NavHostController, codigoQuiz: String?, usersVi
                         println("Rol desconocido: $userRole")
                     }
                 },
-                enabled = userRole != null && userRole == Rol.CREADOR.toString()
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = colorResource(id = R.color.logo_pink) // Aplicamos el color de fondo del botón
+                ),
+                enabled = userRole != null && userRole == Rol.CREADOR.toString() //solo habilitado si es creador
             ) {
                 Text(stringResource(R.string.iniciar_quiz))
             }
 
 
             // Botón "Volver"
-            Button(onClick = {
+            Button(
+                onClick = {
                 // Eliminar al usuario de la lista en la base de datos
                 if (codigoQuiz != null) {
                     usersViewModel.eliminarUsuarioDeQuiz(codigoQuiz) // Llamada para eliminar el usuario
                 }
                 // Volver a la pantalla anterior
                 navController.popBackStack()
-            }) {
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = buttonColor // Aplicamos el color de fondo del botón
+                )
+            ) {
                 Text(text = stringResource(R.string.volver))
             }
         }

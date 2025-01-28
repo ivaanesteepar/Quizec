@@ -7,6 +7,7 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -26,14 +27,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
-class QuizViewModel : ViewModel() {
+class QuizViewModel : ViewModel() { //lógica relacionada con la gestión de quizzes
     var usuario = mutableStateOf<Usuario?>(null)
     private val firestore = FirebaseFirestore.getInstance()
     private val _nombreUsuario = MutableStateFlow<String?>(null)
     val nombreUsuario: StateFlow<String?> = _nombreUsuario
 
     var _preguntas = mutableStateListOf<Pregunta>()
-    var preguntas: List<Pregunta> = _preguntas
+    var preguntas: List<Pregunta> = _preguntas //pregs del quiz
 
     var contadorPreguntas = mutableStateOf(0)
     // StateFlow para almacenar el rol del usuario
@@ -54,8 +55,6 @@ class QuizViewModel : ViewModel() {
     private val _errorMessage = MutableStateFlow("")
     val errorMessage: StateFlow<String> = _errorMessage
 
-
-    //OJO Q LO CAMBIE Y NS SI AFECTA!!!!!!!!!!!
     // Mapa de respuestas de todos los usuarios (usamos StateFlow para ser reactivos)
     private val _respuestas = MutableStateFlow<Map<String, Pair<String, Int>>>(emptyMap())
     val respuestas: StateFlow<Map<String, Pair<String, Int>>> = _respuestas
@@ -63,15 +62,8 @@ class QuizViewModel : ViewModel() {
     private val _totalTime = MutableStateFlow(600) // Tiempo total global inicial (10 minutos)
     val totalTime: StateFlow<Int> get() = _totalTime // Exponer el tiempo total como StateFlow
 
-    private val _usuariosTiempo = mutableStateOf<Map<String, Int>>(emptyMap())
-    val usuariosTiempo: State<Map<String, Int>> get() = _usuariosTiempo
-
     private val _remainingTime = mutableStateOf(60) // Tiempo restante para la pregunta
     val remainingTime: State<Int> = _remainingTime // Exponer el tiempo restante como un estado observable
-
-    // MutableState para almacenar el valor de immediateAccess
-    private val _immediateAccess = mutableStateOf(false)  // Iniciar en false
-    val immediateAccess: State<Boolean> = _immediateAccess
 
     private val _isQuizIniciado = MutableStateFlow(false)
     val isQuizIniciado: StateFlow<Boolean> = _isQuizIniciado
@@ -79,17 +71,11 @@ class QuizViewModel : ViewModel() {
     private val _respuestasUsuario = mutableStateOf<List<List<Map<String, Any>>>>(listOf())
     val respuestasUsuario: State<List<List<Map<String, Any>>>> = _respuestasUsuario
 
-    private val _numeroUsuarios = MutableStateFlow(0)
-    val numeroUsuarios: StateFlow<Int> = _numeroUsuarios
 
     init {
         obtenerRolUsuario()
     }
 
-    // Función para actualizar el tiempo en el ViewModel
-    fun updateQuestionTime(newTime: Int) {
-        _remainingTime.value = newTime
-    }
 
     // Modificamos la función para que devuelva un valor Boolean
     suspend fun obtenerImmediateResults(codigoQuiz: String): Boolean {
@@ -580,7 +566,7 @@ class QuizViewModel : ViewModel() {
     }
 
 
-    // Función para obtener los datos del quiz desde Firestore (latitud, longitud y radio)
+    // Función para obtener los datos (latitud, longitud y radio) del quiz desde Firestore
     suspend fun obtenerDatosDelQuiz(codigoQuiz: String): Triple<Double, Double, Float>? {
         try {
             // Hacemos la consulta para obtener el documento del quiz con el código indicado
@@ -715,13 +701,6 @@ class QuizViewModel : ViewModel() {
     }
 
 
-    // Método para restablecer los tiempos cuando se inicia un nuevo quiz o pregunta
-    fun resetTimes() {
-        _totalTime.value = 600  // Restablece el tiempo total a 10 minutos
-        _remainingTime.value = 30 // Restablece el tiempo por pregunta a 30 segundos
-    }
-
-
     // Función para cargar las imágenes de los cuestionarios creados por el usuario
     suspend fun cargarImagenesCuestionariosUsuario(userId: String) {
         try {
@@ -783,9 +762,9 @@ class QuizViewModel : ViewModel() {
 
     // Función para agregar una pregunta a la lista
     fun agregarPregunta(pregunta: Pregunta) {
-        if (!_preguntas.contains(pregunta)) {
-            _preguntas.add(pregunta) // Agregar la pregunta solo si no está en la lista
-            contadorPreguntas.value += 1 // Aumentar el contador solo si la pregunta es nueva
+        if (!_preguntas.contains(pregunta)) { // Agregar la pregunta solo si no está en la lista
+            _preguntas.add(pregunta)
+            contadorPreguntas.value += 1 // Aumentar el contador
             println("Pregunta agregada en la lista $preguntas")
         }
         else {
@@ -1186,57 +1165,15 @@ class QuizViewModel : ViewModel() {
     }
 
 
-    fun agregarUsuarioAlQuiz(codigoQuiz: String, userId: String) {
-        val db = FirebaseFirestore.getInstance()
-        val usuariosRef = db.collection("usuariosCuestionario").document(codigoQuiz)
-
-        // Intentar agregar el userId a la lista de usuarios
-        usuariosRef.get().addOnSuccessListener { documentSnapshot ->
-            if (documentSnapshot.exists()) {
-                // Si el documento existe, solo actualizamos
-                usuariosRef.update("usuarios.$userId", true)
-                    .addOnSuccessListener {
-                        Log.d("Firestore", "Usuario agregado al cuestionario correctamente.")
-                    }
-                    .addOnFailureListener { e ->
-                        Log.e("Firestore", "Error al agregar usuario: ", e)
-                    }
-            } else {
-                // Si el documento no existe, creamos un nuevo documento con el usuario
-                val usuariosMap = mapOf(userId to true)
-                usuariosRef.set(mapOf("usuarios" to usuariosMap))
-                    .addOnSuccessListener {
-                        Log.d("Firestore", "Documento creado y usuario agregado al cuestionario.")
-                    }
-                    .addOnFailureListener { e ->
-                        Log.e("Firestore", "Error al crear el documento y agregar usuario: ", e)
-                    }
-            }
-        }
-    }
 
 
 
-    fun obtenerNumeroDeUsuarios(codigoQuiz: String) {
-        val db = FirebaseFirestore.getInstance()
-        val usuariosRef = db.collection("usuariosCuestionario").document(codigoQuiz)
 
-        usuariosRef.addSnapshotListener { documentSnapshot, error ->
-            if (error != null) {
-                Log.e("QuizViewModel", "Error al escuchar cambios en el número de usuarios: ${error.message}")
-                return@addSnapshotListener
-            }
 
-            if (documentSnapshot != null && documentSnapshot.exists()) {
-                val usuariosMap = documentSnapshot.get("usuarios") as? Map<String, Boolean>
-                // Actualiza el número de usuarios
-                _numeroUsuarios.value = usuariosMap?.size ?: 0 // Si el mapa es nulo, asigna 0
-                Log.d("QuizViewModel", "Número de usuarios actualizado: ${_numeroUsuarios.value}")
-            } else {
-                Log.e("QuizViewModel", "No se encontró un documento para el cuestionario con ID: $codigoQuiz")
-            }
-        }
-    }
+
+
+
+
 
 
 

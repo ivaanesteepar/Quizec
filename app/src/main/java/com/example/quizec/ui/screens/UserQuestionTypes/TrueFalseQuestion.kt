@@ -1,5 +1,6 @@
 package com.example.quizec.ui.screens.UserQuestionTypes
 
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -25,10 +26,23 @@ fun TrueFalseQuestionScreen(
     falseButtonColor: Color,
     trueButtonColor: Color,
     isAcceptButtonClicked: Boolean,
-    correctAnswer: String // La respuesta correcta ("Verdadero" o "Falso")
+    correctAnswer: String, // La respuesta correcta ("Verdadero" o "Falso")
+    immediateResults: Boolean,
+    quizTerminado: Boolean,
 ) {
 
     val context = LocalContext.current
+
+    // Determinamos si la respuesta es correcta para Verdadero y Falso
+    val isCorrectTrue = correctAnswer == "Verdadero"
+    val isCorrectFalse = correctAnswer == "Falso"
+
+    // Calculamos si el botón debe estar deshabilitado
+    val isTrueDisabled = (isAcceptButtonClicked && !isCorrectTrue && immediateResults) ||
+            (!immediateResults && quizTerminado && !isCorrectTrue)
+
+    val isFalseDisabled = (isAcceptButtonClicked && !isCorrectFalse && immediateResults) ||
+            (!immediateResults && quizTerminado && !isCorrectFalse)
 
     Row(
         horizontalArrangement = Arrangement.Center, // Centra los botones horizontalmente
@@ -39,13 +53,16 @@ fun TrueFalseQuestionScreen(
     ) {
         Button(
             onClick = {
-
-                onSelectedAnswerChange(listOf(context.getString(R.string.verdadero)))
+                if (!isAcceptButtonClicked) {
+                    onSelectedAnswerChange(listOf("Verdadero"))
+                }
             },
             colors = ButtonDefaults.buttonColors(
-                containerColor = if (isAcceptButtonClicked && correctAnswer == stringResource(R.string.verdadero)) Color.Green else trueButtonColor
+
+                containerColor = if (isAcceptButtonClicked && immediateResults && correctAnswer == "Verdadero" ||
+                    !immediateResults && quizTerminado && correctAnswer == "Verdadero") Color.Green else trueButtonColor
             ),
-            enabled = !(isAcceptButtonClicked && correctAnswer != stringResource(R.string.verdadero)), // Deshabilitar si no es la respuesta correcta
+            enabled = !isTrueDisabled, // Deshabilitar si no es la respuesta correcta
             modifier = Modifier.weight(1f) // Ocupa el mismo espacio que el botón de Falso
         ) {
             Text(text = stringResource(R.string.verdadero), color = Color.White)
@@ -55,15 +72,21 @@ fun TrueFalseQuestionScreen(
 
         Button(
             onClick = {
-                onSelectedAnswerChange(listOf(context.getString(R.string.falso)))
+                if (!isAcceptButtonClicked) {
+                    onSelectedAnswerChange(listOf("Falso"))
+                }
             },
             colors = ButtonDefaults.buttonColors(
-                containerColor = if (isAcceptButtonClicked && correctAnswer == stringResource(R.string.falso)) Color.Green else falseButtonColor
+                containerColor = if (isAcceptButtonClicked && immediateResults && correctAnswer == "Falso" ||
+                    !immediateResults && quizTerminado && correctAnswer == "Falso") Color.Green else falseButtonColor
             ),
-            enabled = !(isAcceptButtonClicked && correctAnswer != stringResource(R.string.falso)), // Deshabilitar si no es la respuesta correcta
+            enabled = !isFalseDisabled, // Deshabilitar si no es la respuesta correcta
             modifier = Modifier.weight(1f) // Ocupa el mismo espacio que el botón de Verdadero
         ) {
             Text(text = stringResource(R.string.falso), color = Color.White)
         }
+
+
     }
+    Log.d("TrueFalseQuestionScreen","condicion: $isAcceptButtonClicked $immediateResults  $correctAnswer == $isCorrectTrue")
 }

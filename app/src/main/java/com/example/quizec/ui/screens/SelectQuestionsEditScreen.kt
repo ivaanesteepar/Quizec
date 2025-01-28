@@ -1,14 +1,16 @@
 package com.example.quizec.ui.screens
 
 import android.util.Log
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -17,6 +19,7 @@ import com.example.quizec.R
 import com.example.quizec.ui.viewmodel.QuestionsViewModel
 import com.example.quizec.data.model.Pregunta
 import com.example.quizec.data.model.TipoPregunta
+import com.example.quizec.ui.theme.buttonColor
 import com.example.quizec.ui.viewmodel.QuizViewModel
 import com.example.quizec.utils.AMovServer
 
@@ -49,7 +52,10 @@ fun SelectQuestionsEditScreen(
     var questionToDuplicate by remember { mutableStateOf<Pregunta?>(null) }
 
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = Modifier
+        .background(colorResource(id = R.color.background_color))
+        .fillMaxSize()
+    ) {
         if (preguntasState.value.isEmpty()) {
             CircularProgressIndicator(modifier = Modifier.padding(16.dp)) // Indicador de carga
         } else {
@@ -58,7 +64,7 @@ fun SelectQuestionsEditScreen(
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(16.dp)
             )
-            Text(stringResource(R.string.preguntas_iniciales, preguntasInicialesQuiz.size))
+            //Text(stringResource(R.string.preguntas_iniciales, preguntasInicialesQuiz.size))
 
             LazyColumn(
                 modifier = Modifier
@@ -206,6 +212,9 @@ fun SelectQuestionsEditScreen(
                     questionsViewModel.guardarPreguntasSeleccionadas(quizViewModel)
                     navController.navigate("editCuestionario/$codigoQuiz")
                 },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = colorResource(id = R.color.logo_pink) // Aplicamos el color de fondo del botón
+                ),
                 modifier = Modifier.weight(1f) // Ambos botones tendrán el mismo ancho
             ) {
                 Text(text = stringResource(R.string.guardar)) // Emoji para guardar
@@ -216,6 +225,9 @@ fun SelectQuestionsEditScreen(
                     val codigoQuiz = codigoQuiz
                     navController.navigate("editCuestionario/$codigoQuiz")
                 },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = buttonColor // Aplicamos el color de fondo del botón
+                ),
                 modifier = Modifier.weight(1f)
             ) {
                 Text(text = stringResource(R.string.volver)) // Emoji para volver
@@ -286,6 +298,9 @@ fun PreguntaItemEdit(
         ) {
             Button(
                 onClick = { onEdit(pregunta) },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = buttonColor // Aplicamos el color de fondo del botón
+                ),
                 modifier = Modifier.weight(1f)
             ) {
                 Text(text = "✏️") // Emoji para editar
@@ -293,7 +308,9 @@ fun PreguntaItemEdit(
 
             Button(
                 onClick = { onDelete(pregunta) },
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.Red // Aplicamos el color de fondo del botón
+                ),
                 modifier = Modifier.weight(1f)
             ) {
                 Text(text = "🗑️") // Emoji para eliminar
@@ -301,6 +318,9 @@ fun PreguntaItemEdit(
 
             Button(
                 onClick = { onDuplicate(pregunta) },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = buttonColor // Aplicamos el color de fondo del botón
+                ),
                 modifier = Modifier.weight(1f)
             ) {
                 Text(text = "🔁") // Emoji para duplicar

@@ -2,6 +2,7 @@ package com.example.quizec.ui.screens
 
 import android.net.Uri
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -10,10 +11,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
+import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
 import com.example.quizec.R
 import com.example.quizec.data.model.Pregunta
@@ -26,6 +31,7 @@ import com.example.quizec.ui.screens.UserQuestionTypes.MultChoicesQuestionScreen
 import com.example.quizec.ui.screens.UserQuestionTypes.OneMultChoicesQuestionScreen
 import com.example.quizec.ui.screens.UserQuestionTypes.OrderingQuestionScreen
 import com.example.quizec.ui.screens.UserQuestionTypes.TrueFalseQuestionScreen
+import com.example.quizec.ui.theme.buttonColor
 import com.example.quizec.ui.viewmodel.QuizViewModel
 import com.google.firebase.auth.FirebaseAuth
 import java.io.File
@@ -42,9 +48,12 @@ fun AnswerResultScreen(
 
     var immediateResults by remember { mutableStateOf(false) }
 
+    // Recolectamos el valor de quizTerminado desde el StateFlow
+    //val quizTerminado by quizViewModel.quizTerminado.collectAsState()
+
     LaunchedEffect(codigoQuiz) {
         if (codigoQuiz != null) {
-            quizViewModel.iniciarQuiz(codigoQuiz, userId)
+            //quizViewModel.iniciarQuiz(codigoQuiz, userId)
             quizViewModel.cargarPreguntasPorCodigo(codigoQuiz)
             immediateResults = quizViewModel.obtenerImmediateResults(codigoQuiz)
         }
@@ -54,6 +63,7 @@ fun AnswerResultScreen(
 
     Box(
         modifier = Modifier
+            .background(colorResource(id = R.color.background_color))
             .fillMaxSize()
             .padding(16.dp)
     ) {
@@ -75,6 +85,25 @@ fun AnswerResultScreen(
             ) {
                 Spacer(modifier = Modifier.height(20.dp))
 
+                // Número de pregunta actual
+                Text(
+                    text = LocalContext.current.getString(R.string.pregunta_texto, currentQuestionIndex + 1, preguntas.size),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontSize = 16.sp
+                )
+                // Show selected image if available
+                if (currentQuestion.imagen != null) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    AsyncImage(
+                        model = currentQuestion.imagen,
+                        contentDescription = "Imagen cargada del servidor",
+                        contentScale = ContentScale.Crop, // Ajusta la imagen para q aproveche tdo el tam
+                        modifier = Modifier.size(200.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(18.dp))
+
                 Text(
                     text = currentQuestion.titulo,
                     style = MaterialTheme.typography.headlineMedium,
@@ -82,37 +111,25 @@ fun AnswerResultScreen(
                     modifier = Modifier.padding(top = 16.dp)
                 )
 
-                Spacer(modifier = Modifier.height(20.dp))
-
-                currentQuestion.imagen?.let { imageUrl ->
-                    val file = File(Uri.parse(imageUrl).path ?: "")
-                    if (file.exists()) {
-                        Image(
-                            painter = rememberAsyncImagePainter(model = imageUrl),
-                            contentDescription = "Imagen de la pregunta",
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(200.dp)
-                                .padding(8.dp)
-                        )
-                    } else {
-                        Text(text = stringResource(R.string.archivo_no_encontrado))
-                    }
-                }
 
                 Spacer(modifier = Modifier.height(20.dp))
 
                 println("Correct answer: ${currentQuestion.respuestasCorrectas}")
 
+                val quizTerminado = true //para que en la ult pregunta no muestre las opc correctas
+
                 when (currentQuestion.tipo) {
                     TipoPregunta.VERDADERO_FALSO -> {
                         val respuestaCorrecta = currentQuestion.respuestasCorrectas.firstOrNull() ?: "" // Obtener la primera respuesta correcta
 
-                        TrueFalseQuestionScreen(                            onSelectedAnswerChange = {},
-                            falseButtonColor = if (respuestaCorrecta == stringResource(R.string.falso)) Color.Green else Color.Unspecified, // Si la respuesta correcta es "Falso", el botón "Falso" se pone verde
-                            trueButtonColor = if (respuestaCorrecta == stringResource(R.string.verdadero)) Color.Green else Color.Unspecified, // Si la respuesta correcta es "Verdadero", el botón "Verdadero" se pone verde
+                        TrueFalseQuestionScreen(
+                            onSelectedAnswerChange = {},
+                            falseButtonColor = if (respuestaCorrecta == "Falso") Color.Green else Color.Unspecified, // Si la respuesta correcta es "Falso", el botón "Falso" se pone verde
+                            trueButtonColor = if (respuestaCorrecta == "Verdadero") Color.Green else Color.Unspecified, // Si la respuesta correcta es "Verdadero", el botón "Verdadero" se pone verde
                             isAcceptButtonClicked = true, // Asegúrate de que los botones no se deshabiliten, solo cambien de color
-                            correctAnswer = respuestaCorrecta // Pasamos la respuesta correcta como parámetro
+                            correctAnswer = respuestaCorrecta,
+                            immediateResults = immediateResults,
+                            quizTerminado = quizTerminado
                         )
                     }
                     TipoPregunta.OPCION_MULTIPLE_UNA -> {
@@ -123,7 +140,9 @@ fun AnswerResultScreen(
                             selectedAnswer = currentQuestion.respuestasCorrectas,
                             onSelectedAnswerChange = {},
                             isAcceptButtonClicked = true,
-                            correctAnswer = respuestaCorrecta // Pasamos la respuesta correcta como parámetro
+                            correctAnswer = respuestaCorrecta, // Pasamos la respuesta correcta como parámetro
+                            immediateResults = immediateResults,
+                            quizTerminado = quizTerminado
                         )
                     }
 
@@ -135,7 +154,9 @@ fun AnswerResultScreen(
                             selectedAnswer = currentQuestion.respuestasCorrectas,
                             onSelectedAnswerChange = {},
                             isAcceptButtonClicked = true,
-                            correctAnswers = respuestasCorrectas.toList() // Convertir el conjunto a una lista
+                            correctAnswers = respuestasCorrectas.toList(), // Convertir el conjunto a una lista
+                            immediateResults = immediateResults,
+                            quizTerminado = quizTerminado
                         )
                     }
 
@@ -145,20 +166,26 @@ fun AnswerResultScreen(
                             selectedOption = currentQuestion.opcionCorrecta,
                             onOptionSelected = {},
                             isAcceptButtonClicked = true,
+                            immediateResults = immediateResults,
+                            quizTerminado = quizTerminado
                         )
                     }
                     TipoPregunta.ORDENAR -> {
                         OrderingQuestionScreen(
                             currentQuestion = currentQuestion,
                             userOrderedItems = {},
-                            isAcceptButtonClicked = true
+                            isAcceptButtonClicked = true,
+                            immediateResults = immediateResults,
+                            quizTerminado = quizTerminado
                         )
                     }
                     TipoPregunta.EMPAREJAR -> {
                         MatchingQuestionScreen(
                             currentQuestion = currentQuestion,
                             userSelections = currentQuestion.emparejamientos.toMutableMap(),
-                            isAcceptButtonClicked = true
+                            isAcceptButtonClicked = true,
+                            immediateResults = immediateResults,
+                            quizTerminado = quizTerminado
                         )
                     }
 
@@ -167,14 +194,18 @@ fun AnswerResultScreen(
                             currentQuestion = currentQuestion,
                             opcionesCorrectas = currentQuestion.opcionesCorrectasCompletarPalabras,
                             userInputs = currentQuestion.opcionesCorrectasCompletarPalabras.toMutableStateList(),
-                            isAcceptButtonClicked = true
+                            isAcceptButtonClicked = true,
+                            immediateResults = immediateResults,
+                            quizTerminado = quizTerminado
                         )
                     }
                     TipoPregunta.ASOCIACION -> {
                         AssociationQuestionScreen(
                             currentQuestion = currentQuestion,
                             userSelections = currentQuestion.conceptosYDefiniciones.toMutableMap(),
-                            isAcceptButtonClicked = true
+                            isAcceptButtonClicked = true,
+                            immediateResults = immediateResults,
+                            quizTerminado = quizTerminado
                         )
                     }
                 }
@@ -185,6 +216,9 @@ fun AnswerResultScreen(
                     // Botón para ir a la pregunta anterior
                     Button(
                         onClick = { currentQuestionIndex-- },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = buttonColor // Aplicamos el color de fondo del botón
+                        ),
                         enabled = currentQuestionIndex > 0, // Deshabilitar si es la primera pregunta
                         modifier = Modifier.padding(bottom = 16.dp)
                     ) {
@@ -199,6 +233,9 @@ fun AnswerResultScreen(
                                 navController.navigate("results_screen/$codigoQuiz")
                             }
                         },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = buttonColor // Aplicamos el color de fondo del botón
+                        ),
                         modifier = Modifier.padding(bottom = 16.dp)
                     ) {
                         Text(text = stringResource(R.string.siguiente_pregunta))
