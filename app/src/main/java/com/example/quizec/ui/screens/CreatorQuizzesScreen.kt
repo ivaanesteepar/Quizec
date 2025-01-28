@@ -143,9 +143,9 @@ fun CreatorQuizzesScreen(
                                 val respuestaUsuarioTrim = it.toString().trim()
 
                                 // Contar "Verdadero" y "Falso"
-                                if (respuestaUsuarioTrim.equals("Verdadero", ignoreCase = true)) {
+                                if (respuestaUsuarioTrim.equals(stringResource(id = R.string.verdadero), ignoreCase = true)) {
                                     correctAnswersCount++
-                                } else if (respuestaUsuarioTrim.equals("Falso", ignoreCase = true)) {
+                                } else if (respuestaUsuarioTrim.equals(stringResource(id = R.string.falso), ignoreCase = true)) {
                                     incorrectAnswersCount++
                                 }
                             }

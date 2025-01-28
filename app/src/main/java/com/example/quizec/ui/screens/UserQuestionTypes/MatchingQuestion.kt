@@ -57,7 +57,7 @@ fun MatchingQuestionScreen(
     }
 
     // Resaltar pares correctos si el botón de aceptar es pulsado
-    if (isAcceptButtonClicked) {
+    if (isAcceptButtonClicked && immediateResults || (!immediateResults && quizTerminado)) {
         pairColors.clear()
         colorIndex = 0
 
